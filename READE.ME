@@ -1,0 +1,82 @@
+
+POUR LE BACKEND :
+
+cd backend
+
+# venv Python
+python -m venv .venv
+# mac/linux:
+source .venv/bin/activate
+# windows:
+# .venv\Scripts\activate
+
+# dépendances
+pip install django djangorestframework djangorestframework-simplejwt django-cors-headers mysqlclient python-dotenv
+pip freeze > requirements.txt
+
+# projet + app
+django-admin startproject gestion .
+python manage.py startapp accounts
+
+structure du projet 
+
+backend/
+│── gestion/              # dossier principal du projet
+│   ├── __init__.py
+│   ├── asgi.py
+│   ├── settings.py
+│   ├── urls.py
+│   └── wsgi.py
+│── accounts/             # app pour gérer les utilisateurs
+│   ├── migrations/
+│   ├── __init__.py
+│   ├── admin.py
+│   ├── apps.py
+│   ├── models.py
+│   ├── tests.py
+│   ├── views.py
+│   └── urls.py (tu le créeras)
+│── manage.py
+
+
+
+j'utilise MYSQL server communuty 
+
+dans le terminal on tap ceci pour ouvrir puis 
+"C:\Program Files\MySQL\MySQL Server 8.4\bin\mysql.exe" -h 127.0.0.1 -P 3307 -u root -p
+mdt : root            c'est l'utilisateur creer lors de l'installation
+
+
+-- 1) Base pour ton projet
+CREATE DATABASE IF NOT EXISTS gestion_bd
+  CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- 2) Utilisateur (compatible phpMyAdmin)
+CREATE USER IF NOT EXISTS 'gestion_user'@'localhost' IDENTIFIED BY 'danis';
+
+-- 3) Droits
+GRANT ALL PRIVILEGES ON gestion_bd.* TO 'danis'@'localhost';
+FLUSH PRIVILEGES;
+
+
+-- 4) Vérifier
+SHOW DATABASES;
+
+
+
+pour faire la migrations
+1.creer les migrations 
+python manage.py makemigrations
+
+2. appliquer à la base de donné 
+python manage.py migrate
+
+pour creer un utilisateur dans l'admin django
+
+python manage.py createsuperuser
+email : jacquesboussengui@gmail.com
+mdp :1122
+username : danis
+
+pour lancer le serveur django
+python manage.py runserver
