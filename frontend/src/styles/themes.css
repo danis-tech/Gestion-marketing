@@ -1,0 +1,96 @@
+/* Variables CSS pour les thèmes */
+:root {
+  /* Masquer le contenu jusqu'à ce que le thème soit chargé */
+  visibility: hidden;
+}
+
+/* Afficher le contenu une fois le thème chargé */
+.theme-loaded {
+  visibility: visible;
+}
+
+:root {
+  /* Thème sombre (actuel) */
+  --theme-dark-primary: #1e3a8a;
+  --theme-dark-secondary: #1e40af;
+  --theme-dark-tertiary: #1d4ed8;
+  --theme-dark-text: #ffffff;
+  --theme-dark-text-secondary: #cbd5e1;
+  --theme-dark-bg: #0f172a;
+  --theme-dark-surface: #1e293b;
+  --theme-dark-border: rgba(255, 255, 255, 0.1);
+  --theme-dark-hover: rgba(255, 255, 255, 0.08);
+  --theme-dark-active: rgba(255, 255, 255, 0.15);
+  --theme-dark-accent: #ff6b35;
+  --theme-dark-accent-secondary: #f7931e;
+  --theme-dark-shadow: rgba(0, 0, 0, 0.15);
+  --theme-dark-shadow-hover: rgba(0, 0, 0, 0.3);
+  
+  /* Thème clair */
+  --theme-light-primary: #1e40af;
+  --theme-light-secondary: #1e40af;
+  --theme-light-tertiary: #1e40af;
+  --theme-light-text: #ffffff;
+  --theme-light-text-secondary: #ffffff;
+  --theme-light-bg: #fafafa;
+  --theme-light-surface: #ffffff;
+  --theme-light-border: rgba(255, 255, 255, 0.2);
+  --theme-light-hover: rgba(255, 255, 255, 0.1);
+  --theme-light-active: rgba(255, 255, 255, 0.2);
+  --theme-light-accent: #ff6b35;
+  --theme-light-accent-secondary: #f7931e;
+  --theme-light-shadow: rgba(0, 0, 0, 0.1);
+  --theme-light-shadow-hover: rgba(0, 0, 0, 0.2);
+  
+  /* Variables par défaut (thème sombre) */
+  --primary: var(--theme-dark-primary);
+  --secondary: var(--theme-dark-secondary);
+  --tertiary: var(--theme-dark-tertiary);
+  --text: var(--theme-dark-text);
+  --text-secondary: var(--theme-dark-text-secondary);
+  --bg: var(--theme-dark-bg);
+  --surface: var(--theme-dark-surface);
+  --border: var(--theme-dark-border);
+  --hover: var(--theme-dark-hover);
+  --active: var(--theme-dark-active);
+  --accent: var(--theme-dark-accent);
+  --accent-secondary: var(--theme-dark-accent-secondary);
+  --shadow: var(--theme-dark-shadow);
+  --shadow-hover: var(--theme-dark-shadow-hover);
+}
+
+/* Thème clair */
+[data-theme="light"] {
+  --primary: var(--theme-light-primary);
+  --secondary: var(--theme-light-secondary);
+  --tertiary: var(--theme-light-tertiary);
+  --text: var(--theme-light-text);
+  --text-secondary: var(--theme-light-text-secondary);
+  --bg: var(--theme-light-bg);
+  --surface: var(--theme-light-surface);
+  --border: var(--theme-light-border);
+  --hover: var(--theme-light-hover);
+  --active: var(--theme-light-active);
+  --accent: var(--theme-light-accent);
+  --accent-secondary: var(--theme-light-accent-secondary);
+  --shadow: var(--theme-light-shadow);
+  --shadow-hover: var(--theme-light-shadow-hover);
+}
+
+/* Thème sombre */
+[data-theme="dark"] {
+  --primary: var(--theme-dark-primary);
+  --secondary: var(--theme-dark-secondary);
+  --tertiary: var(--theme-dark-tertiary);
+  --text: var(--theme-dark-text);
+  --text-secondary: var(--theme-dark-text-secondary);
+  --bg: var(--theme-dark-bg);
+  --surface: var(--theme-dark-surface);
+  --border: var(--theme-dark-border);
+  --hover: var(--theme-dark-hover);
+  --active: var(--theme-dark-active);
+  --accent: var(--theme-dark-accent);
+  --accent-secondary: var(--theme-dark-accent-secondary);
+  --shadow: var(--theme-dark-shadow);
+  --shadow-hover: var(--theme-dark-shadow-hover);
+}

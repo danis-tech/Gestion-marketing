@@ -1,0 +1,78 @@
+.theme-toggle {
+  display: flex;
+  background: var(--hover);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 2px;
+  gap: 2px;
+  box-shadow: 0 1px 3px var(--shadow);
+}
+
+.theme-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 12px;
+  font-weight: 500;
+  min-width: 60px;
+  justify-content: center;
+}
+
+.theme-button:hover {
+  background: var(--active);
+  color: var(--text);
+}
+
+.theme-button.active {
+  background: var(--primary);
+  color: white;
+  box-shadow: 0 1px 3px var(--shadow);
+}
+
+.theme-button.active:hover {
+  background: var(--secondary);
+}
+
+.theme-button svg {
+  width: 14px;
+  height: 14px;
+  transition: transform 0.2s ease;
+}
+
+.theme-button:hover svg {
+  transform: scale(1.05);
+}
+
+.theme-button.active svg {
+  transform: scale(1.05);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .theme-toggle {
+    padding: 2px;
+    gap: 2px;
+  }
+  
+  .theme-button {
+    padding: 6px 8px;
+    min-width: 60px;
+    font-size: 12px;
+  }
+  
+  .theme-button span {
+    display: none;
+  }
+  
+  .theme-button svg {
+    width: 18px;
+    height: 18px;
+  }
+}

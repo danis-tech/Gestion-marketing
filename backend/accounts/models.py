@@ -100,6 +100,7 @@ class User(AbstractUser):
     prenom = models.CharField(max_length=100)
     nom    = models.CharField(max_length=100)
     phone  = models.CharField(max_length=30, null=True, blank=True)
+    photo_url = models.CharField(max_length=250, null=True, blank=True, verbose_name="URL de la photo de profil")
 
     role    = models.ForeignKey(Role, null=True, blank=True, on_delete=models.SET_NULL, db_column="role_id")
     service = models.ForeignKey(Service, null=True, blank=True, on_delete=models.SET_NULL, db_column="service_id")

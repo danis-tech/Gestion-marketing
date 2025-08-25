@@ -1,0 +1,12 @@
+<svg width="120" height="40" viewBox="0 0 120 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Moov Africa Text -->
+  <text x="10" y="25" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="white">Moov Africa</text>
+  
+  <!-- V Logo -->
+  <path d="M85 8 L95 25 L105 8 L100 8 L95 20 L90 8 Z" fill="#ff6b35"/>
+  <circle cx="95" cy="15" r="2" fill="white"/>
+  
+  <!-- Gabon Telecom Text -->
+  <text x="75" y="35" font-family="Arial, sans-serif" font-size="10" fill="white" opacity="0.8">Gabon Telecom</text>
+</svg>
+

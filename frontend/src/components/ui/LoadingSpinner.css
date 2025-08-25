@@ -1,0 +1,136 @@
+/* Loading Container - Simple et épuré */
+.loading-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 9999;
+}
+
+.loading-container.fullscreen {
+  background: rgba(0, 0, 0, 0.9);
+}
+
+.loading-container.overlay {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+/* Loading Spinner - Design minimaliste */
+.loading-spinner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+/* Spinner simple et élégant - UN SEUL CERCLE */
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255, 255, 255, 0.2);
+  border-top: 3px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* Size Variants */
+.loading-spinner.small .spinner {
+  width: 24px;
+  height: 24px;
+  border-width: 2px;
+}
+
+.loading-spinner.medium .spinner {
+  width: 40px;
+  height: 40px;
+  border-width: 3px;
+}
+
+.loading-spinner.large .spinner {
+  width: 60px;
+  height: 60px;
+  border-width: 4px;
+}
+
+.loading-spinner.xlarge .spinner {
+  width: 80px;
+  height: 80px;
+  border-width: 5px;
+}
+
+/* Color Variants */
+.loading-spinner.primary .spinner {
+  border-top-color: var(--accent);
+}
+
+.loading-spinner.secondary .spinner {
+  border-top-color: #6c757d;
+}
+
+.loading-spinner.success .spinner {
+  border-top-color: #28a745;
+}
+
+.loading-spinner.warning .spinner {
+  border-top-color: #ffc107;
+}
+
+.loading-spinner.danger .spinner {
+  border-top-color: #dc3545;
+}
+
+.loading-spinner.white .spinner {
+  border-top-color: white;
+}
+
+/* Loading Text - Simple et lisible */
+.loading-text {
+  margin: 0;
+  font-size: 16px;
+  color: white;
+  font-weight: 400;
+  text-align: center;
+  opacity: 0.9;
+}
+
+.loading-spinner.small .loading-text {
+  font-size: 14px;
+}
+
+.loading-spinner.large .loading-text {
+  font-size: 18px;
+}
+
+.loading-spinner.xlarge .loading-text {
+  font-size: 20px;
+}
+
+/* Animation simple */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .loading-spinner.large .spinner {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .loading-spinner.xlarge .spinner {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .loading-text {
+    font-size: 15px;
+  }
+}

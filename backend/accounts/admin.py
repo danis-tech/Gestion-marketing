@@ -27,15 +27,15 @@ class ServiceAdmin(admin.ModelAdmin):
 class UserAdmin(BaseUserAdmin):
     fieldsets = (
         (None, {"fields": ("username","password")}),
-        ("Identité", {"fields": ("email","prenom","nom","phone")}),
+        ("Identité", {"fields": ("email","prenom","nom","phone","photo_url")}),
         ("Organisation", {"fields": ("role","service")}),
         ("Permissions", {"fields": ("is_active","is_staff","is_superuser","groups","user_permissions")}),
         ("Dates", {"fields": ("last_login","derniere_connexion_le","date_joined","cree_le","mis_a_jour_le")}),
     )
     add_fieldsets = (
-        (None, {"classes": ("wide",), "fields": ("username","email","prenom","nom","phone","password1","password2")}),
+        (None, {"classes": ("wide",), "fields": ("username","email","prenom","nom","phone","photo_url","password1","password2")}),
     )
-    list_display = ("id","username","email","prenom","nom","role","service","is_active")
+    list_display = ("id","username","email","prenom","nom","photo_url","role","service","is_active")
     list_filter = ("role","service","is_active","is_staff")
     search_fields = ("username","email","prenom","nom")
     ordering = ("id",)

@@ -1,0 +1,141 @@
+:root {
+  /* ===== COLORS ===== */
+  
+  /* Primary Colors - Moov Africa Brand */
+  --color-primary-blue: #0066cc;
+  --color-primary-blue-dark: #0052a3;
+  --color-primary-blue-darker: #003d7a;
+  --color-primary-orange: #ff6b35;
+  --color-primary-orange-dark: #e55a2b;
+  --color-primary-orange-light: #f7931e;
+  
+  /* Background Colors */
+  --color-bg-primary: #fafafa;
+  --color-bg-secondary: white;
+  --color-bg-blue-light: linear-gradient(135deg, #a8c5e8 0%, #8bb3e0 100%);
+  --color-bg-blue-dark: linear-gradient(135deg, #0066cc 0%, #0052a3 50%, #003d7a 100%);
+  --color-bg-quote: linear-gradient(135deg, #e8f2ff 0%, #d1e7ff 100%);
+  
+  /* Text Colors */
+  --color-text-primary: #1a252f;
+  --color-text-secondary: #2c3e50;
+  --color-text-tertiary: #34495e;
+  --color-text-muted: #5a6c7d;
+  --color-text-light: #888;
+  --color-text-white: white;
+  
+  /* Border Colors */
+  --color-border-light: #eee;
+  --color-border-blue: #d1e7ff;
+  --color-border-blue-dark: #b8d9ff;
+  
+  /* Shadow Colors */
+  --color-shadow-light: rgba(0, 0, 0, 0.08);
+  --color-shadow-medium: rgba(0, 0, 0, 0.1);
+  --color-shadow-heavy: rgba(0, 0, 0, 0.15);
+  --color-shadow-blue: rgba(0, 102, 204, 0.3);
+  --color-shadow-orange: rgba(255, 107, 53, 0.4);
+  
+  /* ===== SPACING ===== */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 40px;
+  --spacing-3xl: 50px;
+  --spacing-4xl: 60px;
+  --spacing-5xl: 80px;
+  
+  /* ===== TYPOGRAPHY ===== */
+  --font-family-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  
+  /* Font Sizes */
+  --font-size-xs: 12px;
+  --font-size-sm: 14px;
+  --font-size-base: 16px;
+  --font-size-lg: 18px;
+  --font-size-xl: 20px;
+  --font-size-2xl: 22px;
+  --font-size-3xl: 24px;
+  --font-size-4xl: 32px;
+  --font-size-5xl: 42px;
+  --font-size-6xl: 48px;
+  --font-size-7xl: 56px;
+  --font-size-8xl: 72px;
+  
+  /* Font Weights */
+  --font-weight-light: 300;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-extrabold: 800;
+  
+  /* Line Heights */
+  --line-height-tight: 1.2;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.6;
+  
+  /* Letter Spacing */
+  --letter-spacing-tight: -3px;
+  --letter-spacing-normal: 0;
+  --letter-spacing-wide: 2px;
+  
+  /* ===== BORDER RADIUS ===== */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+  --radius-full: 50px;
+  
+  /* ===== SHADOWS ===== */
+  --shadow-sm: 0 2px 4px var(--color-shadow-light);
+  --shadow-md: 0 8px 25px var(--color-shadow-light);
+  --shadow-lg: 0 10px 30px var(--color-shadow-medium);
+  --shadow-xl: 0 20px 60px var(--color-shadow-medium);
+  --shadow-2xl: 0 30px 80px var(--color-shadow-heavy);
+  
+  /* ===== TRANSITIONS ===== */
+  --transition-fast: 0.2s ease;
+  --transition-normal: 0.3s ease;
+  --transition-slow: 0.5s ease;
+  
+  /* ===== Z-INDEX ===== */
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-fixed: 1030;
+  --z-modal-backdrop: 1040;
+  --z-modal: 1050;
+  --z-popover: 1060;
+  --z-tooltip: 1070;
+  
+  /* ===== LAYOUT ===== */
+  --container-max-width: 1400px;
+  --header-height: 60px;
+  
+  /* ===== COMPONENT SPECIFIC ===== */
+  
+  /* Button */
+  --button-padding-sm: 8px 16px;
+  --button-padding-md: 12px 24px;
+  --button-padding-lg: 18px 40px;
+  --button-gap-sm: 8px;
+  --button-gap-md: 10px;
+  --button-gap-lg: 12px;
+  
+  /* Logo */
+  --logo-height-small: 30px;
+  --logo-height-medium: 60px;
+  --logo-height-large: 100px;
+  --logo-height-quote: 55px;
+  
+  /* Quote */
+  --quote-padding: 50px 40px;
+  --quote-max-width: 600px;
+  
+  /* Hero */
+  --hero-title-spacing: 8px;
+  --hero-subtitle-spacing: 20px;
+}
