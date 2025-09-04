@@ -1,141 +1,151 @@
+/* ===== COULEURS MOOV AFRICA GABON TÉLÉCOM ===== */
+
 :root {
-  /* ===== COLORS ===== */
+  /* Couleurs principales de la marque - basées sur le logo */
+  --moov-primary: #0066CC;          /* Bleu principal du logo Moov */
+  --moov-primary-dark: #0052A3;     /* Bleu foncé */
+  --moov-primary-light: #3385D6;    /* Bleu clair */
+  --moov-primary-lighter: #66A3E0;  /* Bleu très clair */
   
-  /* Primary Colors - Moov Africa Brand */
-  --color-primary-blue: #0066cc;
-  --color-primary-blue-dark: #0052a3;
-  --color-primary-blue-darker: #003d7a;
-  --color-primary-orange: #ff6b35;
-  --color-primary-orange-dark: #e55a2b;
-  --color-primary-orange-light: #f7931e;
+  /* Couleurs secondaires - basées sur le logo */
+  --moov-secondary: #FF6600;        /* Orange vif du croissant Moov */
+  --moov-secondary-dark: #CC5200;   /* Orange foncé */
+  --moov-secondary-light: #FF8533;  /* Orange clair */
   
-  /* Background Colors */
-  --color-bg-primary: #fafafa;
-  --color-bg-secondary: white;
-  --color-bg-blue-light: linear-gradient(135deg, #a8c5e8 0%, #8bb3e0 100%);
-  --color-bg-blue-dark: linear-gradient(135deg, #0066cc 0%, #0052a3 50%, #003d7a 100%);
-  --color-bg-quote: linear-gradient(135deg, #e8f2ff 0%, #d1e7ff 100%);
+  /* Couleurs d'accent */
+  --moov-accent: #00CC66;           /* Vert Moov */
+  --moov-accent-dark: #00A352;      /* Vert foncé */
+  --moov-accent-light: #33D680;     /* Vert clair */
   
-  /* Text Colors */
-  --color-text-primary: #1a252f;
-  --color-text-secondary: #2c3e50;
-  --color-text-tertiary: #34495e;
-  --color-text-muted: #5a6c7d;
-  --color-text-light: #888;
-  --color-text-white: white;
+  /* Couleurs neutres professionnelles */
+  --moov-gray-50: #F8FAFC;
+  --moov-gray-100: #F1F5F9;
+  --moov-gray-200: #E2E8F0;
+  --moov-gray-300: #CBD5E1;
+  --moov-gray-400: #94A3B8;
+  --moov-gray-500: #64748B;
+  --moov-gray-600: #475569;
+  --moov-gray-700: #334155;
+  --moov-gray-800: #1E293B;
+  --moov-gray-900: #0F172A;
   
-  /* Border Colors */
-  --color-border-light: #eee;
-  --color-border-blue: #d1e7ff;
-  --color-border-blue-dark: #b8d9ff;
+  /* Couleurs de statut */
+  --moov-success: #10B981;          /* Vert succès */
+  --moov-success-light: #D1FAE5;
+  --moov-success-dark: #059669;
   
-  /* Shadow Colors */
-  --color-shadow-light: rgba(0, 0, 0, 0.08);
-  --color-shadow-medium: rgba(0, 0, 0, 0.1);
-  --color-shadow-heavy: rgba(0, 0, 0, 0.15);
-  --color-shadow-blue: rgba(0, 102, 204, 0.3);
-  --color-shadow-orange: rgba(255, 107, 53, 0.4);
+  --moov-warning: #F59E0B;          /* Orange avertissement */
+  --moov-warning-light: #FEF3C7;
+  --moov-warning-dark: #D97706;
   
-  /* ===== SPACING ===== */
-  --spacing-xs: 4px;
-  --spacing-sm: 8px;
-  --spacing-md: 16px;
-  --spacing-lg: 24px;
-  --spacing-xl: 32px;
-  --spacing-2xl: 40px;
-  --spacing-3xl: 50px;
-  --spacing-4xl: 60px;
-  --spacing-5xl: 80px;
+  --moov-error: #EF4444;            /* Rouge erreur */
+  --moov-error-light: #FEE2E2;
+  --moov-error-dark: #DC2626;
   
-  /* ===== TYPOGRAPHY ===== */
-  --font-family-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  --moov-info: #3B82F6;             /* Bleu information */
+  --moov-info-light: #DBEAFE;
+  --moov-info-dark: #1D4ED8;
   
-  /* Font Sizes */
-  --font-size-xs: 12px;
-  --font-size-sm: 14px;
-  --font-size-base: 16px;
-  --font-size-lg: 18px;
-  --font-size-xl: 20px;
-  --font-size-2xl: 22px;
-  --font-size-3xl: 24px;
-  --font-size-4xl: 32px;
-  --font-size-5xl: 42px;
-  --font-size-6xl: 48px;
-  --font-size-7xl: 56px;
-  --font-size-8xl: 72px;
+  /* Couleurs de priorité */
+  --moov-priority-high: #DC2626;    /* Rouge haute priorité */
+  --moov-priority-medium: #F59E0B;  /* Orange priorité moyenne */
+  --moov-priority-low: #10B981;     /* Vert basse priorité */
   
-  /* Font Weights */
-  --font-weight-light: 300;
-  --font-weight-normal: 400;
-  --font-weight-medium: 500;
-  --font-weight-semibold: 600;
-  --font-weight-bold: 700;
-  --font-weight-extrabold: 800;
+  /* Ombres et effets */
+  --moov-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --moov-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  --moov-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --moov-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --moov-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --moov-shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   
-  /* Line Heights */
-  --line-height-tight: 1.2;
-  --line-height-normal: 1.5;
-  --line-height-relaxed: 1.6;
+  /* Bordures - CONTOURS CARRÉS comme demandé */
+  --moov-border-radius-sm: 0;       /* Carré */
+  --moov-border-radius: 0;          /* Carré */
+  --moov-border-radius-md: 0;       /* Carré */
+  --moov-border-radius-lg: 0;       /* Carré */
+  --moov-border-radius-xl: 0;       /* Carré */
+  --moov-border-radius-2xl: 0;      /* Carré */
   
-  /* Letter Spacing */
-  --letter-spacing-tight: -3px;
-  --letter-spacing-normal: 0;
-  --letter-spacing-wide: 2px;
+  /* Transitions */
+  --moov-transition-fast: 0.15s ease;
+  --moov-transition: 0.2s ease;
+  --moov-transition-slow: 0.3s ease;
   
-  /* ===== BORDER RADIUS ===== */
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 20px;
-  --radius-2xl: 24px;
-  --radius-full: 50px;
+  /* Typographie */
+  --moov-font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --moov-font-size-xs: 0.75rem;
+  --moov-font-size-sm: 0.875rem;
+  --moov-font-size-base: 1rem;
+  --moov-font-size-lg: 1.125rem;
+  --moov-font-size-xl: 1.25rem;
+  --moov-font-size-2xl: 1.5rem;
+  --moov-font-size-3xl: 1.875rem;
+  --moov-font-size-4xl: 2.25rem;
   
-  /* ===== SHADOWS ===== */
-  --shadow-sm: 0 2px 4px var(--color-shadow-light);
-  --shadow-md: 0 8px 25px var(--color-shadow-light);
-  --shadow-lg: 0 10px 30px var(--color-shadow-medium);
-  --shadow-xl: 0 20px 60px var(--color-shadow-medium);
-  --shadow-2xl: 0 30px 80px var(--color-shadow-heavy);
+  /* Espacements */
+  --moov-spacing-1: 0.25rem;
+  --moov-spacing-2: 0.5rem;
+  --moov-spacing-3: 0.75rem;
+  --moov-spacing-4: 1rem;
+  --moov-spacing-5: 1.25rem;
+  --moov-spacing-6: 1.5rem;
+  --moov-spacing-8: 2rem;
+  --moov-spacing-10: 2.5rem;
+  --moov-spacing-12: 3rem;
+  --moov-spacing-16: 4rem;
+  --moov-spacing-20: 5rem;
+  --moov-spacing-24: 6rem;
+  --moov-spacing-32: 8rem;
   
-  /* ===== TRANSITIONS ===== */
-  --transition-fast: 0.2s ease;
-  --transition-normal: 0.3s ease;
-  --transition-slow: 0.5s ease;
-  
-  /* ===== Z-INDEX ===== */
-  --z-dropdown: 1000;
-  --z-sticky: 1020;
-  --z-fixed: 1030;
-  --z-modal-backdrop: 1040;
-  --z-modal: 1050;
-  --z-popover: 1060;
-  --z-tooltip: 1070;
-  
-  /* ===== LAYOUT ===== */
-  --container-max-width: 1400px;
-  --header-height: 60px;
-  
-  /* ===== COMPONENT SPECIFIC ===== */
-  
-  /* Button */
-  --button-padding-sm: 8px 16px;
-  --button-padding-md: 12px 24px;
-  --button-padding-lg: 18px 40px;
-  --button-gap-sm: 8px;
-  --button-gap-md: 10px;
-  --button-gap-lg: 12px;
-  
-  /* Logo */
-  --logo-height-small: 30px;
-  --logo-height-medium: 60px;
-  --logo-height-large: 100px;
-  --logo-height-quote: 55px;
-  
-  /* Quote */
-  --quote-padding: 50px 40px;
-  --quote-max-width: 600px;
-  
-  /* Hero */
-  --hero-title-spacing: 8px;
-  --hero-subtitle-spacing: 20px;
+  /* Z-index */
+  --moov-z-dropdown: 1000;
+  --moov-z-sticky: 1020;
+  --moov-z-fixed: 1030;
+  --moov-z-modal-backdrop: 1040;
+  --moov-z-modal: 1050;
+  --moov-z-popover: 1060;
+  --moov-z-tooltip: 1070;
+}
+
+/* ===== DÉGRADÉS MOOV ===== */
+.moov-gradient-primary {
+  background: linear-gradient(135deg, var(--moov-primary) 0%, var(--moov-primary-dark) 100%);
+}
+
+.moov-gradient-secondary {
+  background: linear-gradient(135deg, var(--moov-secondary) 0%, var(--moov-secondary-dark) 100%);
+}
+
+.moov-gradient-accent {
+  background: linear-gradient(135deg, var(--moov-accent) 0%, var(--moov-accent-dark) 100%);
+}
+
+.moov-gradient-hero {
+  background: linear-gradient(135deg, var(--moov-primary) 0%, var(--moov-secondary) 50%, var(--moov-accent) 100%);
+}
+
+/* ===== UTILITAIRES MOOV ===== */
+.moov-text-gradient {
+  background: linear-gradient(135deg, var(--moov-primary), var(--moov-secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.moov-border-gradient {
+  border: 2px solid;
+  border-image: linear-gradient(135deg, var(--moov-primary), var(--moov-secondary)) 1;
+}
+
+.moov-shadow-primary {
+  box-shadow: 0 10px 25px rgba(0, 102, 204, 0.15);
+}
+
+.moov-shadow-secondary {
+  box-shadow: 0 10px 25px rgba(255, 102, 0, 0.15);
+}
+
+.moov-shadow-accent {
+  box-shadow: 0 10px 25px rgba(0, 204, 102, 0.15);
 }

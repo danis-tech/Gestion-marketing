@@ -1,39 +1,102 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
-from .models import Role, Permission, RolePermission, Service
+from .models import User, Role, Permission, Service, RolePermission
 
 User = get_user_model()
 
 # -------- Référentiels --------
 class RoleSerializer(serializers.ModelSerializer):
+    """Sérialiseur pour les rôles."""
+    
     class Meta:
         model = Role
-        fields = ("id", "code", "nom")
+        fields = ['id', 'code', 'nom']
+
 
 class PermissionSerializer(serializers.ModelSerializer):
+    """Sérialiseur pour les permissions."""
+    
     class Meta:
         model = Permission
-        fields = ("id", "code", "description")
+        fields = ['id', 'code', 'description']
+
 
 class ServiceSerializer(serializers.ModelSerializer):
+    """Sérialiseur pour les services."""
+    
     class Meta:
         model = Service
-        fields = ("id", "code", "nom")
+        fields = ['id', 'code', 'nom']
+
 
 class RolePermissionSerializer(serializers.ModelSerializer):
+    """Sérialiseur pour les permissions des rôles."""
+    role = RoleSerializer(read_only=True)
+    permission = PermissionSerializer(read_only=True)
+    
     class Meta:
         model = RolePermission
-        fields = ("id", "role", "permission")
+        fields = ['id', 'role', 'permission']
 
 
 # -------- Users --------
 class UserListSerializer(serializers.ModelSerializer):
+    """Sérialiseur pour lister les utilisateurs."""
     role = RoleSerializer(read_only=True)
     service = ServiceSerializer(read_only=True)
-
+    
     class Meta:
         model = User
-        fields = ("id","username","email","prenom","nom","phone","photo_url","role","service","is_active")
+        fields = [
+            'id', 'username', 'email', 'prenom', 'nom', 
+            'phone', 'photo_url', 'role', 'service', 'is_active'
+        ]
+
+
+class UserDetailSerializer(serializers.ModelSerializer):
+    """Sérialiseur détaillé pour les utilisateurs."""
+    role = RoleSerializer(read_only=True)
+    service = ServiceSerializer(read_only=True)
+    permissions_codes = serializers.ListField(child=serializers.CharField(), read_only=True)
+    
+    class Meta:
+        model = User
+        fields = [
+            'id', 'username', 'email', 'prenom', 'nom', 
+            'phone', 'photo_url', 'role', 'service', 'is_active',
+            'date_joined', 'last_login', 'permissions_codes'
+        ]
+        read_only_fields = ['date_joined', 'last_login', 'permissions_codes']
+
+
+class UserCreateSerializer(serializers.ModelSerializer):
+    """Sérialiseur pour créer un utilisateur."""
+    password = serializers.CharField(write_only=True)
+    
+    class Meta:
+        model = User
+        fields = [
+            'username', 'email', 'password', 'prenom', 'nom',
+            'phone', 'role', 'service'
+        ]
+    
+    def create(self, validated_data):
+        password = validated_data.pop('password')
+        user = User(**validated_data)
+        user.set_password(password)
+        user.save()
+        return user
+
+
+class UserUpdateSerializer(serializers.ModelSerializer):
+    """Sérialiseur pour modifier un utilisateur."""
+    
+    class Meta:
+        model = User
+        fields = [
+            'email', 'prenom', 'nom', 'phone', 
+            'photo_url', 'role', 'service', 'is_active'
+        ]
 
 
 class UserCreateUpdateSerializer(serializers.ModelSerializer):
@@ -88,11 +151,11 @@ class SetPasswordSerializer(serializers.Serializer):
 class MeSerializer(serializers.ModelSerializer):
     role = serializers.SerializerMethodField()
     service = serializers.SerializerMethodField()
-    permissions = serializers.SerializerMethodField()
+    role_permissions = serializers.SerializerMethodField()  # Renommé pour clarifier
 
     class Meta:
         model = User
-        fields = ("id","username","email","prenom","nom","phone","photo_url","role","service","permissions")
+        exclude = ("password", "user_permissions")  # Exclure le mot de passe et les permissions Django natives
 
     def get_role(self, obj):
         return {"id": obj.role_id, "code": obj.role.code, "nom": obj.role.nom} if obj.role_id else None
@@ -100,7 +163,7 @@ class MeSerializer(serializers.ModelSerializer):
     def get_service(self, obj):
         return {"id": obj.service_id, "code": obj.service.code, "nom": obj.service.nom} if obj.service_id else None
 
-    def get_permissions(self, obj):
+    def get_role_permissions(self, obj):
         # Récupérer les permissions de l'utilisateur via son rôle
         if obj.role:
             # Récupérer toutes les permissions du rôle

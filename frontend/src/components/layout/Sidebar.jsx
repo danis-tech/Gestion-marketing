@@ -26,7 +26,28 @@ const Sidebar = ({ isCollapsed, onToggleCollapse, onLogout }) => {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
         </svg>
       ),
-      path: '/dashboard/projets'
+      subItems: [
+        {
+          id: 'equipe-projets',
+          label: 'Equipes projets',
+          path: '/dashboard/projets/equipe'
+        },
+        {
+          id: 'ajouter-projet',
+          label: 'Ajouter un projet',
+          path: '/dashboard/projets/ajouter'
+        },
+        {
+          id: 'ajouter-tache',
+          label: 'Ajouter une tâche',
+          path: '/dashboard/projets/taches/ajouter'
+        },
+        {
+          id: 'stats-projets',
+          label: 'Voir les stats',
+          path: '/dashboard/projets/stats'
+        }
+      ]
     },
     {
       id: 'etapes',
@@ -155,78 +176,80 @@ const Sidebar = ({ isCollapsed, onToggleCollapse, onLogout }) => {
           </div>
         </div>
 
-      {/* Menu items */}
-      <nav className="sidebar-nav">
-        {menuItems.map((item) => (
-          <div key={item.id} className="menu-item-container" data-tooltip={isCollapsed ? item.label : ''}>
-            {item.subItems ? (
-              // Item avec sous-menu
-              <div className="menu-item-with-sub">
-                <button
-                  className={`menu-item ${isSubItemActive(item.subItems) ? 'active' : ''}`}
-                  onClick={() => toggleSubMenu(item.id)}
+        {/* Menu items */}
+        <nav className="sidebar-nav">
+          {menuItems.map((item) => (
+            <div key={item.id} className="menu-item-container" data-tooltip={isCollapsed ? item.label : ''}>
+              {item.subItems ? (
+                // Item avec sous-menu
+                <div className="menu-item-with-sub">
+                  <button
+                    className={`menu-item ${isSubItemActive(item.subItems) ? 'active' : ''}`}
+                    onClick={() => toggleSubMenu(item.id)}
+                  >
+                    <span className="menu-icon">{item.icon}</span>
+                    {!isCollapsed && <span className="menu-label">{item.label}</span>}
+                    {!isCollapsed && (
+                      <svg 
+                        className={`submenu-arrow ${expandedItems.has(item.id) ? 'expanded' : ''}`}
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    )}
+                  </button>
+                  
+                  {/* Sous-menu */}
+                  {(!isCollapsed && expandedItems.has(item.id)) && (
+                    <div className="submenu">
+                      {item.subItems.map((subItem) => (
+                        <Link
+                          key={subItem.id}
+                          to={subItem.path}
+                          className={`submenu-item ${isActive(subItem.path) ? 'active' : ''}`}
+                        >
+                          <span className="submenu-icon">→</span>
+                          <span className="submenu-label">{subItem.label}</span>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                // Item simple
+                <Link
+                  to={item.path}
+                  className={`menu-item ${isActive(item.path) ? 'active' : ''}`}
                 >
                   <span className="menu-icon">{item.icon}</span>
                   {!isCollapsed && <span className="menu-label">{item.label}</span>}
-                  {!isCollapsed && (
-                    <svg 
-                      className={`submenu-arrow ${expandedItems.has(item.id) ? 'expanded' : ''}`}
-                      fill="none" 
-                      stroke="currentColor" 
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  )}
-                </button>
-                {(!isCollapsed && expandedItems.has(item.id)) && (
-                  <div className="submenu">
-                    {item.subItems.map((subItem) => (
-                      <Link
-                        key={subItem.id}
-                        to={subItem.path}
-                        className={`submenu-item ${isActive(subItem.path) ? 'active' : ''}`}
-                      >
-                        <span className="submenu-icon">→</span>
-                        <span className="submenu-label">{subItem.label}</span>
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ) : (
-              // Item simple
-              <Link
-                to={item.path}
-                className={`menu-item ${isActive(item.path) ? 'active' : ''}`}
-              >
-                <span className="menu-icon">{item.icon}</span>
-                {!isCollapsed && <span className="menu-label">{item.label}</span>}
-              </Link>
-            )}
-          </div>
-        ))}
-      </nav>
+                </Link>
+              )}
+            </div>
+          ))}
+        </nav>
 
-      {/* Sélecteur de thème */}
-      {!isCollapsed && (
-        <div className="sidebar-theme-section">
-          <div className="theme-section-label">Thème</div>
-          <ThemeToggle />
+        {/* Sélecteur de thème */}
+        {!isCollapsed && (
+          <div className="sidebar-theme-section">
+            <div className="theme-section-label">Thème</div>
+            <ThemeToggle />
+          </div>
+        )}
+        
+        {/* Footer avec déconnexion */}
+        <div className="sidebar-footer">
+          <button className="logout-button" onClick={onLogout}>
+            <span className="menu-icon">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+            </span>
+            {!isCollapsed && <span className="menu-label">Déconnexion</span>}
+          </button>
         </div>
-      )}
-      
-      {/* Footer avec déconnexion */}
-      <div className="sidebar-footer">
-        <button className="logout-button" onClick={onLogout}>
-          <span className="menu-icon">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-            </svg>
-          </span>
-          {!isCollapsed && <span className="menu-label">Déconnexion</span>}
-        </button>
-      </div>
       </div>
       
       {/* Bouton toggle à l'extérieur */}

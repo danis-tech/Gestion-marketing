@@ -1,18 +1,18 @@
-/* Dashboard Container */
+/* Dashboard Container - Utilise principalement Tailwind */
 .dashboard {
   display: flex;
   min-height: 100vh;
-  background: var(--bg);
+  background: #f8fafc;
 }
 
 /* Dashboard Content */
 .dashboard-content {
   flex: 1;
   margin-left: 280px;
+  /* margin-right: 5px; */
   transition: margin-left 0.3s ease;
   min-height: 100vh;
-  background: var(--bg);
-  padding: 24px;
+  background: #f8fafc;
 }
 
 .dashboard-content.sidebar-collapsed {
@@ -23,7 +23,6 @@
 @media (max-width: 768px) {
   .dashboard-content {
     margin-left: 0;
-    padding: 16px;
   }
   
   .dashboard-content.sidebar-collapsed {

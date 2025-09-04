@@ -6,6 +6,16 @@ import Dashboard from './components/layout/Dashboard';
 import LoadingSpinner from './components/ui/LoadingSpinner';
 import NotificationModal from './components/modals/NotificationModal';
 import useNotification from './hooks/useNotification';
+import { 
+  Users, 
+  Target, 
+  TrendingUp, 
+  Zap, 
+  Globe, 
+  Rocket,
+  BarChart3,
+  Lightbulb
+} from 'lucide-react';
 import './App.css';
 import './styles/themes.css';
 import moovLogo from './assets/img/logo.png';
@@ -30,7 +40,13 @@ function App() {
         showError('Erreur de session', 'Votre session a expiré. Veuillez vous reconnecter.');
       }
     }
-    setIsLoading(false);
+    
+    // Durée minimale de 2 secondes pour l'écran de chargement
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 2000);
+    
+    return () => clearTimeout(timer);
   }, [showSuccess, showError]);
 
   const handleLogin = (loginData) => {
@@ -102,29 +118,27 @@ function App() {
                   {/* Left Panel - Modern Design (2/3 width) */}
                   <div className="left-panel">
                     <div className="left-content">
-                      {/* Hero Section */}
-                      <div className="hero-section">
-                        <div className="hero-title">
+                      {/* Main Content Block */}
+                      <div className="main-content-block">
+                        {/* Main Icon - First Position */}
+                        <div className="main-icon-section">
+                          <Users className="main-icon" />
+                        </div>
+                        
+                        {/* App Name */}
+                        <div className="app-name">
                           <h1>Bienvenue sur</h1>
                           <h2>Marketges</h2>
+                          <p className="app-subtitle">
+                            La plateforme de gestion de projets nouvelle génération
+                          </p>
                         </div>
-                        <p className="hero-subtitle">
-                          La plateforme de gestion de projets nouvelle génération
-                        </p>
-                      </div>
-                      
-                      {/* Quote Section */}
-                      <div className="quote-section">
-                        <div className="quote-content">
+                        
+                        {/* Quote */}
+                        <div className="quote-section">
                           <p className="quote-text">
                             "L'innovation et la collaboration sont les moteurs du succès dans le monde numérique d'aujourd'hui."
                           </p>
-                          <div className="quote-author">
-                            <div className="author-logo">
-                              <img src={moovLogo} alt="Moov Africa" />
-                            </div>
-                            <span className="author-title">Leader en télécommunications</span>
-                          </div>
                         </div>
                       </div>
                     </div>

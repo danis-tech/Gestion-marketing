@@ -85,17 +85,53 @@ python manage.py runserver
 
 
 --------------------------------------------------------------------REACT---------------------------------------------------------------
-# 1. Création du projet (déjà fait)
+# 🚀 Installation et configuration de React + Tailwind v4
+
+## 1. Création du projet (déjà fait)
+```bash
 npm create vite@latest frontend -- --template react
-
-# 2. Aller dans le bon dossier
+2. Aller dans le bon dossier
+bash
+Copier
+Modifier
 cd frontend
-
-# 3. Installation des dépendances
+3. Installation des dépendances
+bash
+Copier
+Modifier
 npm install
-
-# 4. Installation des packages supplémentaires
+4. Installation des packages supplémentaires
+bash
+Copier
+Modifier
 npm install axios react-router-dom @tanstack/react-query
-
-# 5. Lancement du serveur de développement
+5. Installation de Tailwind CSS v4
+bash
+Copier
+Modifier
+npm install -D tailwindcss postcss autoprefixer @tailwindcss/postcss
+6. Création du fichier postcss.config.js à la racine
+js
+Copier
+Modifier
+export default {
+  plugins: {
+    "@tailwindcss/postcss": {},
+  },
+};
+7. Importer Tailwind dans src/index.css
+css
+Copier
+Modifier
+@import "tailwindcss";
+8. Vérifier que src/main.jsx importe bien le CSS global
+jsx
+Copier
+Modifier
+import "./index.css";
+9. Lancer le serveur de développement
+bash
+Copier
+Modifier
 npm run dev
+

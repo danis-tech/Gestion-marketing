@@ -1,0 +1,344 @@
+/* ===== DESIGN UNIFIÉ PROPRE POUR TOUS LES MODAUX ===== */
+
+/* ===== OVERLAY ===== */
+.project-details-modal-overlay,
+.project-edit-modal-overlay,
+.project-add-modal-overlay {
+  background: rgba(0, 0, 0, 0.8) !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+/* ===== CONTENU DES MODAUX ===== */
+.project-details-modal-content,
+.project-edit-modal-content,
+.project-add-modal-content {
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+  border: 2px solid var(--moov-gray-200) !important;
+  background: white !important;
+}
+
+/* ===== EN-TÊTES DES MODAUX ===== */
+.project-details-modal-header,
+.project-edit-modal-header,
+.project-add-modal-header {
+  background: linear-gradient(135deg, #0066CC 0%, #0052A3 100%) !important;
+  border-bottom: 2px solid var(--moov-gray-200) !important;
+  box-shadow: 0 4px 20px rgba(0, 102, 204, 0.3) !important;
+  padding: 20px !important;
+}
+
+/* ===== TITRES DES MODAUX ===== */
+.project-details-modal-title,
+.project-edit-modal-title,
+.project-add-modal-title {
+  color: white !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1px !important;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+  font-size: 24px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* ===== ICÔNES DES TITRES ===== */
+.project-details-modal-icon,
+.project-edit-modal-icon,
+.project-add-modal-icon {
+  color: white !important;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3)) !important;
+  opacity: 1 !important;
+  width: 28px !important;
+  height: 28px !important;
+  margin-right: 15px !important;
+}
+
+/* ===== BOUTONS DE FERMETURE ===== */
+.project-details-modal-close,
+.project-edit-modal-close,
+.project-add-modal-close {
+  background: #EF4444 !important;
+  color: white !important;
+  border: 2px solid #DC2626 !important;
+  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3) !important;
+  width: 40px !important;
+  height: 40px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+}
+
+.project-details-modal-close:hover,
+.project-edit-modal-close:hover,
+.project-add-modal-close:hover {
+  background: #DC2626 !important;
+  border-color: #B91C1C !important;
+  transform: scale(1.05) !important;
+}
+
+/* ===== ICÔNES DES BOUTONS DE FERMETURE ===== */
+.project-details-modal-close svg,
+.project-edit-modal-close svg,
+.project-add-modal-close svg {
+  width: 20px !important;
+  height: 20px !important;
+  color: white !important;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.3)) !important;
+}
+
+/* ===== BOUTONS D'ACTION ===== */
+.btn,
+.btn-primary,
+.btn-secondary,
+.btn-danger {
+  padding: 12px 24px !important;
+  border: 2px solid transparent !important;
+  border-radius: 0 !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: 120px !important;
+  text-decoration: none !important;
+  font-family: inherit !important;
+}
+
+.btn-primary {
+  background: #0066CC !important;
+  color: white !important;
+  border-color: #0052A3 !important;
+  box-shadow: 0 4px 15px rgba(0, 102, 204, 0.3) !important;
+}
+
+.btn-primary:hover {
+  background: #0052A3 !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(0, 102, 204, 0.4) !important;
+}
+
+.btn-secondary {
+  background: #64748B !important;
+  color: white !important;
+  border-color: #475569 !important;
+  box-shadow: 0 4px 15px rgba(100, 116, 139, 0.3) !important;
+}
+
+.btn-secondary:hover {
+  background: #475569 !important;
+  border-color: #374151 !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(100, 116, 139, 0.4) !important;
+}
+
+.btn-danger {
+  background: #EF4444 !important;
+  color: white !important;
+  border-color: #DC2626 !important;
+  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3) !important;
+}
+
+.btn-danger:hover {
+  background: #DC2626 !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4) !important;
+}
+
+/* ===== BOUTON DE FERMETURE SPÉCIAL ===== */
+.project-details-modal-close-btn {
+  background: #0066CC !important;
+  color: white !important;
+  border: 2px solid #0052A3 !important;
+  box-shadow: 0 4px 15px rgba(0, 102, 204, 0.3) !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  min-width: 140px !important;
+  padding: 12px 24px !important;
+  font-size: 14px !important;
+  transition: all 0.3s ease !important;
+}
+
+.project-details-modal-close-btn:hover {
+  background: #0052A3 !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(0, 102, 204, 0.4) !important;
+}
+
+/* ===== SECTIONS DE FORMULAIRE ===== */
+.form-section {
+  border: 2px solid var(--moov-gray-200) !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05) !important;
+  background: white !important;
+  padding: 20px !important;
+  margin-bottom: 20px !important;
+}
+
+.form-section:hover {
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* ===== TITRES DE SECTION ===== */
+.form-section-title {
+  font-weight: 700 !important;
+  color: var(--moov-gray-900) !important;
+  border-bottom: 2px solid var(--moov-gray-200) !important;
+  padding-bottom: 10px !important;
+  margin-bottom: 20px !important;
+  font-size: 18px !important;
+}
+
+/* ===== LABELS ===== */
+.form-label {
+  font-weight: 600 !important;
+  color: var(--moov-gray-800) !important;
+  margin-bottom: 8px !important;
+  display: block !important;
+}
+
+.form-label.required::after {
+  content: ' *' !important;
+  color: #EF4444 !important;
+  font-weight: 700 !important;
+}
+
+/* ===== CHAMPS DE FORMULAIRE ===== */
+.form-input,
+.form-select,
+.form-textarea {
+  width: 100% !important;
+  padding: 12px !important;
+  border: 2px solid var(--moov-gray-300) !important;
+  border-radius: 0 !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  transition: all 0.3s ease !important;
+  background: white !important;
+}
+
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
+  border-color: #0066CC !important;
+  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1) !important;
+  outline: none !important;
+}
+
+/* ===== MESSAGES D'ERREUR ===== */
+.form-error {
+  color: #EF4444 !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  margin-top: 5px !important;
+  padding: 8px 12px !important;
+  background: #FEF2F2 !important;
+  border: 1px solid #FECACA !important;
+  border-radius: 0 !important;
+}
+
+.form-error-general {
+  color: #EF4444 !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  margin-bottom: 20px !important;
+  padding: 12px !important;
+  background: #FEF2F2 !important;
+  border: 1px solid #FECACA !important;
+  border-radius: 0 !important;
+}
+
+/* ===== FOOTERS ===== */
+.project-details-modal-footer,
+.project-edit-modal-footer,
+.project-add-modal-footer {
+  border-top: 2px solid var(--moov-gray-200) !important;
+  padding: 20px !important;
+  background: var(--moov-gray-50) !important;
+  display: flex !important;
+  gap: 15px !important;
+  justify-content: flex-end !important;
+}
+
+/* ===== BOUTONS SPÉCIFIQUES POUR CHAQUE MODAL ===== */
+
+/* ===== MODAL DE DÉTAILS ===== */
+.project-details-modal .btn {
+  background: #0066CC !important;
+  color: white !important;
+  border-color: #0052A3 !important;
+}
+
+.project-details-modal .btn:hover {
+  background: #0052A3 !important;
+}
+
+/* ===== MODAL D'ÉDITION ===== */
+.project-edit-modal .btn-primary {
+  background: #FF6600 !important;
+  color: white !important;
+  border-color: #E55A00 !important;
+}
+
+.project-edit-modal .btn-primary:hover {
+  background: #E55A00 !important;
+}
+
+/* ===== MODAL D'AJOUT ===== */
+.project-add-modal .btn-primary {
+  background: #00CC66 !important;
+  color: white !important;
+  border-color: #00B359 !important;
+}
+
+.project-add-modal .btn-primary:hover {
+  background: #00B359 !important;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .project-details-modal-header,
+  .project-edit-modal-header,
+  .project-add-modal-header {
+    padding: 15px !important;
+  }
+  
+  .project-details-modal-title,
+  .project-edit-modal-title,
+  .project-add-modal-title {
+    font-size: 20px !important;
+    letter-spacing: 0.5px !important;
+  }
+  
+  .project-details-modal-close,
+  .project-edit-modal-close,
+  .project-add-modal-close {
+    width: 35px !important;
+    height: 35px !important;
+  }
+  
+  .btn,
+  .btn-primary,
+  .btn-secondary,
+  .btn-danger,
+  .project-details-modal-close-btn {
+    min-width: 100px !important;
+    padding: 10px 20px !important;
+    font-size: 13px !important;
+  }
+  
+  .form-section {
+    padding: 15px !important;
+    margin-bottom: 15px !important;
+  }
+  
+  .project-details-modal-footer,
+  .project-edit-modal-footer,
+  .project-add-modal-footer {
+    padding: 15px !important;
+    flex-direction: column !important;
+  }
+}

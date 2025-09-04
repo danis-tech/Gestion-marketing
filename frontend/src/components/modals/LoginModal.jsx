@@ -47,10 +47,10 @@ const LoginModal = ({
     try {
       const data = await authService.login(formData);
       
-      // Stocker les tokens
-      localStorage.setItem('access_token', data.access);
-      localStorage.setItem('refresh_token', data.refresh);
-      localStorage.setItem('user_data', JSON.stringify(data.user));
+      // Stocker les tokens en utilisant les clés de configuration
+      localStorage.setItem(getConfig('TOKENS.ACCESS_TOKEN_KEY'), data.access);
+      localStorage.setItem(getConfig('TOKENS.REFRESH_TOKEN_KEY'), data.refresh);
+      localStorage.setItem(getConfig('TOKENS.USER_DATA_KEY'), JSON.stringify(data.user));
       
       onLogin(data);
     } catch (error) {

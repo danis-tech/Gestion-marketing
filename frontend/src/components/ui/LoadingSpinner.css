@@ -1,5 +1,13 @@
-/* Loading Container - Simple et épuré */
-.loading-container {
+/* Variables CSS pour configurer les durées */
+:root {
+  --loading-fade-duration: 0.8s;
+  --loading-logo-float-duration: 3s;
+  --loading-spinner-duration: 2s;
+  --loading-dots-duration: 1.4s;
+}
+
+/* Loading Fullscreen - Design simple et épuré */
+.loading-fullscreen {
   position: fixed;
   top: 0;
   left: 0;
@@ -10,127 +18,239 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.8);
+  background: #1e3a8a;
   z-index: 9999;
+  overflow: hidden;
 }
 
-.loading-container.fullscreen {
-  background: rgba(0, 0, 0, 0.9);
+.modern-loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 40px;
+  text-align: center;
+  animation: fadeInUp var(--loading-fade-duration) ease-out;
 }
 
-.loading-container.overlay {
-  background: rgba(0, 0, 0, 0.7);
-}
-
-/* Loading Spinner - Design minimaliste */
-.loading-spinner {
+/* App Brand */
+.app-brand {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 20px;
 }
 
-/* Spinner simple et élégant - UN SEUL CERCLE */
-.spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid rgba(255, 255, 255, 0.2);
-  border-top: 3px solid white;
+.app-logo {
+  position: relative;
+  width: 120px;
+  height: 120px;
+}
+
+.logo-circle {
+  width: 100%;
+  height: 100%;
   border-radius: 50%;
-  animation: spin 1s linear infinite;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: logoFloat var(--loading-logo-float-duration) ease-in-out infinite;
 }
 
-/* Size Variants */
-.loading-spinner.small .spinner {
-  width: 24px;
-  height: 24px;
-  border-width: 2px;
-}
-
-.loading-spinner.medium .spinner {
-  width: 40px;
-  height: 40px;
-  border-width: 3px;
-}
-
-.loading-spinner.large .spinner {
+.logo-inner {
   width: 60px;
   height: 60px;
-  border-width: 4px;
+  border-radius: 50%;
+  background: #1e3a8a;
+  position: relative;
 }
 
-.loading-spinner.xlarge .spinner {
+.logo-inner::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: white;
+}
+
+.app-name {
+  font-size: 3.5rem;
+  font-weight: 800;
+  color: white;
+  margin: 0;
+  letter-spacing: 2px;
+}
+
+.app-subtitle {
+  font-size: 1.4rem;
+  color: white;
+  margin: 0;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+/* Modern Spinner */
+.modern-spinner {
+  position: relative;
   width: 80px;
   height: 80px;
-  border-width: 5px;
 }
 
-/* Color Variants */
-.loading-spinner.primary .spinner {
-  border-top-color: var(--accent);
+.spinner-ring {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border: 4px solid transparent;
+  border-radius: 50%;
+  animation: spinRing var(--loading-spinner-duration) linear infinite;
 }
 
-.loading-spinner.secondary .spinner {
-  border-top-color: #6c757d;
-}
-
-.loading-spinner.success .spinner {
-  border-top-color: #28a745;
-}
-
-.loading-spinner.warning .spinner {
-  border-top-color: #ffc107;
-}
-
-.loading-spinner.danger .spinner {
-  border-top-color: #dc3545;
-}
-
-.loading-spinner.white .spinner {
+.spinner-ring:nth-child(1) {
   border-top-color: white;
+  animation-delay: 0s;
 }
 
-/* Loading Text - Simple et lisible */
+.spinner-ring:nth-child(2) {
+  border-right-color: white;
+  animation-delay: 0.3s;
+}
+
+.spinner-ring:nth-child(3) {
+  border-bottom-color: white;
+  animation-delay: 0.6s;
+}
+
+/* Loading Message */
+.loading-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+}
+
 .loading-text {
-  margin: 0;
-  font-size: 16px;
+  font-size: 1.3rem;
   color: white;
-  font-weight: 400;
-  text-align: center;
-  opacity: 0.9;
+  margin: 0;
+  font-weight: 600;
+  opacity: 1;
 }
 
-.loading-spinner.small .loading-text {
-  font-size: 14px;
+.loading-dots {
+  display: flex;
+  gap: 8px;
 }
 
-.loading-spinner.large .loading-text {
-  font-size: 18px;
+.loading-dots span {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: white;
+  opacity: 0.8;
+  animation: dotsPulse var(--loading-dots-duration) ease-in-out infinite both;
 }
 
-.loading-spinner.xlarge .loading-text {
-  font-size: 20px;
+.loading-dots span:nth-child(1) { animation-delay: 0s; }
+.loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+.loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+/* Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-/* Animation simple */
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+@keyframes logoFloat {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes spinRing {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes dotsPulse {
+  0%, 80%, 100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 /* Responsive */
 @media (max-width: 768px) {
-  .loading-spinner.large .spinner {
+  .app-name {
+    font-size: 3rem;
+  }
+  
+  .app-subtitle {
+    font-size: 1.2rem;
+  }
+  
+  .app-logo {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .logo-inner {
     width: 50px;
     height: 50px;
   }
   
-  .loading-spinner.xlarge .spinner {
+  .logo-inner::before {
+    width: 25px;
+    height: 25px;
+  }
+  
+  .modern-spinner {
     width: 60px;
     height: 60px;
   }
+}
+
+@media (max-width: 480px) {
+  .app-name {
+    font-size: 2.5rem;
+  }
   
-  .loading-text {
-    font-size: 15px;
+  .app-subtitle {
+    font-size: 1.1rem;
+  }
+  
+  .app-logo {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .logo-inner {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .logo-inner::before {
+    width: 20px;
+    height: 20px;
   }
 }

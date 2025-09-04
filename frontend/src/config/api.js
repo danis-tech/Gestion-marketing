@@ -22,12 +22,14 @@ const API_CONFIG = {
     LIST: '/accounts/users/',
     DETAIL: (id) => `/accounts/users/${id}/`,
     SET_PASSWORD: (id) => `/accounts/users/${id}/set_password/`,
+    STATS: '/accounts/users/stats/',
   },
   
   // Endpoints des rôles
   ROLES: {
     LIST: '/accounts/roles/',
     DETAIL: (id) => `/accounts/roles/${id}/`,
+    PERMISSIONS: (id) => `/accounts/roles/${id}/permissions/`,
   },
   
   // Endpoints des permissions
@@ -46,6 +48,45 @@ const API_CONFIG = {
   ROLE_PERMISSIONS: {
     LIST: '/accounts/role-permissions/',
     DETAIL: (id) => `/accounts/role-permissions/${id}/`,
+  },
+  
+  // Endpoints des projets
+  PROJECTS: {
+    LIST: '/projects/',
+    DETAIL: (id) => `/projects/${id}/`,
+    STATS: '/projects/stats/',
+    UPDATE_STATUS: (id) => `/projects/${id}/update_statut/`,
+    
+    // Membres de projet
+    MEMBERS: {
+      LIST: (projectId) => `/projects/${projectId}/membres/`,
+      DETAIL: (projectId, memberId) => `/projects/${projectId}/membres/${memberId}/`,
+    },
+    
+    // Permissions de projet
+    PERMISSIONS: {
+      LIST: (projectId) => `/projects/${projectId}/permissions/`,
+      DETAIL: (projectId, permissionId) => `/projects/${projectId}/permissions/${permissionId}/`,
+      USER_PERMISSIONS: (projectId) => `/projects/${projectId}/permissions/utilisateur-permissions/`,
+      GRANT_MULTIPLE: (projectId) => `/projects/${projectId}/permissions/accorder-multiple/`,
+    },
+    
+    // Historique de projet
+    HISTORY: {
+      LIST: (projectId) => `/projects/${projectId}/historiques/`,
+      DETAIL: (projectId, historyId) => `/projects/${projectId}/historiques/${historyId}/`,
+    },
+  },
+  
+  // Endpoints des tâches
+  TASKS: {
+    LIST: '/taches/',
+    DETAIL: (id) => `/taches/${id}/`,
+    STATS: '/taches/stats/',
+    UPDATE_STATUS: (id) => `/taches/${id}/update_statut/`,
+    PROJECT_TASKS: (projectId) => `/taches/projet_taches/?projet_id=${projectId}`,
+    MY_TASKS: '/taches/mes_taches/',
+    OVERDUE_TASKS: '/taches/en_retard/',
   },
 };
 
@@ -88,10 +129,12 @@ export const API_ENDPOINTS = {
   USERS_LIST: buildApiUrl(API_CONFIG.USERS.LIST),
   USER_DETAIL: (id) => buildApiUrl(API_CONFIG.USERS.DETAIL(id)),
   USER_SET_PASSWORD: (id) => buildApiUrl(API_CONFIG.USERS.SET_PASSWORD(id)),
+  USER_STATS: buildApiUrl(API_CONFIG.USERS.STATS),
   
   // Role endpoints
   ROLES_LIST: buildApiUrl(API_CONFIG.ROLES.LIST),
   ROLE_DETAIL: (id) => buildApiUrl(API_CONFIG.ROLES.DETAIL(id)),
+  ROLE_PERMISSIONS: (id) => buildApiUrl(API_CONFIG.ROLES.PERMISSIONS(id)),
   
   // Permission endpoints
   PERMISSIONS_LIST: buildApiUrl(API_CONFIG.PERMISSIONS.LIST),
@@ -104,6 +147,35 @@ export const API_ENDPOINTS = {
   // Role-Permission endpoints
   ROLE_PERMISSIONS_LIST: buildApiUrl(API_CONFIG.ROLE_PERMISSIONS.LIST),
   ROLE_PERMISSION_DETAIL: (id) => buildApiUrl(API_CONFIG.ROLE_PERMISSIONS.DETAIL(id)),
+  
+  // Project endpoints
+  PROJECTS_LIST: buildApiUrl(API_CONFIG.PROJECTS.LIST),
+  PROJECT_DETAIL: (id) => buildApiUrl(API_CONFIG.PROJECTS.DETAIL(id)),
+  PROJECTS_STATS: buildApiUrl(API_CONFIG.PROJECTS.STATS),
+  PROJECT_UPDATE_STATUS: (id) => buildApiUrl(API_CONFIG.PROJECTS.UPDATE_STATUS(id)),
+  
+  // Project members endpoints
+  PROJECT_MEMBERS_LIST: (projectId) => buildApiUrl(API_CONFIG.PROJECTS.MEMBERS.LIST(projectId)),
+  PROJECT_MEMBER_DETAIL: (projectId, memberId) => buildApiUrl(API_CONFIG.PROJECTS.MEMBERS.DETAIL(projectId, memberId)),
+  
+  // Project permissions endpoints
+  PROJECT_PERMISSIONS_LIST: (projectId) => buildApiUrl(API_CONFIG.PROJECTS.PERMISSIONS.LIST(projectId)),
+  PROJECT_PERMISSION_DETAIL: (projectId, permissionId) => buildApiUrl(API_CONFIG.PROJECTS.PERMISSIONS.DETAIL(projectId, permissionId)),
+  PROJECT_USER_PERMISSIONS: (projectId) => buildApiUrl(API_CONFIG.PROJECTS.PERMISSIONS.USER_PERMISSIONS(projectId)),
+  PROJECT_GRANT_MULTIPLE_PERMISSIONS: (projectId) => buildApiUrl(API_CONFIG.PROJECTS.PERMISSIONS.GRANT_MULTIPLE(projectId)),
+  
+  // Project history endpoints
+  PROJECT_HISTORY_LIST: (projectId) => buildApiUrl(API_CONFIG.PROJECTS.HISTORY.LIST(projectId)),
+  PROJECT_HISTORY_DETAIL: (projectId, historyId) => buildApiUrl(API_CONFIG.PROJECTS.HISTORY.DETAIL(projectId, historyId)),
+  
+  // Task endpoints
+  TASKS_LIST: buildApiUrl(API_CONFIG.TASKS.LIST),
+  TASK_DETAIL: (id) => buildApiUrl(API_CONFIG.TASKS.DETAIL(id)),
+  TASKS_STATS: buildApiUrl(API_CONFIG.TASKS.STATS),
+  TASK_UPDATE_STATUS: (id) => buildApiUrl(API_CONFIG.TASKS.UPDATE_STATUS(id)),
+  PROJECT_TASKS: (projectId) => buildApiUrl(API_CONFIG.TASKS.PROJECT_TASKS(projectId)),
+  MY_TASKS: buildApiUrl(API_CONFIG.TASKS.MY_TASKS),
+  OVERDUE_TASKS: buildApiUrl(API_CONFIG.TASKS.OVERDUE_TASKS),
 };
 
 // Configuration par défaut pour Axios

@@ -84,18 +84,24 @@ class RolePermission(models.Model):
 
 class User(AbstractUser):
     """
-    Mappe la table `utilisateurs` de ton SQL :
-      - username    VARCHAR(150) UNIQUE (hérité)
-      - email       VARCHAR(254) UNIQUE
-      - prenom      VARCHAR(100)
-      - nom         VARCHAR(100)
+    Mappe la table `utilisateurs` optimisée :
+      - username    VARCHAR(150) UNIQUE (hérité d'AbstractUser)
+      - email       VARCHAR(254) UNIQUE (hérité d'AbstractUser)
+      - last_login  DATETIME NULL (hérité d'AbstractUser)
+      - date_joined DATETIME NOT NULL (hérité d'AbstractUser)
+      - prenom      VARCHAR(100) (métier)
+      - nom         VARCHAR(100) (métier)
       - role_id     BIGINT (FK → roles.id)         (optionnel)
       - service_id  BIGINT (FK → services.id)      (optionnel)
       - phone       VARCHAR(30)                     (optionnel)
-      - derniere_connexion_le DATETIME NULL
-      - cree_le           DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-      - mis_a_jour_le     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      - photo_url   VARCHAR(250)                    (optionnel)
+      - mis_a_jour_le DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     """
+    # Champs Django standards (maintenus pour compatibilité mais non utilisés)
+    first_name = models.CharField(max_length=150, null=True, blank=True)
+    last_name = models.CharField(max_length=150, null=True, blank=True)
+    
+    # Champs métier (utilisés par l'application)
     email  = models.EmailField(max_length=254, unique=True)
     prenom = models.CharField(max_length=100)
     nom    = models.CharField(max_length=100)
@@ -105,9 +111,7 @@ class User(AbstractUser):
     role    = models.ForeignKey(Role, null=True, blank=True, on_delete=models.SET_NULL, db_column="role_id")
     service = models.ForeignKey(Service, null=True, blank=True, on_delete=models.SET_NULL, db_column="service_id")
 
-    # Champs métier supplémentaires
-    derniere_connexion_le = models.DateTimeField(null=True, blank=True)  # miroir dédié (en plus de last_login)
-    cree_le        = models.DateTimeField(auto_now_add=True)
+    # Champ métier supplémentaire (pas de doublon avec Django)
     mis_a_jour_le  = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -126,9 +130,9 @@ class User(AbstractUser):
         ]
 
     def save(self, *args, **kwargs):
-        # Garder l’admin Django cohérent avec tes champs métier
+        # Synchroniser first_name/last_name avec prenom/nom pour compatibilité Django
         self.first_name = self.prenom
-        self.last_name  = self.nom
+        self.last_name = self.nom
         super().save(*args, **kwargs)
 
     def __str__(self) -> str:
@@ -151,13 +155,13 @@ class User(AbstractUser):
         )
 
 
-# Synchroniser `derniere_connexion_le` lors des connexions (en plus de last_login géré par Django)
-@receiver(user_logged_in)
-def _update_derniere_connexion(sender, user, request, **kwargs):
-    try:
-        User.objects.filter(pk=user.pk).update(derniere_connexion_le=models.functions.Now())
-    except Exception:
-        pass
+# Le signal n'est plus nécessaire car on utilise last_login de Django directement
+# @receiver(user_logged_in)
+# def _update_derniere_connexion(sender, user, request, **kwargs):
+#     try:
+#         User.objects.filter(pk=user.pk).update(derniere_connexion_le=models.functions.Now())
+#     except Exception:
+#         pass
 
 
 # ----------------------------

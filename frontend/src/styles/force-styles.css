@@ -1,0 +1,187 @@
+/* ===== FORÇAGE DES STYLES - DÉBOGAGE ===== */
+
+/* ===== FORÇAGE DES EN-TÊTES ===== */
+div[class*="project-details-modal-header"],
+div[class*="project-edit-modal-header"],
+div[class*="project-add-modal-header"] {
+  background: linear-gradient(135deg, #0066CC 0%, #0052A3 100%) !important;
+  border-bottom: 2px solid #64748B !important;
+  box-shadow: 0 4px 20px rgba(0, 102, 204, 0.3) !important;
+  padding: 20px !important;
+}
+
+/* ===== FORÇAGE DES TITRES ===== */
+h1[class*="project-details-modal-title"],
+h1[class*="project-edit-modal-title"],
+h1[class*="project-add-modal-title"],
+h2[class*="project-details-modal-title"],
+h2[class*="project-edit-modal-title"],
+h2[class*="project-add-modal-title"],
+div[class*="project-details-modal-title"],
+div[class*="project-edit-modal-title"],
+div[class*="project-add-modal-title"] {
+  color: white !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1px !important;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+  font-size: 24px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* ===== FORÇAGE DES BOUTONS DE FERMETURE ===== */
+button[class*="project-details-modal-close"],
+button[class*="project-edit-modal-close"],
+button[class*="project-add-modal-close"],
+div[class*="project-details-modal-close"],
+div[class*="project-edit-modal-close"],
+div[class*="project-add-modal-close"] {
+  background: #EF4444 !important;
+  color: white !important;
+  border: 2px solid #DC2626 !important;
+  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3) !important;
+  width: 40px !important;
+  height: 40px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+}
+
+/* ===== FORÇAGE DES BOUTONS D'ACTION ===== */
+button[class*="btn"],
+button[class*="btn-primary"],
+button[class*="btn-secondary"],
+button[class*="btn-danger"],
+div[class*="btn"],
+div[class*="btn-primary"],
+div[class*="btn-secondary"],
+div[class*="btn-danger"] {
+  padding: 12px 24px !important;
+  border: 2px solid transparent !important;
+  border-radius: 0 !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: 120px !important;
+  text-decoration: none !important;
+}
+
+/* ===== FORÇAGE DES COULEURS DES BOUTONS ===== */
+button[class*="btn-primary"],
+div[class*="btn-primary"] {
+  background: #0066CC !important;
+  color: white !important;
+  border-color: #0052A3 !important;
+  box-shadow: 0 4px 15px rgba(0, 102, 204, 0.3) !important;
+}
+
+button[class*="btn-secondary"],
+div[class*="btn-secondary"] {
+  background: #64748B !important;
+  color: white !important;
+  border-color: #475569 !important;
+  box-shadow: 0 4px 15px rgba(100, 116, 139, 0.3) !important;
+}
+
+button[class*="btn-danger"],
+div[class*="btn-danger"] {
+  background: #EF4444 !important;
+  color: white !important;
+  border-color: #DC2626 !important;
+  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3) !important;
+}
+
+/* ===== FORÇAGE DES ICÔNES ===== */
+svg[class*="project-details-modal-icon"],
+svg[class*="project-edit-modal-icon"],
+svg[class*="project-add-modal-icon"] {
+  color: white !important;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3)) !important;
+  opacity: 1 !important;
+  width: 28px !important;
+  height: 28px !important;
+}
+
+/* ===== FORÇAGE DES ICÔNES DES BOUTONS DE FERMETURE ===== */
+button[class*="project-details-modal-close"] svg,
+button[class*="project-edit-modal-close"] svg,
+button[class*="project-add-modal-close"] svg,
+div[class*="project-details-modal-close"] svg,
+div[class*="project-edit-modal-close"] svg,
+div[class*="project-add-modal-close"] svg {
+  width: 20px !important;
+  height: 20px !important;
+  color: white !important;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.3)) !important;
+}
+
+/* ===== FORÇAGE DES FOOTERS ===== */
+div[class*="project-details-modal-footer"],
+div[class*="project-edit-modal-footer"],
+div[class*="project-add-modal-footer"] {
+  border-top: 2px solid #64748B !important;
+  padding: 20px !important;
+  background: #F8FAFC !important;
+  display: flex !important;
+  gap: 15px !important;
+  justify-content: flex-end !important;
+}
+
+/* ===== FORÇAGE DES SECTIONS ===== */
+div[class*="form-section"] {
+  border: 2px solid #E2E8F0 !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05) !important;
+  background: white !important;
+  padding: 20px !important;
+  margin-bottom: 20px !important;
+}
+
+/* ===== FORÇAGE DES TITRES DE SECTION ===== */
+div[class*="form-section-title"],
+h3[class*="form-section-title"] {
+  font-weight: 700 !important;
+  color: #1E293B !important;
+  border-bottom: 2px solid #E2E8F0 !important;
+  padding-bottom: 10px !important;
+  margin-bottom: 20px !important;
+  font-size: 18px !important;
+}
+
+/* ===== FORÇAGE DES LABELS ===== */
+label[class*="form-label"],
+div[class*="form-label"] {
+  font-weight: 600 !important;
+  color: #334155 !important;
+  margin-bottom: 8px !important;
+  display: block !important;
+}
+
+/* ===== FORÇAGE DES CHAMPS ===== */
+input[class*="form-input"],
+select[class*="form-select"],
+textarea[class*="form-textarea"] {
+  width: 100% !important;
+  padding: 12px !important;
+  border: 2px solid #CBD5E1 !important;
+  border-radius: 0 !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  background: white !important;
+}
+
+/* ===== FORÇAGE DES MESSAGES D'ERREUR ===== */
+div[class*="form-error"],
+div[class*="form-error-general"] {
+  color: #EF4444 !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  padding: 8px 12px !important;
+  background: #FEF2F2 !important;
+  border: 1px solid #FECACA !important;
+  border-radius: 0 !important;
+}

@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     
     # Applications locales
     'accounts',
+    'projects',
 ]
 
 # Configuration du middleware

@@ -1,156 +1,188 @@
-import React from 'react';
-import './DashboardHome.css';
+import React, { useState } from 'react';
+import { 
+  BarChart3, 
+  ClipboardList, 
+  CheckCircle, 
+  Users, 
+  Clock, 
+  ChevronDown
+} from 'lucide-react';
+import StatsCard from '../ui/StatsCard';
+import OnlineUsersCard from '../ui/OnlineUsersCard';
+import StatsModal from '../ui/StatsModal';
+import { useStats } from '../../hooks/useStats';
 
 const DashboardHome = ({ user }) => {
+  const [selectedStat, setSelectedStat] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  
+  // Utiliser le hook personnalisé pour les statistiques
+  const { 
+    stats, 
+    loading, 
+    error, 
+    refreshStats, 
+    getDynamicColors, 
+    getChangeData, 
+    getGraphData 
+  } = useStats();
+
+  const handleCardClick = (stat) => {
+    setSelectedStat(stat);
+    setIsModalOpen(true);
+  };
+
+  // Configuration des cartes avec données dynamiques
+  const getStatsCards = () => {
+    const projectsColors = getDynamicColors('projects', stats.projects);
+    const tasksColors = getDynamicColors('tasks', stats.tasks);
+    
+    const projectsChange = getChangeData('projects', stats.projects);
+    const tasksChange = getChangeData('tasks', stats.tasks);
+
+    return [
+      {
+        id: 1,
+        title: 'Projets Actifs',
+        value: stats.projects?.total_projets || '0',
+        change: projectsChange.change,
+        changeType: projectsChange.changeType,
+        icon: BarChart3,
+        color: projectsColors.color,
+        bgColor: projectsColors.bgColor,
+        graphData: getGraphData('projects', stats.projects),
+        subtitle: 'Projets en cours',
+        period: 'Ce mois',
+        type: 'projects',
+        loading: loading.projects
+      },
+      {
+        id: 2,
+        title: 'Tâches en Cours',
+        value: stats.tasks?.total_taches || '0',
+        change: tasksChange.change,
+        changeType: tasksChange.changeType,
+        icon: ClipboardList,
+        color: tasksColors.color,
+        bgColor: tasksColors.bgColor,
+        graphData: getGraphData('tasks', stats.tasks),
+        subtitle: 'Tâches en cours',
+        period: 'En cours',
+        type: 'tasks',
+        loading: loading.tasks
+      },
+      {
+        id: 3,
+        title: 'Tâches Terminées',
+        value: stats.tasks?.taches_terminees || '0',
+        change: `+${stats.tasks?.taches_terminees || 0}`,
+        changeType: 'positive',
+        icon: CheckCircle,
+        color: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+        bgColor: 'linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(5, 150, 105, 0.12) 100%)',
+        graphData: getGraphData('tasks', stats.tasks),
+        subtitle: 'Tâches complétées',
+        period: 'Ce mois',
+        type: 'tasks_completed',
+        loading: loading.tasks
+      },
+      {
+        id: 4,
+        title: 'En Attente',
+        value: stats.tasks?.taches_en_retard || '0',
+        change: stats.tasks?.taches_en_retard > 0 ? `${stats.tasks.taches_en_retard} en retard` : 'Aucun',
+        changeType: stats.tasks?.taches_en_retard > 0 ? 'warning' : 'positive',
+        icon: Clock,
+        color: stats.tasks?.taches_en_retard > 0 
+          ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'
+          : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+        bgColor: stats.tasks?.taches_en_retard > 0
+          ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(217, 119, 6, 0.12) 100%)'
+          : 'linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(5, 150, 105, 0.12) 100%)',
+        graphData: [2, 3, 1, 4, 2, 5, 3, 6, 4],
+        subtitle: 'En attente de validation',
+        period: 'Validation',
+        showGraph: false,
+        type: 'overdue_tasks',
+        loading: loading.tasks
+      }
+    ];
+  };
+
+  const statsCards = getStatsCards();
+
   return (
-    <div className="dashboard-home">
-      <div className="dashboard-header">
-        <div className="welcome-section">
-          <h1>Bienvenue, {user?.prenom || user?.username || 'Utilisateur'} !</h1>
-          <p>Gérez vos projets marketing efficacement avec Marketges</p>
-        </div>
-        <div className="user-info">
-          <div className="user-avatar">
-            {user?.photo_url ? (
-              <img src={user.photo_url} alt="Avatar" />
-            ) : (
-              <div className="avatar-placeholder">
-                {(user?.prenom?.[0] || user?.username?.[0] || 'U').toUpperCase()}
-              </div>
-            )}
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+
+      {/* --- Stats Cards avec plus d'espacement --- */}
+      <div className="flex">
+        {/* Bloc transparent pour espacer de la sidebar */}
+        <div className="w-3 h-full bg-transparent flex-shrink-0"></div>
+        
+        {/* Conteneur des cartes sur toute la largeur */}
+        <div className="flex-1 px-6 pt-20 pb-16">
+          {/* Messages d'erreur */}
+          {(error.projects || error.tasks || error.users) && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-800 text-sm">
+                Erreur lors du chargement des statistiques. 
+                {error.projects && <span className="block">Projets: {error.projects}</span>}
+                {error.tasks && <span className="block">Tâches: {error.tasks}</span>}
+                {error.users && <span className="block">Utilisateurs: {error.users}</span>}
+              </p>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 w-full">
+            {/* Cartes de statistiques normales */}
+            {statsCards.map((stat, index) => (
+              <StatsCard
+                key={stat.id}
+                title={stat.title}
+                value={stat.loading ? '...' : stat.value}
+                change={stat.loading ? '...' : stat.change}
+                changeType={stat.changeType}
+                icon={stat.icon}
+                color={stat.color}
+                bgColor={stat.bgColor}
+                graphData={stat.graphData}
+                showGraph={stat.showGraph !== false}
+                subtitle={stat.subtitle}
+                period={stat.period}
+                className="animate-fade-in-up"
+                style={{ animationDelay: `${index * 100}ms` }}
+                onClick={() => handleCardClick(stat)}
+              />
+            ))}
+            
+            {/* Carte spécialisée pour les utilisateurs en ligne */}
+            <div className="animate-fade-in-up" style={{ animationDelay: '400ms' }}>
+              <OnlineUsersCard
+                statsData={stats.users}
+                loading={loading.users}
+                onClick={() => handleCardClick({
+                  title: 'Utilisateurs Actifs',
+                  type: 'users'
+                })}
+              />
+            </div>
           </div>
-          <div className="user-details">
-            <span className="user-name">{user?.prenom} {user?.nom}</span>
-            <span className="user-role">{user?.role?.nom || 'Utilisateur'}</span>
-          </div>
         </div>
+       <div className="w-3 h-full bg-transparent flex-shrink-0"></div>
       </div>
 
-      <div className="dashboard-stats">
-        <div className="stat-card">
-          <div className="stat-icon projects">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-            </svg>
-          </div>
-          <div className="stat-content">
-            <h3>Projets Actifs</h3>
-            <p className="stat-number">12</p>
-            <p className="stat-change positive">+3 ce mois</p>
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-icon tasks">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-            </svg>
-          </div>
-          <div className="stat-content">
-            <h3>Tâches en Cours</h3>
-            <p className="stat-number">48</p>
-            <p className="stat-change positive">+8 cette semaine</p>
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-icon completed">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <div className="stat-content">
-            <h3>Projets Terminés</h3>
-            <p className="stat-number">156</p>
-            <p className="stat-change positive">+12 ce trimestre</p>
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-icon team">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-            </svg>
-          </div>
-          <div className="stat-content">
-            <h3>Équipe</h3>
-            <p className="stat-number">24</p>
-            <p className="stat-change neutral">Stable</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="dashboard-content-grid">
-        <div className="content-card recent-projects">
-          <div className="card-header">
-            <h2>Projets Récents</h2>
-            <button className="view-all-btn">Voir tout</button>
-          </div>
-          <div className="card-content">
-            <div className="project-item">
-              <div className="project-info">
-                <h4>Campagne Marketing Q4</h4>
-                <p>Campagne publicitaire pour les fêtes de fin d'année</p>
-              </div>
-              <div className="project-status in-progress">
-                <span>En cours</span>
-              </div>
-            </div>
-            <div className="project-item">
-              <div className="project-info">
-                <h4>Refonte Site Web</h4>
-                <p>Modernisation de l'interface utilisateur</p>
-              </div>
-              <div className="project-status completed">
-                <span>Terminé</span>
-              </div>
-            </div>
-            <div className="project-item">
-              <div className="project-info">
-                <h4>Stratégie Réseaux Sociaux</h4>
-                <p>Plan de communication sur les réseaux sociaux</p>
-              </div>
-              <div className="project-status pending">
-                <span>En attente</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="content-card quick-actions">
-          <div className="card-header">
-            <h2>Actions Rapides</h2>
-          </div>
-          <div className="card-content">
-            <div className="action-grid">
-              <button className="action-btn">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-                <span>Nouveau Projet</span>
-              </button>
-              <button className="action-btn">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                </svg>
-                <span>Nouvelle Tâche</span>
-              </button>
-              <button className="action-btn">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
-                </svg>
-                <span>Importer Document</span>
-              </button>
-              <button className="action-btn">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                <span>Planifier Réunion</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* Modal pour les détails des statistiques */}
+      <StatsModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        statsData={selectedStat?.type === 'projects' ? stats.projects : 
+                   selectedStat?.type === 'tasks' || selectedStat?.type === 'tasks_completed' || selectedStat?.type === 'overdue_tasks' ? stats.tasks : 
+                   selectedStat?.type === 'users' ? stats.users : null}
+        title={selectedStat?.title || 'Détails des statistiques'}
+        type={selectedStat?.type?.includes('projects') ? 'projects' : 
+              selectedStat?.type?.includes('tasks') ? 'tasks' : 
+              selectedStat?.type?.includes('users') ? 'users' : 'projects'}
+      />
     </div>
   );
 };

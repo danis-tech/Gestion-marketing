@@ -31,24 +31,67 @@ User = get_user_model()
 
 # -------- Référentiels --------
 class RoleViewSet(viewsets.ModelViewSet):
-    queryset = Role.objects.all().order_by("code")
+    """
+    ViewSet pour la gestion des rôles.
+    
+    Endpoints disponibles :
+    - GET /api/accounts/roles/ - Liste des rôles
+    - POST /api/accounts/roles/ - Créer un rôle
+    - GET /api/accounts/roles/{id}/ - Détails d'un rôle
+    - PUT /api/accounts/roles/{id}/ - Modifier un rôle
+    - DELETE /api/accounts/roles/{id}/ - Supprimer un rôle
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = Role.objects.all()
     serializer_class = RoleSerializer
-    permission_classes = [permissions.IsAdminUser]
+    
+    @action(detail=True, methods=['get'])
+    def permissions(self, request, pk=None):
+        """Obtenir les permissions d'un rôle."""
+        role = self.get_object()
+        permissions = Permission.objects.filter(rolepermission__role=role)
+        serializer = PermissionSerializer(permissions, many=True)
+        return Response(serializer.data)
 
-class PermissionViewSet(viewsets.ModelViewSet):
-    queryset = Permission.objects.all().order_by("code")
+
+class PermissionViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    ViewSet en lecture seule pour les permissions.
+    
+    Endpoints disponibles :
+    - GET /api/accounts/permissions/ - Liste des permissions
+    - GET /api/accounts/permissions/{id}/ - Détails d'une permission
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = Permission.objects.all()
     serializer_class = PermissionSerializer
-    permission_classes = [permissions.IsAdminUser]
+
+
+class ServiceViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    ViewSet en lecture seule pour les services.
+    
+    Endpoints disponibles :
+    - GET /api/accounts/services/ - Liste des services
+    - GET /api/accounts/services/{id}/ - Détails d'un service
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = Service.objects.all()
+    serializer_class = ServiceSerializer
+
 
 class RolePermissionViewSet(viewsets.ModelViewSet):
-    queryset = RolePermission.objects.select_related("role","permission").all()
+    """
+    ViewSet pour la gestion des permissions des rôles.
+    
+    Endpoints disponibles :
+    - GET /api/accounts/role-permissions/ - Liste des permissions de rôles
+    - POST /api/accounts/role-permissions/ - Assigner une permission à un rôle
+    - DELETE /api/accounts/role-permissions/{id}/ - Retirer une permission d'un rôle
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = RolePermission.objects.all()
     serializer_class = RolePermissionSerializer
-    permission_classes = [permissions.IsAdminUser]
-
-class ServiceViewSet(viewsets.ModelViewSet):
-    queryset = Service.objects.all().order_by("code")
-    serializer_class = ServiceSerializer
-    permission_classes = [permissions.IsAdminUser]
 
 # -------- Users --------
 class UserViewSet(viewsets.ModelViewSet):
@@ -111,6 +154,60 @@ class UserViewSet(viewsets.ModelViewSet):
         user.set_password(ser.validated_data["new_password"])
         user.save()
         return Response({"detail": "Mot de passe mis à jour."}, status=200)
+
+    @action(detail=False, methods=['get'])
+    def stats(self, request):
+        """Obtenir les statistiques des utilisateurs."""
+        from django.utils import timezone
+        from datetime import timedelta
+        
+        # Calculer les statistiques
+        total_users = User.objects.filter(is_active=True).count()
+        
+        # Utilisateurs connectés aujourd'hui (dernière connexion dans les dernières 24h)
+        today = timezone.now()
+        yesterday = today - timedelta(hours=24)
+        active_today = User.objects.filter(
+            is_active=True,
+            last_login__gte=yesterday
+        ).count()
+        
+        # Utilisateurs connectés cette semaine
+        week_ago = today - timedelta(days=7)
+        active_this_week = User.objects.filter(
+            is_active=True,
+            last_login__gte=week_ago
+        ).count()
+        
+        # Utilisateurs connectés ce mois
+        month_ago = today - timedelta(days=30)
+        active_this_month = User.objects.filter(
+            is_active=True,
+            last_login__gte=month_ago
+        ).count()
+        
+        # Statistiques par rôle
+        role_stats = {}
+        for user in User.objects.filter(is_active=True).select_related('role'):
+            role_name = user.role.nom if user.role else 'Aucun rôle'
+            role_stats[role_name] = role_stats.get(role_name, 0) + 1
+        
+        # Statistiques par service
+        service_stats = {}
+        for user in User.objects.filter(is_active=True).select_related('service'):
+            service_name = user.service.nom if user.service else 'Aucun service'
+            service_stats[service_name] = service_stats.get(service_name, 0) + 1
+        
+        return Response({
+            'total_users': total_users,
+            'active_today': active_today,
+            'active_this_week': active_this_week,
+            'active_this_month': active_this_month,
+            'online_users': active_today,  # Pour l'affichage en temps réel
+            'par_role': role_stats,
+            'par_service': service_stats,
+            'derniere_mise_a_jour': today.isoformat()
+        })
 
 # -------- Profil connecté --------
 class MeView(APIView):

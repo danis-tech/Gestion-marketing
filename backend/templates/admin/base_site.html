@@ -1,0 +1,164 @@
+{% extends "admin/base.html" %} {% load static %} {% block title %}{{ title }} |
+Gestion Marketing{% endblock %} {% block branding %}
+<h1 id="site-name">
+	<a href="{% url 'admin:index' %}"> Gestion Marketing - Administration </a>
+</h1>
+{% endblock %} {% block extrastyle %}
+<style>
+	/* Couleurs Moov Africa */
+	:root {
+		--moov-blue: #0066cc;
+		--moov-blue-dark: #004499;
+		--moov-orange: #ff6600;
+		--moov-orange-dark: #cc5200;
+	}
+
+	/* Header avec couleurs Moov Africa */
+	#header {
+		background: linear-gradient(
+			135deg,
+			var(--moov-blue) 0%,
+			var(--moov-blue-dark) 100%
+		);
+		color: white;
+	}
+
+	#branding h1 a {
+		color: white !important;
+	}
+
+	/* Boutons avec couleurs Moov Africa */
+	.button,
+	input[type="submit"],
+	input[type="button"],
+	.submit-row input,
+	a.button {
+		background: var(--moov-blue);
+		color: white;
+	}
+
+	.button:hover,
+	input[type="submit"]:hover,
+	input[type="button"]:hover,
+	.submit-row input:hover,
+	a.button:hover {
+		background: var(--moov-blue-dark);
+	}
+
+	.button.default {
+		background: #10b981;
+	}
+
+	.button.default:hover {
+		background: #059669;
+	}
+
+	.deletelink {
+		background: #ef4444 !important;
+	}
+
+	.deletelink:hover {
+		background: #dc2626 !important;
+	}
+
+	/* Tableaux avec couleurs Moov Africa */
+	#changelist thead th {
+		background: var(--moov-blue);
+		color: white;
+	}
+
+	#changelist tbody tr:hover {
+		background: var(--moov-blue);
+		color: white;
+	}
+
+	/* Actions en lot */
+	.actions {
+		background: var(--moov-blue);
+		color: white;
+	}
+
+	/* Pagination */
+	.paginator a:hover {
+		background: var(--moov-blue);
+		color: white;
+	}
+
+	.paginator .this-page {
+		background: var(--moov-blue);
+		color: white;
+	}
+
+	/* Modules et titres */
+	.module h2,
+	.module caption,
+	.inline-group h2 {
+		background: var(--moov-blue);
+		color: white;
+	}
+
+	/* Object tools */
+	.object-tools a {
+		background: var(--moov-orange);
+		color: white;
+	}
+
+	.object-tools a:hover {
+		background: var(--moov-orange-dark);
+	}
+
+	/* Liens */
+	a:link,
+	a:visited {
+		color: var(--moov-blue);
+	}
+
+	a:hover,
+	a:focus {
+		color: var(--moov-blue-dark);
+	}
+
+	/* Filtres */
+	#changelist-filter a:hover {
+		background: var(--moov-blue);
+		color: white;
+	}
+
+	#changelist-filter a.selected {
+		background: var(--moov-blue);
+		color: white;
+	}
+
+	/* Breadcrumbs */
+	.breadcrumbs a {
+		color: var(--moov-blue) !important;
+	}
+
+	.breadcrumbs a:hover {
+		background: var(--moov-blue);
+		color: white !important;
+	}
+
+	/* Scrollbar personnalisée */
+	::-webkit-scrollbar {
+		width: 10px;
+	}
+
+	::-webkit-scrollbar-track {
+		background: #f1f1f1;
+	}
+
+	::-webkit-scrollbar-thumb {
+		background: var(--moov-blue);
+		border-radius: 4px;
+	}
+
+	::-webkit-scrollbar-thumb:hover {
+		background: var(--moov-blue-dark);
+	}
+</style>
+{% endblock %} {% block footer %}
+<div id="footer">
+	<p>&copy; {% now "Y" %} Gabon Télécom. Tous droits réservés. | Version 1.0</p>
+</div>
+{% endblock %}
