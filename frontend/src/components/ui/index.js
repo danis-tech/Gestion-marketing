@@ -9,3 +9,5 @@ export { default as TasksDataTable } from './TasksDataTable';
 export { default as TaskAddModal } from './TaskAddModal';
 export { default as TaskDetailsModal } from './TaskDetailsModal';
 export { default as TaskEditModal } from './TaskEditModal';
+export { default as PhaseProgressCard } from './PhaseProgressCard';
+export { default as PhaseStatsCard } from './PhaseStatsCard';

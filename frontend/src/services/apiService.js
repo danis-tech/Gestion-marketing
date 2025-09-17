@@ -599,6 +599,114 @@ export const taskService = {
   },
 };
 
+// Service des phases de projet
+export const phasesService = {
+  // Récupérer toutes les phases standard
+  getPhases: async () => {
+    const response = await apiClient.get('/api/phases/');
+    return response.data;
+  },
+  
+  // Récupérer une phase par ID
+  getPhase: async (id) => {
+    const response = await apiClient.get(`/api/phases/${id}/`);
+    return response.data;
+  },
+  
+  // Récupérer les phases d'un projet
+  getProjectPhases: async (projectId) => {
+    const response = await apiClient.get(`/api/projects/${projectId}/phases/`);
+    return response.data;
+  },
+  
+  // Mettre à jour l'état d'une phase de projet
+  updateProjectPhase: async (projectId, phaseId, phaseData) => {
+    const response = await apiClient.put(`/api/projects/${projectId}/phases/${phaseId}/`, phaseData);
+    return response.data;
+  },
+  
+  // Marquer le début d'une phase
+  markPhaseStart: async (projectId, phaseId) => {
+    const response = await apiClient.post(`/api/projects/${projectId}/phases/${phaseId}/marquer-debut/`);
+    return response.data;
+  },
+  
+  // Marquer la fin d'une phase
+  markPhaseEnd: async (projectId, phaseId) => {
+    const response = await apiClient.post(`/api/projects/${projectId}/phases/${phaseId}/marquer-fin/`);
+    return response.data;
+  },
+  
+  // Obtenir la progression des phases d'un projet
+  getProjectPhasesProgression: async (projectId) => {
+    const response = await apiClient.get(`/api/projects/${projectId}/phases/progression/`);
+    return response.data;
+  }
+};
+
+// Service des étapes de projet
+export const etapesService = {
+  // Récupérer les étapes d'une phase
+  getPhaseEtapes: async (projectId, phaseId) => {
+    const response = await apiClient.get(`/api/projects/${projectId}/phases/${phaseId}/etapes/`);
+    return response.data;
+  },
+  
+  // Récupérer une étape par ID
+  getEtape: async (projectId, phaseId, etapeId) => {
+    const response = await apiClient.get(`/api/projects/${projectId}/phases/${phaseId}/etapes/${etapeId}/`);
+    return response.data;
+  },
+  
+  // Créer une nouvelle étape
+  createEtape: async (projectId, phaseId, etapeData) => {
+    const response = await apiClient.post(`/api/projects/${projectId}/phases/${phaseId}/etapes/`, etapeData);
+    return response.data;
+  },
+  
+  // Mettre à jour une étape
+  updateEtape: async (projectId, phaseId, etapeId, etapeData) => {
+    const response = await apiClient.put(`/api/projects/${projectId}/phases/${phaseId}/etapes/${etapeId}/`, etapeData);
+    return response.data;
+  },
+  
+  // Mettre à jour partiellement une étape
+  updateEtapePartial: async (projectId, phaseId, etapeId, etapeData) => {
+    const response = await apiClient.patch(`/api/projects/${projectId}/phases/${phaseId}/etapes/${etapeId}/`, etapeData);
+    return response.data;
+  },
+  
+  // Supprimer une étape
+  deleteEtape: async (projectId, phaseId, etapeId) => {
+    const response = await apiClient.delete(`/api/projects/${projectId}/phases/${phaseId}/etapes/${etapeId}/`);
+    return response.data;
+  },
+  
+  // Démarrer une étape
+  startEtape: async (projectId, phaseId, etapeId) => {
+    const response = await apiClient.post(`/api/projects/${projectId}/phases/${phaseId}/etapes/${etapeId}/demarrer/`);
+    return response.data;
+  },
+  
+  // Terminer une étape
+  endEtape: async (projectId, phaseId, etapeId) => {
+    const response = await apiClient.post(`/api/projects/${projectId}/phases/${phaseId}/etapes/${etapeId}/terminer/`);
+    return response.data;
+  },
+  
+  // Annuler une étape
+  cancelEtape: async (projectId, phaseId, etapeId) => {
+    const response = await apiClient.post(`/api/projects/${projectId}/phases/${phaseId}/etapes/${etapeId}/annuler/`);
+    return response.data;
+  },
+  
+  // Obtenir la progression des étapes d'une phase
+  getPhaseEtapesProgression: async (projectId, phaseId) => {
+    const response = await apiClient.get(`/api/projects/${projectId}/phases/${phaseId}/etapes/progression/`);
+    return response.data;
+  }
+};
+
 // Export de l'instance Axios pour les cas spéciaux
 export { apiClient };
 
@@ -611,4 +719,6 @@ export default {
   rolePermissions: rolePermissionService,
   projects: projectService,
   tasks: taskService,
+  phases: phasesService,
+  etapes: etapesService,
 };

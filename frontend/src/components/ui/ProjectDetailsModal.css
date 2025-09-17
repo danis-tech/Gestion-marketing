@@ -213,6 +213,7 @@
   font-size: var(--moov-font-size-4xl);
   font-weight: 800;
   margin-bottom: var(--moov-spacing-2);
+  color: var(--moov-blue-600);
   background: var(--moov-gradient-primary);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -707,4 +708,76 @@
 
 .project-details-modal-body::-webkit-scrollbar-thumb:hover {
   background: var(--moov-gradient-secondary);
+}
+
+/* ===== LISTE DES MEMBRES DE L'ÉQUIPE ===== */
+.team-members-section {
+  margin-top: var(--moov-spacing-6);
+  padding-top: var(--moov-spacing-6);
+  border-top: 1px solid var(--moov-gray-200);
+}
+
+.team-members-list {
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid var(--moov-gray-200);
+  border-radius: var(--moov-border-radius-lg);
+  background: var(--moov-gray-50);
+  padding: var(--moov-spacing-3);
+  margin-top: var(--moov-spacing-3);
+}
+
+.team-member-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--moov-spacing-3) var(--moov-spacing-4);
+  background: white;
+  border-radius: var(--moov-border-radius-md);
+  margin-bottom: var(--moov-spacing-2);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.team-member-item:last-child {
+  margin-bottom: 0;
+}
+
+.team-member-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.member-name {
+  font-weight: 600;
+  color: var(--moov-gray-900);
+  font-size: var(--moov-font-size-sm);
+}
+
+.member-role {
+  font-size: var(--moov-font-size-xs);
+  color: var(--moov-gray-600);
+  background: var(--moov-gray-100);
+  padding: var(--moov-spacing-1) var(--moov-spacing-2);
+  border-radius: var(--moov-border-radius-sm);
+  font-style: italic;
+}
+
+/* Scrollbar pour la liste des membres */
+.team-members-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.team-members-list::-webkit-scrollbar-track {
+  background: var(--moov-gray-100);
+  border-radius: var(--moov-border-radius-sm);
+}
+
+.team-members-list::-webkit-scrollbar-thumb {
+  background: var(--moov-gray-300);
+  border-radius: var(--moov-border-radius-sm);
+}
+
+.team-members-list::-webkit-scrollbar-thumb:hover {
+  background: var(--moov-gray-400);
 }

@@ -4,16 +4,19 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.db.models import Count, Q
 from django.utils import timezone
+from django.core.exceptions import ValidationError
 from datetime import datetime, timedelta
 
-from .models import Projet, MembreProjet, HistoriqueEtat, PermissionProjet, Tache
+from .models import Projet, MembreProjet, HistoriqueEtat, PermissionProjet, Tache, PhaseProjet, ProjetPhaseEtat, Etape
 from .serializers import (
-    ProjetListSerializer, ProjetDetailSerializer, ProjetCreateUpdateSerializer,
+    ProjetListSerializer, ProjetDetailSerializer, ProjetDetailWithPhasesSerializer, ProjetCreateUpdateSerializer,
     ProjetStatutUpdateSerializer, ProjetStatsSerializer,
     MembreProjetSerializer, MembreProjetCreateSerializer,
     HistoriqueEtatSerializer, PermissionProjetSerializer, PermissionProjetCreateSerializer,
     PermissionProjetUpdateSerializer, UtilisateurPermissionsSerializer,
-    TacheListSerializer, TacheDetailSerializer, TacheCreateUpdateSerializer, TacheStatutUpdateSerializer
+    TacheListSerializer, TacheDetailSerializer, TacheCreateUpdateSerializer, TacheStatutUpdateSerializer,
+    PhaseProjetSerializer, ProjetPhaseEtatSerializer, ProjetPhaseEtatUpdateSerializer,
+    EtapeSerializer, EtapeCreateSerializer, EtapeUpdateSerializer, ProjetPhaseEtatWithEtapesSerializer
 )
 from .permissions import (
     ProjetPermissions, MembreProjetPermissions, HistoriqueEtatPermissions,
@@ -56,7 +59,7 @@ class ProjetViewSet(viewsets.ModelViewSet):
         if self.action == 'list':
             return ProjetListSerializer
         elif self.action == 'retrieve':
-            return ProjetDetailSerializer
+            return ProjetDetailWithPhasesSerializer
         elif self.action == 'create' or self.action == 'update' or self.action == 'partial_update':
             return ProjetCreateUpdateSerializer
         elif self.action == 'update_statut':
@@ -140,6 +143,27 @@ class MembreProjetViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         """Créer un nouveau membre de projet."""
         return super().create(request, *args, **kwargs)
+    
+    def destroy(self, request, *args, **kwargs):
+        """Supprimer un membre de projet et envoyer un email de notification."""
+        instance = self.get_object()
+        
+        # Envoyer un email de notification pour la suppression du projet
+        try:
+            from accounts.email_service import TeamEmailService
+            removed_by = request.user
+            
+            # Envoyer l'email de retrait
+            TeamEmailService.send_team_removal_notification(
+                instance.utilisateur,
+                instance.service or instance.utilisateur.service,
+                removed_by,
+                project=instance.projet
+            )
+        except Exception as e:
+            print(f"Erreur lors de l'envoi de l'email de retrait du projet : {str(e)}")
+        
+        return super().destroy(request, *args, **kwargs)
     
     def get_serializer_context(self):
         """Ajouter le projet au contexte du sérialiseur."""
@@ -438,4 +462,239 @@ class TacheViewSet(viewsets.ModelViewSet):
             'par_statut': taches_par_statut,
             'par_priorite': taches_par_priorite,
             'par_phase': taches_par_phase,
+        })
+
+
+class PhaseProjetViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    ViewSet en lecture seule pour les phases de projet.
+    
+    Endpoints disponibles :
+    - GET /api/phases/ - Liste des phases standard
+    - GET /api/phases/{id}/ - Détails d'une phase
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = PhaseProjet.objects.filter(active=True).order_by('ordre')
+    serializer_class = PhaseProjetSerializer
+
+
+class ProjetPhaseEtatViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet pour la gestion des états des phases d'un projet.
+    
+    Endpoints disponibles :
+    - GET /api/projects/{projet_id}/phases/ - Liste des phases du projet
+    - PUT /api/projects/{projet_id}/phases/{id}/ - Modifier l'état d'une phase
+    - PATCH /api/projects/{projet_id}/phases/{id}/ - Mettre à jour partiellement une phase
+    - POST /api/projects/{projet_id}/phases/{id}/marquer-debut/ - Marquer le début d'une phase
+    - POST /api/projects/{projet_id}/phases/{id}/marquer-fin/ - Marquer la fin d'une phase
+    """
+    permission_classes = [ProjetPermissions]
+    serializer_class = ProjetPhaseEtatSerializer
+    
+    def get_queryset(self):
+        """Filtrer par projet."""
+        projet_id = self.kwargs.get('projet_pk')
+        return ProjetPhaseEtat.objects.filter(projet_id=projet_id).select_related('phase')
+    
+    def get_serializer_class(self):
+        """Choisir le bon sérialiseur."""
+        if self.action in ['update', 'partial_update']:
+            return ProjetPhaseEtatUpdateSerializer
+        return ProjetPhaseEtatSerializer
+    
+    def get_serializer_context(self):
+        """Ajouter le projet au contexte du sérialiseur."""
+        context = super().get_serializer_context()
+        projet_id = self.kwargs.get('projet_pk')
+        if projet_id:
+            try:
+                context['projet'] = Projet.objects.get(pk=projet_id)
+            except Projet.DoesNotExist:
+                pass
+        return context
+    
+    @action(detail=True, methods=['post'])
+    def marquer_debut(self, request, projet_pk=None, pk=None):
+        """Marquer le début d'une phase."""
+        phase_etat = self.get_object()
+        phase_etat.marquer_debut()
+        
+        return Response({
+            'message': f'Phase "{phase_etat.phase.nom}" marquée comme débutée',
+            'phase_etat': ProjetPhaseEtatSerializer(phase_etat).data
+        })
+    
+    @action(detail=True, methods=['post'])
+    def marquer_fin(self, request, projet_pk=None, pk=None):
+        """Marquer la fin d'une phase."""
+        phase_etat = self.get_object()
+        
+        # Log pour debug
+        print(f"DEBUG: Tentative de termination de la phase {phase_etat.id} ({phase_etat.phase.nom})")
+        print(f"DEBUG: État avant termination - terminee: {phase_etat.terminee}, date_fin: {phase_etat.date_fin}")
+        
+        try:
+            phase_etat.marquer_fin()
+            
+            # Recharger l'objet depuis la base de données pour s'assurer d'avoir les données à jour
+            phase_etat.refresh_from_db()
+            print(f"DEBUG: État après termination - terminee: {phase_etat.terminee}, date_fin: {phase_etat.date_fin}")
+            
+            return Response({
+                'message': f'Phase "{phase_etat.phase.nom}" marquée comme terminée',
+                'phase_etat': ProjetPhaseEtatSerializer(phase_etat).data
+            })
+        except ValidationError as e:
+            error_message = str(e)
+            response_data = {
+                'error': error_message,
+                'message': 'Impossible de terminer cette phase'
+            }
+            
+            # Ajouter les détails des étapes seulement si c'est le bon type d'erreur
+            if "étapes ne sont pas terminées" in error_message:
+                response_data['etapes_en_attente'] = EtapeSerializer(phase_etat.etapes_en_attente_ou_en_cours, many=True).data
+            
+            return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(detail=False, methods=['get'])
+    def progression(self, request, projet_pk=None):
+        """Obtenir la progression des phases du projet."""
+        phases_etat = self.get_queryset()
+        
+        total_phases = phases_etat.count()
+        phases_terminees = phases_etat.filter(terminee=True).count()
+        phases_ignorees = phases_etat.filter(ignoree=True).count()
+        phases_en_cours = phases_etat.filter(
+            date_debut__isnull=False,
+            terminee=False,
+            ignoree=False
+        ).count()
+        
+        progression_pourcentage = (phases_terminees / total_phases * 100) if total_phases > 0 else 0
+        
+        return Response({
+            'total_phases': total_phases,
+            'phases_terminees': phases_terminees,
+            'phases_ignorees': phases_ignorees,
+            'phases_en_cours': phases_en_cours,
+            'progression_pourcentage': round(progression_pourcentage, 2),
+            'phases_detail': ProjetPhaseEtatSerializer(phases_etat, many=True).data
+        })
+
+
+class EtapeViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet pour la gestion des étapes d'une phase de projet.
+    
+    Endpoints disponibles :
+    - GET /api/projects/{projet_id}/phases/{phase_id}/etapes/ - Liste des étapes d'une phase
+    - POST /api/projects/{projet_id}/phases/{phase_id}/etapes/ - Créer une étape
+    - GET /api/projects/{projet_id}/phases/{phase_id}/etapes/{id}/ - Détails d'une étape
+    - PUT /api/projects/{projet_id}/phases/{phase_id}/etapes/{id}/ - Modifier une étape
+    - PATCH /api/projects/{projet_id}/phases/{phase_id}/etapes/{id}/ - Mettre à jour partiellement une étape
+    - DELETE /api/projects/{projet_id}/phases/{phase_id}/etapes/{id}/ - Supprimer une étape
+    - POST /api/projects/{projet_id}/phases/{phase_id}/etapes/{id}/demarrer/ - Démarrer une étape
+    - POST /api/projects/{projet_id}/phases/{phase_id}/etapes/{id}/terminer/ - Terminer une étape
+    - POST /api/projects/{projet_id}/phases/{phase_id}/etapes/{id}/annuler/ - Annuler une étape
+    """
+    permission_classes = [ProjetPermissions]
+    serializer_class = EtapeSerializer
+    
+    def get_queryset(self):
+        """Filtrer par phase de projet."""
+        projet_id = self.kwargs.get('projet_pk')
+        phase_id = self.kwargs.get('phase_pk')
+        return Etape.objects.filter(
+            phase_etat__projet_id=projet_id,
+            phase_etat_id=phase_id
+        ).select_related('responsable', 'cree_par', 'phase_etat__phase')
+    
+    def get_serializer_class(self):
+        """Choisir le bon sérialiseur."""
+        if self.action == 'create':
+            return EtapeCreateSerializer
+        elif self.action in ['update', 'partial_update']:
+            return EtapeUpdateSerializer
+        return EtapeSerializer
+    
+    def get_serializer_context(self):
+        """Ajouter le contexte nécessaire au sérialiseur."""
+        context = super().get_serializer_context()
+        projet_id = self.kwargs.get('projet_pk')
+        phase_id = self.kwargs.get('phase_pk')
+        
+        if projet_id and phase_id:
+            try:
+                context['projet'] = Projet.objects.get(pk=projet_id)
+                context['phase_etat'] = ProjetPhaseEtat.objects.get(
+                    projet_id=projet_id,
+                    id=phase_id
+                )
+            except (Projet.DoesNotExist, ProjetPhaseEtat.DoesNotExist):
+                pass
+        
+        return context
+    
+    def perform_create(self, serializer):
+        """Créer une nouvelle étape."""
+        phase_etat = self.get_serializer_context().get('phase_etat')
+        if phase_etat:
+            serializer.save(phase_etat=phase_etat)
+    
+    @action(detail=True, methods=['post'])
+    def demarrer(self, request, projet_pk=None, phase_pk=None, pk=None):
+        """Démarrer une étape."""
+        etape = self.get_object()
+        etape.demarrer()
+        
+        return Response({
+            'message': f'Étape "{etape.nom}" démarrée avec succès',
+            'etape': EtapeSerializer(etape).data
+        })
+    
+    @action(detail=True, methods=['post'])
+    def terminer(self, request, projet_pk=None, phase_pk=None, pk=None):
+        """Terminer une étape."""
+        etape = self.get_object()
+        etape.terminer()
+        
+        return Response({
+            'message': f'Étape "{etape.nom}" terminée avec succès',
+            'etape': EtapeSerializer(etape).data
+        })
+    
+    @action(detail=True, methods=['post'])
+    def annuler(self, request, projet_pk=None, phase_pk=None, pk=None):
+        """Annuler une étape."""
+        etape = self.get_object()
+        etape.annuler()
+        
+        return Response({
+            'message': f'Étape "{etape.nom}" annulée avec succès',
+            'etape': EtapeSerializer(etape).data
+        })
+    
+    @action(detail=False, methods=['get'])
+    def progression(self, request, projet_pk=None, phase_pk=None):
+        """Obtenir la progression des étapes de la phase."""
+        etapes = self.get_queryset()
+        
+        total_etapes = etapes.count()
+        etapes_terminees = etapes.filter(statut='terminee').count()
+        etapes_en_cours = etapes.filter(statut='en_cours').count()
+        etapes_annulees = etapes.filter(statut='annulee').count()
+        etapes_en_retard = etapes.filter(est_en_retard=True).count()
+        
+        progression_pourcentage = (etapes_terminees / total_etapes * 100) if total_etapes > 0 else 0
+        
+        return Response({
+            'total_etapes': total_etapes,
+            'etapes_terminees': etapes_terminees,
+            'etapes_en_cours': etapes_en_cours,
+            'etapes_annulees': etapes_annulees,
+            'etapes_en_retard': etapes_en_retard,
+            'progression_pourcentage': round(progression_pourcentage, 2),
+            'etapes_detail': EtapeSerializer(etapes, many=True).data
         })

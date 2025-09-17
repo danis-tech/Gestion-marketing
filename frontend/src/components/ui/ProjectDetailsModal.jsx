@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   X, 
   Calendar, 
@@ -15,10 +15,38 @@ import {
   Target,
   BarChart3
 } from 'lucide-react';
+import { projectsService } from '../../services/apiService';
 import './ProjectDetailsModal.css';
 
 const ProjectDetailsModal = ({ project, isOpen, onClose }) => {
+  const [projectDetails, setProjectDetails] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  // Charger les détails complets du projet quand le modal s'ouvre
+  useEffect(() => {
+    const loadProjectDetails = async () => {
+      if (isOpen && project && project.id) {
+        setLoading(true);
+        try {
+          const details = await projectsService.getProject(project.id);
+          setProjectDetails(details);
+        } catch (error) {
+          console.error('Erreur lors du chargement des détails:', error);
+          setProjectDetails(project); // Fallback sur les données de base
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadProjectDetails();
+  }, [isOpen, project]);
+
   if (!isOpen || !project) return null;
+
+  // Utiliser les détails complets si disponibles, sinon les données de base
+  const currentProject = projectDetails || project;
+
 
   // Fonction utilitaire pour gérer les valeurs par défaut
   const getFieldValue = (project, field, defaultValue = 'Non défini') => {
@@ -55,14 +83,20 @@ const ProjectDetailsModal = ({ project, isOpen, onClose }) => {
 
   // Formatage du budget
   const formatBudget = (budget) => {
-    if (!budget || budget === 0) return 'Non défini';
-    return budget.toLocaleString('fr-FR') + ' FCFA';
+    if (!budget || budget === 0 || budget === '0') return 'Non défini';
+    
+    // Convertir en nombre si c'est une chaîne
+    const budgetNumber = typeof budget === 'string' ? parseFloat(budget) : budget;
+    
+    if (isNaN(budgetNumber)) return 'Non défini';
+    
+    return budgetNumber.toLocaleString('fr-FR') + ' FCFA';
   };
 
   // Calcul de la progression (si dates disponibles)
   const calculateProgress = () => {
-    const startDate = getFieldValue(project, ['debut', 'date_debut', 'cree_le']);
-    const endDate = getFieldValue(project, ['fin', 'date_fin']);
+    const startDate = getFieldValue(currentProject, ['debut', 'date_debut', 'cree_le']);
+    const endDate = getFieldValue(currentProject, ['fin', 'date_fin']);
     
     if (!startDate || !endDate) return 0;
     
@@ -107,33 +141,10 @@ const ProjectDetailsModal = ({ project, isOpen, onClose }) => {
           {/* Informations principales */}
           <div className="project-info-section">
             <div className="project-main-info">
-              <h2 className="project-name">{getFieldValue(project, 'nom', 'Projet sans nom')}</h2>
-              <p className="project-code">Code: {getFieldValue(project, 'code', 'N/A')}</p>
+              <h2 className="project-name">{getFieldValue(currentProject, 'nom', 'Projet sans nom')}</h2>
+              <p className="project-code">Code: {getFieldValue(currentProject, 'code', 'N/A')}</p>
             </div>
             
-            {/* Statistiques principales */}
-            <div className="stats-grid">
-              <div className="stat-card">
-                <div className="stat-card-value">{getFieldValue(project, 'nombre_membres', '0')}</div>
-                <div className="stat-card-label">Membres</div>
-                <div className="stat-card-description">Équipe du projet</div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-card-value">{getFieldValue(project, 'estimation_jours', '0')}</div>
-                <div className="stat-card-label">Jours Estimés</div>
-                <div className="stat-card-description">Durée prévue</div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-card-value">{progress}%</div>
-                <div className="stat-card-label">Progression</div>
-                <div className="stat-card-description">Avancement actuel</div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-card-value">{formatBudget(getFieldValue(project, 'budget'))}</div>
-                <div className="stat-card-label">Budget</div>
-                <div className="stat-card-description">Allocation financière</div>
-              </div>
-            </div>
           </div>
 
           {/* Description et objectif */}
@@ -146,13 +157,13 @@ const ProjectDetailsModal = ({ project, isOpen, onClose }) => {
               <div className="info-item">
                 <label className="info-label">Description</label>
                 <p className="info-value">
-                  {getFieldValue(project, 'description', 'Aucune description disponible')}
+                  {getFieldValue(currentProject, 'description', 'Aucune description disponible')}
                 </p>
               </div>
               <div className="info-item">
                 <label className="info-label">Objectif</label>
                 <p className="info-value">
-                  {getFieldValue(project, 'objectif', 'Aucun objectif défini')}
+                  {getFieldValue(currentProject, 'objectif', 'Aucun objectif défini')}
                 </p>
               </div>
             </div>
@@ -169,19 +180,19 @@ const ProjectDetailsModal = ({ project, isOpen, onClose }) => {
                 <div className="info-item">
                   <label className="info-label">Date de début</label>
                   <p className="info-value">
-                    {formatDate(getFieldValue(project, ['debut', 'date_debut', 'cree_le']))}
+                    {formatDate(getFieldValue(currentProject, ['debut', 'date_debut', 'cree_le']))}
                   </p>
                 </div>
                 <div className="info-item">
                   <label className="info-label">Date de fin</label>
                   <p className="info-value">
-                    {formatDate(getFieldValue(project, ['fin', 'date_fin']))}
+                    {formatDate(getFieldValue(currentProject, ['fin', 'date_fin']))}
                   </p>
                 </div>
                 <div className="info-item">
                   <label className="info-label">Estimation (jours)</label>
                   <p className="info-value">
-                    {getFieldValue(project, 'estimation_jours', 'Non définie')} jours
+                    {getFieldValue(currentProject, 'estimation_jours', 'Non définie')} jours
                   </p>
                 </div>
                 <div className="info-item">
@@ -209,28 +220,62 @@ const ProjectDetailsModal = ({ project, isOpen, onClose }) => {
             <div className="info-content">
               <div className="info-grid">
                 <div className="info-item">
-                  <label className="info-label">Chef de projet</label>
+                  <label className="info-label">Responsable du projet</label>
                   <p className="info-value">
-                    {getFieldValue(project, ['chef_projet', 'nom_createur', 'proprietaire.username'], 'Non défini')}
+                    {currentProject.proprietaire ? 
+                      `${currentProject.proprietaire.prenom} ${currentProject.proprietaire.nom} (@${currentProject.proprietaire.username})` : 
+                      'Non défini'
+                    }
                   </p>
                 </div>
                 <div className="info-item">
-                  <label className="info-label">Service</label>
+                  <label className="info-label">Type de projet</label>
                   <p className="info-value">
-                    {getFieldValue(project, ['service', 'type'], 'Non défini')}
-                  </p>
-                </div>
-                <div className="info-item">
-                  <label className="info-label">Nombre de membres</label>
-                  <p className="info-value">
-                    {getFieldValue(project, 'nombre_membres', '0')} membre(s)
+                    {getFieldValue(currentProject, 'type', 'Non défini')}
                   </p>
                 </div>
                 <div className="info-item">
                   <label className="info-label">Créateur</label>
                   <p className="info-value">
-                    {getFieldValue(project, 'nom_createur', 'Non défini')}
+                    {getFieldValue(currentProject, 'nom_createur', 'Non défini')}
                   </p>
+                </div>
+              </div>
+              
+              {/* Liste des membres de l'équipe */}
+              <div className="team-members-section">
+                <label className="info-label">
+                  Membres de l'équipe ({currentProject.nombre_membres || currentProject.membres?.length || 0})
+                </label>
+                <div className="team-members-list">
+                  {loading ? (
+                    <div className="team-member-item">
+                      <span className="member-name">Chargement des membres...</span>
+                    </div>
+                  ) : currentProject.membres && currentProject.membres.length > 0 ? (
+                    currentProject.membres.map((membre, index) => (
+                      <div key={membre.id || index} className="team-member-item">
+                        <span className="member-name">
+                          {membre.utilisateur ? 
+                            `${membre.utilisateur.prenom} ${membre.utilisateur.nom}` : 
+                            'Membre inconnu'
+                          }
+                        </span>
+                        {membre.role_projet && (
+                          <span className="member-role">({membre.role_projet})</span>
+                        )}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="team-member-item">
+                      <span className="member-name">
+                        {currentProject.nombre_membres > 0 ? 
+                          `${currentProject.nombre_membres} membre(s) - Détails disponibles en mode édition` : 
+                          'Aucun membre assigné'
+                        }
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -245,47 +290,80 @@ const ProjectDetailsModal = ({ project, isOpen, onClose }) => {
             <div className="status-grid">
               <div className="status-item">
                 <label className="status-label">Statut</label>
-                <span className={`status-badge status-${getFieldValue(project, ['statut', 'etat'], 'default').toLowerCase()}`}>
-                  {getFieldValue(project, ['statut', 'etat'], 'Non défini')}
+                <span className={`status-badge status-${getFieldValue(currentProject, ['statut', 'etat'], 'default').toLowerCase()}`}>
+                  {getFieldValue(currentProject, ['statut', 'etat'], 'Non défini')}
                 </span>
               </div>
               <div className="status-item">
                 <label className="status-label">Priorité</label>
-                <span className={`priority-badge priority-${getFieldValue(project, 'priorite', 'default').toLowerCase()}`}>
-                  {getFieldValue(project, 'priorite', 'Non définie')}
+                <span className={`priority-badge priority-${getFieldValue(currentProject, 'priorite', 'default').toLowerCase()}`}>
+                  {getFieldValue(currentProject, 'priorite', 'Non définie')}
                 </span>
               </div>
               <div className="status-item">
                 <label className="status-label">État</label>
-                <span className={`state-badge state-${getFieldValue(project, 'etat', 'off').toLowerCase()}`}>
-                  {getFieldValue(project, 'etat') === 'On' ? 'Actif' : 'Inactif'}
+                <span className={`state-badge state-${getFieldValue(currentProject, 'etat', 'off').toLowerCase()}`}>
+                  {getFieldValue(currentProject, 'etat') === 'On' ? 'Actif' : 'Inactif'}
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Métadonnées */}
+          {/* Métadonnées et statistiques de position */}
           <div className="metadata-section">
             <div className="info-title">
               <Clock className="w-5 h-5 text-gray-600" />
-              Métadonnées
+              Métadonnées et position
             </div>
             <div className="metadata-grid">
               <div className="metadata-item">
                 <span className="metadata-label">Créé le:</span>
                 <span className="metadata-value">
-                  {formatDate(getFieldValue(project, 'cree_le'))}
+                  {formatDate(getFieldValue(currentProject, 'cree_le'))}
                 </span>
               </div>
               <div className="metadata-item">
                 <span className="metadata-label">Mis à jour le:</span>
                 <span className="metadata-value">
-                  {formatDate(getFieldValue(project, 'mis_a_jour_le'))}
+                  {formatDate(getFieldValue(currentProject, 'mis_a_jour_le'))}
                 </span>
               </div>
               <div className="metadata-item">
-                <span className="metadata-label">ID:</span>
-                <span className="metadata-value">{project.id}</span>
+                <span className="metadata-label">Position dans l'application:</span>
+                <span className="metadata-value">#{currentProject.id}</span>
+              </div>
+              <div className="metadata-item">
+                <span className="metadata-label">Position dans le mois:</span>
+                <span className="metadata-value">
+                  {(() => {
+                    const createdDate = new Date(currentProject.cree_le);
+                    const monthStart = new Date(createdDate.getFullYear(), createdDate.getMonth(), 1);
+                    const dayOfMonth = createdDate.getDate();
+                    return `Jour ${dayOfMonth} du mois`;
+                  })()}
+                </span>
+              </div>
+              <div className="metadata-item">
+                <span className="metadata-label">Position dans la semaine:</span>
+                <span className="metadata-value">
+                  {(() => {
+                    const createdDate = new Date(currentProject.cree_le);
+                    const dayOfWeek = createdDate.getDay();
+                    const dayNames = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+                    return dayNames[dayOfWeek];
+                  })()}
+                </span>
+              </div>
+              <div className="metadata-item">
+                <span className="metadata-label">Position dans la journée:</span>
+                <span className="metadata-value">
+                  {(() => {
+                    const createdDate = new Date(currentProject.cree_le);
+                    const hour = createdDate.getHours();
+                    const minute = createdDate.getMinutes();
+                    return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+                  })()}
+                </span>
               </div>
             </div>
           </div>

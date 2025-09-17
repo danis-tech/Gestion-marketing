@@ -1,6 +1,7 @@
 from rest_framework import serializers
-from .models import Projet, MembreProjet, HistoriqueEtat, PermissionProjet
+from .models import Projet, MembreProjet, HistoriqueEtat, PermissionProjet, PhaseProjet, ProjetPhaseEtat, Etape
 from accounts.serializers import UserListSerializer, ServiceSerializer
+from .email_service import ProjectEmailService
 from .models import Tache
 
 
@@ -41,7 +42,24 @@ class MembreProjetCreateSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         # Assigner automatiquement le projet
         validated_data['projet'] = self.context['projet']
-        return super().create(validated_data)
+        membre = super().create(validated_data)
+        
+        # Envoyer un email de notification pour l'ajout à un projet
+        try:
+            from accounts.email_service import TeamEmailService
+            added_by = self.context.get('request').user if self.context.get('request') else None
+            
+            # Envoyer l'email avec les informations du projet
+            TeamEmailService.send_team_assignment_notification(
+                membre.utilisateur,
+                membre.service or membre.utilisateur.service,  # Utiliser le service du membre ou de l'utilisateur
+                added_by,
+                project=membre.projet
+            )
+        except Exception as e:
+            print(f"Erreur lors de l'envoi de l'email d'ajout au projet : {str(e)}")
+        
+        return membre
 
 
 class HistoriqueEtatSerializer(serializers.ModelSerializer):
@@ -121,13 +139,28 @@ class ProjetCreateUpdateSerializer(serializers.ModelSerializer):
         model = Projet
         fields = [
             'code', 'nom', 'nom_createur', 'description', 'objectif', 'budget',
-            'type', 'statut', 'priorite', 'etat', 'debut', 'fin', 'estimation_jours'
+            'type', 'statut', 'priorite', 'etat', 'debut', 'fin', 'estimation_jours',
+            'proprietaire'
         ]
     
     def create(self, validated_data):
-        # Assigner automatiquement le propriétaire
-        validated_data['proprietaire'] = self.context['request'].user
-        return super().create(validated_data)
+        # Si aucun propriétaire n'est spécifié, utiliser l'utilisateur connecté
+        if 'proprietaire' not in validated_data or not validated_data['proprietaire']:
+            validated_data['proprietaire'] = self.context['request'].user
+        
+        # Créer le projet
+        projet = super().create(validated_data)
+        
+        # Envoyer l'email de notification au responsable
+        try:
+            responsable = projet.proprietaire
+            if responsable and responsable.email:
+                ProjectEmailService.send_project_created_notification(projet, responsable)
+        except Exception as e:
+            # Ne pas faire échouer la création du projet si l'email échoue
+            print(f"Erreur lors de l'envoi de l'email de notification : {str(e)}")
+        
+        return projet
     
     def update(self, instance, validated_data):
         # Enregistrer qui a fait la modification
@@ -359,3 +392,254 @@ class TacheStatutUpdateSerializer(serializers.ModelSerializer):
                 "Une tâche terminée ne peut pas changer de statut."
             )
         return value
+
+
+# Sérialiseurs pour les phases de projet
+class PhaseProjetSerializer(serializers.ModelSerializer):
+    """Sérialiseur pour les phases de projet."""
+    
+    class Meta:
+        model = PhaseProjet
+        fields = [
+            'id', 'nom', 'ordre', 'description', 'active'
+        ]
+        read_only_fields = ['id']
+
+
+class ProjetPhaseEtatSerializer(serializers.ModelSerializer):
+    """Sérialiseur pour l'état des phases d'un projet."""
+    phase = PhaseProjetSerializer(read_only=True)
+    phase_id = serializers.IntegerField(write_only=True)
+    est_en_cours = serializers.BooleanField(read_only=True)
+    est_en_attente = serializers.BooleanField(read_only=True)
+    peut_etre_terminee = serializers.BooleanField(read_only=True)
+    etapes_en_attente_ou_en_cours = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = ProjetPhaseEtat
+        fields = [
+            'id', 'phase', 'phase_id', 'terminee', 'ignoree', 
+            'date_debut', 'date_fin', 'commentaire', 'est_en_cours', 
+            'est_en_attente', 'peut_etre_terminee', 'etapes_en_attente_ou_en_cours',
+            'cree_le', 'mis_a_jour_le'
+        ]
+        read_only_fields = ['cree_le', 'mis_a_jour_le']
+    
+    def get_etapes_en_attente_ou_en_cours(self, obj):
+        """Retourne les étapes non terminées avec leurs détails"""
+        etapes = obj.etapes_en_attente_ou_en_cours
+        return EtapeSerializer(etapes, many=True).data
+    
+    def validate_phase_id(self, value):
+        """Valider que la phase existe."""
+        try:
+            PhaseProjet.objects.get(id=value, active=True)
+        except PhaseProjet.DoesNotExist:
+            raise serializers.ValidationError("Cette phase n'existe pas ou n'est pas active.")
+        return value
+    
+    def create(self, validated_data):
+        """Créer un nouvel état de phase."""
+        phase_id = validated_data.pop('phase_id')
+        phase = PhaseProjet.objects.get(id=phase_id)
+        validated_data['phase'] = phase
+        return super().create(validated_data)
+    
+    def update(self, instance, validated_data):
+        """Mettre à jour un état de phase."""
+        if 'phase_id' in validated_data:
+            phase_id = validated_data.pop('phase_id')
+            phase = PhaseProjet.objects.get(id=phase_id)
+            validated_data['phase'] = phase
+        return super().update(instance, validated_data)
+
+
+class ProjetPhaseEtatUpdateSerializer(serializers.ModelSerializer):
+    """Sérialiseur pour mettre à jour l'état d'une phase."""
+    
+    class Meta:
+        model = ProjetPhaseEtat
+        fields = [
+            'terminee', 'ignoree', 'date_debut', 'date_fin', 'commentaire'
+        ]
+    
+    def validate(self, data):
+        """Validation personnalisée."""
+        # Vérifier que les dates sont cohérentes
+        if 'date_debut' in data and 'date_fin' in data:
+            if data['date_debut'] and data['date_fin'] and data['date_debut'] > data['date_fin']:
+                raise serializers.ValidationError(
+                    "La date de début ne peut pas être postérieure à la date de fin."
+                )
+        
+        # Vérifier la cohérence des états
+        if 'terminee' in data and 'ignoree' in data:
+            if data['terminee'] and data['ignoree']:
+                raise serializers.ValidationError(
+                    "Une phase ne peut pas être à la fois terminée et ignorée."
+                )
+        
+        return data
+
+
+class ProjetDetailWithPhasesSerializer(ProjetDetailSerializer):
+    """Sérialiseur détaillé pour un projet avec les phases."""
+    phases_etat = ProjetPhaseEtatSerializer(many=True, read_only=True)
+    
+    class Meta(ProjetDetailSerializer.Meta):
+        fields = ProjetDetailSerializer.Meta.fields + ['phases_etat']
+
+
+# Sérialiseurs pour les étapes
+class EtapeSerializer(serializers.ModelSerializer):
+    """Sérialiseur pour les étapes d'une phase."""
+    responsable = UserListSerializer(read_only=True)
+    responsable_id = serializers.IntegerField(write_only=True, required=False, allow_null=True)
+    cree_par = UserListSerializer(read_only=True)
+    statut_display = serializers.CharField(source='get_statut_display', read_only=True)
+    priorite_display = serializers.CharField(source='get_priorite_display', read_only=True)
+    est_en_retard = serializers.BooleanField(read_only=True)
+    duree_prevue = serializers.IntegerField(read_only=True)
+    duree_reelle = serializers.IntegerField(read_only=True)
+    
+    class Meta:
+        model = Etape
+        fields = [
+            'id', 'nom', 'description', 'ordre', 'statut', 'statut_display',
+            'priorite', 'priorite_display', 'responsable', 'responsable_id',
+            'date_debut_prevue', 'date_fin_prevue', 'date_debut_reelle', 'date_fin_reelle',
+            'progression_pourcentage', 'commentaire', 'notes_internes',
+            'cree_par', 'cree_le', 'mis_a_jour_le', 'est_en_retard',
+            'duree_prevue', 'duree_reelle'
+        ]
+        read_only_fields = ['cree_le', 'mis_a_jour_le', 'cree_par']
+    
+    def validate_responsable_id(self, value):
+        """Valider que le responsable existe."""
+        if value is not None:
+            try:
+                User.objects.get(id=value)
+            except User.DoesNotExist:
+                raise serializers.ValidationError("Cet utilisateur n'existe pas.")
+        return value
+    
+    def validate(self, data):
+        """Validation personnalisée."""
+        # Vérifier que les dates sont cohérentes
+        if 'date_debut_prevue' in data and 'date_fin_prevue' in data:
+            if (data.get('date_debut_prevue') and data.get('date_fin_prevue') and 
+                data['date_debut_prevue'] > data['date_fin_prevue']):
+                raise serializers.ValidationError(
+                    "La date de début prévue ne peut pas être postérieure à la date de fin prévue."
+                )
+        
+        if 'date_debut_reelle' in data and 'date_fin_reelle' in data:
+            if (data.get('date_debut_reelle') and data.get('date_fin_reelle') and 
+                data['date_debut_reelle'] > data['date_fin_reelle']):
+                raise serializers.ValidationError(
+                    "La date de début réelle ne peut pas être postérieure à la date de fin réelle."
+                )
+        
+        # Vérifier la progression
+        if 'progression_pourcentage' in data:
+            if not (0 <= data['progression_pourcentage'] <= 100):
+                raise serializers.ValidationError(
+                    "La progression doit être entre 0 et 100%."
+                )
+        
+        return data
+    
+    def create(self, validated_data):
+        """Créer une nouvelle étape."""
+        # Assigner automatiquement qui crée l'étape
+        validated_data['cree_par'] = self.context['request'].user
+        
+        # Gérer le responsable
+        if 'responsable_id' in validated_data:
+            responsable_id = validated_data.pop('responsable_id')
+            if responsable_id:
+                validated_data['responsable'] = User.objects.get(id=responsable_id)
+        
+        return super().create(validated_data)
+    
+    def update(self, instance, validated_data):
+        """Mettre à jour une étape."""
+        # Gérer le responsable
+        if 'responsable_id' in validated_data:
+            responsable_id = validated_data.pop('responsable_id')
+            if responsable_id:
+                validated_data['responsable'] = User.objects.get(id=responsable_id)
+            else:
+                validated_data['responsable'] = None
+        
+        return super().update(instance, validated_data)
+
+
+class EtapeCreateSerializer(serializers.ModelSerializer):
+    """Sérialiseur pour créer une étape."""
+    responsable_id = serializers.IntegerField(required=False, allow_null=True)
+    
+    class Meta:
+        model = Etape
+        fields = [
+            'nom', 'description', 'ordre', 'priorite', 'responsable_id',
+            'date_debut_prevue', 'date_fin_prevue', 'commentaire'
+        ]
+    
+    def validate_ordre(self, value):
+        """Valider l'ordre dans la phase."""
+        phase_etat = self.context.get('phase_etat')
+        if phase_etat:
+            # Vérifier que l'ordre n'existe pas déjà dans cette phase
+            if Etape.objects.filter(phase_etat=phase_etat, ordre=value).exists():
+                raise serializers.ValidationError(
+                    "Une étape avec cet ordre existe déjà dans cette phase."
+                )
+        return value
+    
+    def create(self, validated_data):
+        """Créer une nouvelle étape."""
+        # Assigner automatiquement qui crée l'étape
+        validated_data['cree_par'] = self.context['request'].user
+        validated_data['phase_etat'] = self.context['phase_etat']
+        
+        # Gérer le responsable
+        if 'responsable_id' in validated_data:
+            responsable_id = validated_data.pop('responsable_id')
+            if responsable_id:
+                from accounts.models import User
+                validated_data['responsable'] = User.objects.get(id=responsable_id)
+        
+        return super().create(validated_data)
+
+
+class EtapeUpdateSerializer(serializers.ModelSerializer):
+    """Sérialiseur pour mettre à jour une étape."""
+    responsable_id = serializers.IntegerField(required=False, allow_null=True)
+    
+    class Meta:
+        model = Etape
+        fields = [
+            'nom', 'description', 'ordre', 'statut', 'priorite', 'responsable_id',
+            'date_debut_prevue', 'date_fin_prevue', 'date_debut_reelle', 'date_fin_reelle',
+            'progression_pourcentage', 'commentaire', 'notes_internes'
+        ]
+    
+    def validate_ordre(self, value):
+        """Valider l'ordre dans la phase."""
+        instance = self.instance
+        if instance and instance.phase_etat:
+            # Vérifier que l'ordre n'existe pas déjà dans cette phase (sauf pour l'instance actuelle)
+            if Etape.objects.filter(phase_etat=instance.phase_etat, ordre=value).exclude(id=instance.id).exists():
+                raise serializers.ValidationError(
+                    "Une étape avec cet ordre existe déjà dans cette phase."
+                )
+        return value
+
+
+class ProjetPhaseEtatWithEtapesSerializer(ProjetPhaseEtatSerializer):
+    """Sérialiseur pour une phase avec ses étapes."""
+    etapes = EtapeSerializer(many=True, read_only=True)
+    
+    class Meta(ProjetPhaseEtatSerializer.Meta):
+        fields = ProjetPhaseEtatSerializer.Meta.fields + ['etapes']

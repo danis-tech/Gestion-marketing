@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Bell } from 'lucide-react';
 import Sidebar from './Sidebar';
-import { DashboardHome, AddProject, AddTask, TeamManagement } from '../pages';
+import { DashboardHome, AddProject, AddTask, TeamManagement, PhasesManagement, PhasesEtapesManagementNew, DocumentsManagement } from '../pages';
 import './Dashboard.css';
 
 const Dashboard = ({ user, onLogout }) => {
@@ -110,7 +110,8 @@ const Dashboard = ({ user, onLogout }) => {
           <Route path="/projets/taches/ajouter" element={<AddTask />} />
           <Route path="/etapes/kanban" element={<div>Page Kanban</div>} />
           <Route path="/etapes/gantt" element={<div>Page Ganttt</div>} />
-          <Route path="/documents" element={<div>Page Documents</div>} />
+          <Route path="/etapes/validations" element={<PhasesEtapesManagementNew />} />
+          <Route path="/documents" element={<DocumentsManagement />} />
           <Route path="/lancement" element={<div>Page Lancement</div>} />
           <Route path="/archivage/archives" element={<div>Page Archives</div>} />
           <Route path="/archivage/bilan" element={<div>Page Bilan</div>} />

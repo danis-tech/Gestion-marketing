@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   X, 
   Save,
@@ -10,25 +10,55 @@ import {
   FileText,
   AlertCircle
 } from 'lucide-react';
+import { userService } from '../../services/apiService';
 import './ProjectAddModal.css';
 
 const ProjectAddModal = ({ isOpen, onClose, onSave }) => {
   const [formData, setFormData] = useState({
     nom: '',
     code: '',
-    nom_createur: '',
+    proprietaire: '',
     description: '',
     objectif: '',
     budget: '',
     type: '',
     statut: 'en_attente',
-    priorite: 'haut',
-    etat: 'On',
+    priorite: 'haut', // Valeur par défaut corrigée
+    etat: 'Off', // Par défaut inactif
     debut: '',
     fin: ''
   });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [availableUsers, setAvailableUsers] = useState([]);
+
+  // Récupérer l'utilisateur connecté et charger les utilisateurs disponibles
+  useEffect(() => {
+    const userData = localStorage.getItem('user_data');
+    if (userData) {
+      try {
+        const user = JSON.parse(userData);
+        setCurrentUser(user);
+      } catch (error) {
+        console.error('Erreur lors du parsing des données utilisateur:', error);
+      }
+    }
+
+    // Charger la liste des utilisateurs disponibles
+    const loadUsers = async () => {
+      try {
+        const response = await userService.getUsers();
+        setAvailableUsers(response.results || response.data || response || []);
+      } catch (error) {
+        console.error('Erreur lors du chargement des utilisateurs:', error);
+      }
+    };
+
+    if (isOpen) {
+      loadUsers();
+    }
+  }, [isOpen]);
 
   // Gestion des changements de champs
   const handleInputChange = (field, value) => {
@@ -58,8 +88,8 @@ const ProjectAddModal = ({ isOpen, onClose, onSave }) => {
       newErrors.code = 'Le code du projet est requis';
     }
 
-    if (!formData.nom_createur?.trim()) {
-      newErrors.nom_createur = 'Le nom du créateur est requis';
+    if (!formData.proprietaire?.trim()) {
+      newErrors.proprietaire = 'Le propriétaire du projet est requis';
     }
 
     if (!formData.description?.trim()) {
@@ -72,6 +102,15 @@ const ProjectAddModal = ({ isOpen, onClose, onSave }) => {
 
     if (!formData.type?.trim()) {
       newErrors.type = 'Le type de projet est requis';
+    }
+
+    // Validation des dates obligatoires
+    if (!formData.debut?.trim()) {
+      newErrors.debut = 'La date de début est requise';
+    }
+
+    if (!formData.fin?.trim()) {
+      newErrors.fin = 'La date de fin est requise';
     }
 
     if (formData.debut && formData.fin && new Date(formData.debut) > new Date(formData.fin)) {
@@ -93,30 +132,37 @@ const ProjectAddModal = ({ isOpen, onClose, onSave }) => {
     setIsSubmitting(true);
     
     try {
-             // Préparer les données pour l'API
-       const dataToSave = {
-         ...formData,
-         debut: formData.debut ? `${formData.debut}T09:00:00Z` : null,
-         fin: formData.fin ? `${formData.fin}T18:00:00Z` : null
-       };
+      // Préparer les données pour l'API avec le nom du créateur automatique
+      const dataToSave = {
+        ...formData,
+        nom_createur: currentUser ? `${currentUser.prenom} ${currentUser.nom}` : 'Utilisateur inconnu',
+        debut: formData.debut ? `${formData.debut}T09:00:00Z` : null,
+        fin: formData.fin ? `${formData.fin}T18:00:00Z` : null
+      };
+
+      console.log('=== DONNÉES ENVOYÉES À L\'API ===');
+      console.log('FormData complet:', formData);
+      console.log('DataToSave:', dataToSave);
+      console.log('Priorité:', formData.priorite);
+      console.log('Statut:', formData.statut);
 
       await onSave(dataToSave);
       
-                           // Réinitialiser le formulaire
-        setFormData({
-          nom: '',
-          code: '',
-          nom_createur: '',
-          description: '',
-          objectif: '',
-          budget: '',
-          type: '',
-          statut: 'en_attente',
-          priorite: 'haut',
-          etat: 'On',
-          debut: '',
-          fin: ''
-        });
+      // Réinitialiser le formulaire
+      setFormData({
+        nom: '',
+        code: '',
+        proprietaire: '',
+        description: '',
+        objectif: '',
+        budget: '',
+        type: '',
+        statut: 'en_attente',
+        priorite: 'haut',
+        etat: 'Off', // Par défaut inactif
+        debut: '',
+        fin: ''
+      });
         setErrors({});
         
         onClose();
@@ -131,21 +177,21 @@ const ProjectAddModal = ({ isOpen, onClose, onSave }) => {
   // Fermer le modal
   const handleClose = () => {
     if (!isSubmitting) {
-                           // Réinitialiser le formulaire
-        setFormData({
-          nom: '',
-          code: '',
-          nom_createur: '',
-          description: '',
-          objectif: '',
-          budget: '',
-          type: '',
-          statut: 'en_attente',
-          priorite: 'haut',
-          etat: 'On',
-          debut: '',
-          fin: ''
-        });
+      // Réinitialiser le formulaire
+      setFormData({
+        nom: '',
+        code: '',
+        proprietaire: '',
+        description: '',
+        objectif: '',
+        budget: '',
+        type: '',
+        statut: 'en_attente',
+        priorite: 'haut',
+        etat: 'Off', // Par défaut inactif
+        debut: '',
+        fin: ''
+      });
       setErrors({});
       onClose();
     }
@@ -211,16 +257,21 @@ const ProjectAddModal = ({ isOpen, onClose, onSave }) => {
                  </div>
 
                  <div className="form-group">
-                   <label className="form-label">Nom du créateur *</label>
-                   <input
-                     type="text"
-                     className={`form-input ${errors.nom_createur ? 'form-input-error' : ''}`}
-                     value={formData.nom_createur}
-                     onChange={(e) => handleInputChange('nom_createur', e.target.value)}
-                     placeholder="Nom du créateur"
+                   <label className="form-label">Responsable du projet *</label>
+                   <select
+                     className={`form-select ${errors.proprietaire ? 'form-input-error' : ''}`}
+                     value={formData.proprietaire}
+                     onChange={(e) => handleInputChange('proprietaire', e.target.value)}
                      disabled={isSubmitting}
-                   />
-                   {errors.nom_createur && <span className="form-error">{errors.nom_createur}</span>}
+                   >
+                     <option value="">Sélectionner un Responsable</option>
+                     {availableUsers.map(user => (
+                       <option key={user.id} value={user.id}>
+                         {user.prenom} {user.nom} (@{user.username})
+                       </option>
+                     ))}
+                   </select>
+                   {errors.proprietaire && <span className="form-error">{errors.proprietaire}</span>}
                  </div>
                </div>
             </div>
@@ -276,9 +327,9 @@ const ProjectAddModal = ({ isOpen, onClose, onSave }) => {
                     disabled={isSubmitting}
                   >
                     <option value="en_attente">En attente</option>
-                    <option value="en_cours">En cours</option>
                     <option value="termine">Terminé</option>
-                    <option value="annule">Annulé</option>
+                    <option value="hors_delai">Hors délai</option>
+                    <option value="rejete">Rejeté</option>
                   </select>
                 </div>
 
@@ -290,9 +341,10 @@ const ProjectAddModal = ({ isOpen, onClose, onSave }) => {
                     onChange={(e) => handleInputChange('priorite', e.target.value)}
                     disabled={isSubmitting}
                   >
-                    <option value="basse">Basse</option>
-                    <option value="moyenne">Moyenne</option>
-                    <option value="haute">Haute</option>
+                    <option value="bas">Basse</option>
+                    <option value="moyen">Moyenne</option>
+                    <option value="intermediaire">Intermédiaire</option>
+                    <option value="haut">Haute</option>
                   </select>
                 </div>
 
@@ -318,30 +370,31 @@ const ProjectAddModal = ({ isOpen, onClose, onSave }) => {
                 Dates et estimation
               </h3>
               
-                             <div className="form-grid">
-                 <div className="form-group">
-                   <label className="form-label">Date de début</label>
-                   <input
-                     type="date"
-                     className="form-input"
-                     value={formData.debut}
-                     onChange={(e) => handleInputChange('debut', e.target.value)}
-                     disabled={isSubmitting}
-                   />
-                 </div>
+              <div className="form-grid">
+                <div className="form-group">
+                  <label className="form-label">Date de début *</label>
+                  <input
+                    type="date"
+                    className={`form-input ${errors.debut ? 'form-input-error' : ''}`}
+                    value={formData.debut}
+                    onChange={(e) => handleInputChange('debut', e.target.value)}
+                    disabled={isSubmitting}
+                  />
+                  {errors.debut && <span className="form-error">{errors.debut}</span>}
+                </div>
 
-                 <div className="form-group">
-                   <label className="form-label">Date de fin</label>
-                   <input
-                     type="date"
-                     className={`form-input ${errors.fin ? 'form-input-error' : ''}`}
-                     value={formData.fin}
-                     onChange={(e) => handleInputChange('fin', e.target.value)}
-                     disabled={isSubmitting}
-                   />
-                   {errors.fin && <span className="form-error">{errors.fin}</span>}
-                 </div>
-               </div>
+                <div className="form-group">
+                  <label className="form-label">Date de fin *</label>
+                  <input
+                    type="date"
+                    className={`form-input ${errors.fin ? 'form-input-error' : ''}`}
+                    value={formData.fin}
+                    onChange={(e) => handleInputChange('fin', e.target.value)}
+                    disabled={isSubmitting}
+                  />
+                  {errors.fin && <span className="form-error">{errors.fin}</span>}
+                </div>
+              </div>
             </div>
 
             {/* Budget et type */}
@@ -374,7 +427,7 @@ const ProjectAddModal = ({ isOpen, onClose, onSave }) => {
                      className={`form-input ${errors.type ? 'form-input-error' : ''}`}
                      value={formData.type}
                      onChange={(e) => handleInputChange('type', e.target.value)}
-                     placeholder="Type de projet"
+                     placeholder="Ex : Nouvelle offre de forfait mobile , etc."
                      disabled={isSubmitting}
                    />
                    {errors.type && <span className="form-error">{errors.type}</span>}

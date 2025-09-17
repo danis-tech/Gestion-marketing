@@ -8,3 +8,23 @@ PyJWT==2.10.1
 python-dotenv==1.1.1
 sqlparse==0.5.3
 tzdata==2025.2
+
+# Génération de documents PDF
+docxtpl==0.19.0
+python-docx==1.1.2
+reportlab==4.2.2
+weasyprint==62.3
+Pillow==10.4.0
+django-filter==24.3
+
+# Dépendances supplémentaires pour la génération PDF
+jinja2==3.1.4
+lxml==5.1.0
+cffi==1.16.0
+pycparser==2.21
+html5lib==1.1
+tinycss2==1.2.1
+cssselect2==0.7.0
+pyphen==0.14.0
+cairocffi==1.6.1
+cairosvg==2.7.1

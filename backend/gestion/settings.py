@@ -26,9 +26,9 @@ ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
 #SECRET_KEY = 'django-insecure-p)z2579b)&7#o)g1#@$8f8p@lsp!$lr&qp6q%h6ig=q0=ht-b_'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# DEBUG = True  # Commenté pour utiliser la valeur du .env
 
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '0.0.0.0', 'testserver']
+# ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '0.0.0.0', 'testserver']  # Commenté pour utiliser la valeur du .env
 
 
 # Application definition
@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites',
     
     # Mes applications
     'accounts',
@@ -47,6 +48,7 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
     'projects',
+    'documents',
 
    
 ]
@@ -242,23 +244,24 @@ STATIC_URL = 'static/'
 
 # --- Configuration Email ---
 # Pour le développement local avec MailDev
+# Configuration Email
+# Configuration SMTP pour l'envoi d'emails réels
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'localhost'
-EMAIL_PORT = 1025
-EMAIL_USE_TLS = False
-EMAIL_USE_SSL = False
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'jacquesboussengui@gmail.com'
+EMAIL_HOST_PASSWORD = ''
 DEFAULT_FROM_EMAIL = 'noreply@gestion-marketing.com'
-
-# Configuration pour un serveur SMTP (à utiliser en production)
-# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-# EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
-# EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
-# EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
-# EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', 'jacquesboussengui@gmail.com')
-# EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')  # Mot de passe d'application Gmail
-# DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@gestion-marketing.com')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Site ID pour django.contrib.sites
+SITE_ID = 1
+
+
+
+

@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="fr">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Retrait de l'équipe - Gabon Telecom</title>
+		<style>
+			* {
+				margin: 0;
+				padding: 0;
+				box-sizing: border-box;
+			}
+
+			body {
+				font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+				line-height: 1.6;
+				color: #000000;
+				background: #f8f9fa;
+				margin: 0;
+				padding: 20px;
+			}
+
+			.email-container {
+				max-width: 600px;
+				margin: 0 auto;
+				background: #ffffff;
+				border: 1px solid #e9ecef;
+			}
+
+			/* Header simple et professionnel */
+			.header {
+				background: #2563eb;
+				color: #ffffff;
+				padding: 30px;
+				text-align: center;
+			}
+
+			.app-name {
+				font-size: 1.8rem;
+				font-weight: 700;
+				margin-bottom: 8px;
+			}
+
+			.company-tagline {
+				font-size: 0.9rem;
+				margin-bottom: 20px;
+				opacity: 0.9;
+			}
+
+			.header h1 {
+				font-size: 1.3rem;
+				font-weight: 600;
+				margin: 0 0 8px 0;
+			}
+
+			.header p {
+				font-size: 0.95rem;
+				margin: 0;
+				opacity: 0.9;
+			}
+
+			/* Contenu principal */
+			.content {
+				padding: 30px;
+			}
+
+			/* Message d'accueil */
+			.welcome-message {
+				background: #f8f9fa;
+				padding: 20px;
+				margin-bottom: 25px;
+				border-left: 4px solid #ff6b35;
+			}
+
+			.welcome-message p {
+				color: #000000;
+				font-size: 1rem;
+				margin: 0;
+				line-height: 1.5;
+			}
+
+			/* Carte de l'équipe */
+			.team-card {
+				background: #ffffff;
+				border: 2px solid #2563eb;
+				padding: 25px;
+				margin: 25px 0;
+				text-align: center;
+			}
+
+			.team-name {
+				font-size: 1.4rem;
+				font-weight: 700;
+				margin: 0 0 10px 0;
+				color: #2563eb;
+			}
+
+			.team-code {
+				font-size: 0.9rem;
+				color: #6c757d;
+				background: #f8f9fa;
+				padding: 6px 12px;
+				border: 1px solid #dee2e6;
+				display: inline-block;
+			}
+
+			/* Informations de l'équipe */
+			.team-info {
+				margin: 25px 0;
+				background: #ffffff;
+				border: 1px solid #dee2e6;
+			}
+
+			.info-row {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				padding: 15px 20px;
+				border-bottom: 1px solid #f1f3f4;
+			}
+
+			.info-row:last-child {
+				border-bottom: none;
+			}
+
+			.info-label {
+				font-weight: 600;
+				color: #000000;
+				font-size: 0.95rem;
+			}
+
+			.info-value {
+				color: #000000;
+				font-size: 0.95rem;
+				text-align: right;
+			}
+
+			/* Badge simple */
+			.badge {
+				display: inline-block;
+				padding: 6px 12px;
+				font-size: 0.8rem;
+				font-weight: 600;
+				text-transform: uppercase;
+				letter-spacing: 0.5px;
+			}
+
+			.badge.team {
+				background: #2563eb;
+				color: #ffffff;
+			}
+
+			.badge.removal {
+				background: #ff6b35;
+				color: #ffffff;
+			}
+
+			/* Bouton CTA simple */
+			.cta-section {
+				text-align: center;
+				margin: 30px 0;
+				padding: 20px 0;
+			}
+
+			.cta-button {
+				display: inline-block;
+				background: #2563eb;
+				color: #ffffff;
+				padding: 15px 35px;
+				text-decoration: none;
+				font-weight: 600;
+				font-size: 1rem;
+				border: none;
+				transition: background-color 0.2s;
+			}
+
+			.cta-button:hover {
+				background: #1d4ed8;
+			}
+
+			/* Footer simple */
+			.footer {
+				background: #f8f9fa;
+				color: #6c757d;
+				padding: 25px 30px;
+				text-align: center;
+				border-top: 1px solid #dee2e6;
+			}
+
+			.footer p {
+				margin: 0 0 8px 0;
+				font-size: 0.9rem;
+			}
+
+			.footer .brand {
+				color: #000000;
+				font-weight: 600;
+			}
+
+			.footer .contact-info {
+				font-size: 0.85rem;
+				color: #6c757d;
+				margin-top: 10px;
+			}
+
+			/* Responsive */
+			@media (max-width: 600px) {
+				body {
+					padding: 10px;
+				}
+
+				.email-container {
+					margin: 0;
+				}
+
+				.header,
+				.content,
+				.footer {
+					padding: 20px;
+				}
+
+				.info-row {
+					flex-direction: column;
+					align-items: flex-start;
+					gap: 5px;
+				}
+
+				.info-value {
+					text-align: left;
+				}
+
+				.cta-button {
+					padding: 12px 25px;
+					font-size: 0.95rem;
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<div class="email-container">
+			<!-- Header -->
+			<div class="header">
+				<div class="app-name">Gabon Telecom</div>
+				<div class="company-tagline">
+					Connecter le Gabon, Rapprocher les Cœurs
+				</div>
+				<h1>Retrait de l'équipe</h1>
+				<p>Modification de votre affectation d'équipe</p>
+			</div>
+
+			<!-- Contenu principal -->
+			<div class="content">
+				<!-- Message d'accueil -->
+				<div class="welcome-message">
+					<p>
+						Bonjour <strong>{{ user.prenom }} {{ user.nom }}</strong>,<br />
+						Vous avez été retiré de l'équipe et n'avez plus accès à ses projets
+						et tâches. {% if project %}
+						<br /><br />
+						<strong>Projet associé :</strong> {{ project.nom }} ({{ project.code
+						}}) {% endif %}
+					</p>
+				</div>
+
+				<!-- Carte de l'équipe -->
+				<div class="team-card">
+					<div class="team-name">{{ service.nom }}</div>
+					<div class="team-code">Code: {{ service.code }}</div>
+				</div>
+
+				<!-- Informations de l'équipe -->
+				<div class="team-info">
+					<div class="info-row">
+						<span class="info-label">Équipe</span>
+						<span class="info-value">
+							<span class="badge team">{{ service.nom }}</span>
+						</span>
+					</div>
+
+					<div class="info-row">
+						<span class="info-label">Code</span>
+						<span class="info-value">{{ service.code }}</span>
+					</div>
+
+					<div class="info-row">
+						<span class="info-label">Date de retrait</span>
+						<span class="info-value"
+							>{{ user.mis_a_jour_le|date:"d/m/Y à H:i" }}</span
+						>
+					</div>
+
+					{% if removed_by %}
+					<div class="info-row">
+						<span class="info-label">Retiré par</span>
+						<span class="info-value"
+							>{{ removed_by.prenom }} {{ removed_by.nom }}</span
+						>
+					</div>
+					{% endif %}
+				</div>
+
+				{% if project %}
+				<!-- Informations du projet -->
+				<div class="team-info">
+					<div class="info-row">
+						<span class="info-label">Projet associé</span>
+						<span class="info-value">
+							<span class="badge assignment">{{ project.nom }}</span>
+						</span>
+					</div>
+
+					<div class="info-row">
+						<span class="info-label">Code projet</span>
+						<span class="info-value">{{ project.code }}</span>
+					</div>
+
+					{% if project.statut %}
+					<div class="info-row">
+						<span class="info-label">Statut</span>
+						<span class="info-value">{{ project.get_statut_display }}</span>
+					</div>
+					{% endif %} {% if project.priorite %}
+					<div class="info-row">
+						<span class="info-label">Priorité</span>
+						<span class="info-value">{{ project.get_priorite_display }}</span>
+					</div>
+					{% endif %}
+				</div>
+				{% endif %}
+
+				<!-- Call to Action -->
+				<div class="cta-section">
+					<a href="{{ app_url }}" class="cta-button">
+						Accéder au Tableau de Bord
+					</a>
+				</div>
+			</div>
+
+			<!-- Footer -->
+			<div class="footer">
+				<p>
+					Email automatique du système de gestion d'équipes
+					<span class="brand">Gabon Telecom</span>
+				</p>
+				<p>© 2024 Gabon Telecom S.A. Tous droits réservés.</p>
+				<div class="contact-info">
+					📍 Libreville, Gabon | ☎️ +241 01 74 60 00 | 🌐 www.gabontelecom.ga
+				</div>
+			</div>
+		</div>
+	</body>
+</html>

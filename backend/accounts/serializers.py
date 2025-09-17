@@ -122,12 +122,25 @@ class UserCreateUpdateSerializer(serializers.ModelSerializer):
             user.service = Service.objects.filter(code=service_code).first()
 
         user.save()
+        
+        # Envoyer un email si l'utilisateur a été créé avec un service
+        if service_code and user.service:
+            try:
+                from .email_service import TeamEmailService
+                created_by = self.context.get('request').user if self.context.get('request') else None
+                TeamEmailService.send_team_assignment_notification(user, user.service, created_by)
+            except Exception as e:
+                print(f"Erreur lors de l'envoi de l'email d'assignation d'équipe : {str(e)}")
+        
         return user
 
     def update(self, instance, validated_data):
         role_code = validated_data.pop("role_code", None)
         service_code = validated_data.pop("service_code", None)
         password = validated_data.pop("password", None)
+
+        # Sauvegarder l'ancien service pour détecter les changements
+        old_service = instance.service
 
         for k, v in validated_data.items():
             setattr(instance, k, v)
@@ -140,6 +153,38 @@ class UserCreateUpdateSerializer(serializers.ModelSerializer):
             instance.set_password(password)
 
         instance.save()
+        
+        # Envoyer un email si l'utilisateur a été assigné à un nouveau service
+        if service_code is not None and instance.service and instance.service != old_service:
+            try:
+                from .email_service import TeamEmailService
+                assigned_by = self.context.get('request').user if self.context.get('request') else None
+                
+                # Essayer de trouver un projet récent associé à ce service
+                from projects.models import Projet
+                recent_project = Projet.objects.filter(
+                    proprietaire=instance,
+                    statut__in=['en_attente', 'en_cours']
+                ).order_by('-cree_le').first()
+                
+                TeamEmailService.send_team_assignment_notification(
+                    instance, 
+                    instance.service, 
+                    assigned_by, 
+                    project=recent_project
+                )
+            except Exception as e:
+                print(f"Erreur lors de l'envoi de l'email d'assignation d'équipe : {str(e)}")
+        
+        # Envoyer un email si l'utilisateur a été retiré d'un service
+        elif service_code is not None and old_service and not instance.service:
+            try:
+                from .email_service import TeamEmailService
+                removed_by = self.context.get('request').user if self.context.get('request') else None
+                TeamEmailService.send_team_removal_notification(instance, old_service, removed_by)
+            except Exception as e:
+                print(f"Erreur lors de l'envoi de l'email de retrait d'équipe : {str(e)}")
+        
         return instance
 
 

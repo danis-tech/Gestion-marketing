@@ -114,11 +114,11 @@ const LoginModal = ({
   if (!isOpen) return null;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
+    <div className="login-modal-overlay" onClick={onClose}>
+      <div className="login-modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="login-modal-header">
           <h2>Connexion</h2>
-          <button className="modal-close" onClick={onClose}>
+          <button className="login-modal-close" onClick={onClose}>
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>

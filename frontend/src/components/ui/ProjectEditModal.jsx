@@ -11,19 +11,21 @@ import {
   AlertCircle,
   CheckCircle
 } from 'lucide-react';
+import { userService } from '../../services/apiService';
 import './ProjectEditModal.css';
 
 const ProjectEditModal = ({ project, isOpen, onClose, onSave }) => {
   const [formData, setFormData] = useState({
     nom: '',
     code: '',
+    proprietaire: '',
     description: '',
     objectif: '',
     budget: '',
     type: '',
     statut: 'en_attente',
     priorite: 'haut',
-    etat: 'On',
+    etat: 'Off', // Par défaut inactif
     debut: '',
     fin: '',
     estimation_jours: '',
@@ -31,21 +33,23 @@ const ProjectEditModal = ({ project, isOpen, onClose, onSave }) => {
   });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [availableUsers, setAvailableUsers] = useState([]);
 
-  // Initialiser le formulaire avec les données du projet
+  // Initialiser le formulaire avec les données du projet et charger les utilisateurs
   useEffect(() => {
     if (project) {
       // S'assurer que tous les champs ont des valeurs définies (pas undefined)
       setFormData({
         nom: project.nom ?? '',
         code: project.code ?? '',
+        proprietaire: project.proprietaire?.id ?? '',
         description: project.description ?? '',
         objectif: project.objectif ?? '',
         budget: project.budget ?? '',
         type: project.type ?? '',
         statut: project.statut ?? 'en_attente',
         priorite: project.priorite ?? 'haut',
-        etat: project.etat ?? 'On',
+        etat: project.etat ?? 'Off',
         debut: project.debut ? project.debut.split('T')[0] : '',
         fin: project.fin ? project.fin.split('T')[0] : '',
         estimation_jours: project.estimation_jours ?? '',
@@ -53,7 +57,21 @@ const ProjectEditModal = ({ project, isOpen, onClose, onSave }) => {
       });
       setErrors({});
     }
-  }, [project]);
+
+    // Charger la liste des utilisateurs disponibles
+    const loadUsers = async () => {
+      try {
+        const response = await userService.getUsers();
+        setAvailableUsers(response.results || response.data || response || []);
+      } catch (error) {
+        console.error('Erreur lors du chargement des utilisateurs:', error);
+      }
+    };
+
+    if (isOpen) {
+      loadUsers();
+    }
+  }, [project, isOpen]);
 
   // Gestion des changements de champs
   const handleInputChange = (field, value) => {
@@ -83,6 +101,10 @@ const ProjectEditModal = ({ project, isOpen, onClose, onSave }) => {
       newErrors.code = 'Le code du projet est requis';
     }
 
+    if (!formData.proprietaire) {
+      newErrors.proprietaire = 'Le Responsable du projet est requis';
+    }
+
     if (!formData.description?.trim()) {
       newErrors.description = 'La description du projet est requise';
     }
@@ -93,6 +115,15 @@ const ProjectEditModal = ({ project, isOpen, onClose, onSave }) => {
 
     if (!formData.type?.trim()) {
       newErrors.type = 'Le type de projet est requis';
+    }
+
+    // Validation des dates obligatoires
+    if (!formData.debut?.trim()) {
+      newErrors.debut = 'La date de début est requise';
+    }
+
+    if (!formData.fin?.trim()) {
+      newErrors.fin = 'La date de fin est requise';
     }
 
     if (formData.debut && formData.fin && new Date(formData.debut) > new Date(formData.fin)) {
@@ -206,6 +237,24 @@ const ProjectEditModal = ({ project, isOpen, onClose, onSave }) => {
                   />
                   {errors.code && <span className="form-error">{errors.code}</span>}
                 </div>
+
+                <div className="form-group">
+                  <label className="form-label">Responsable du projet *</label>
+                  <select
+                    className={`form-select ${errors.proprietaire ? 'form-input-error' : ''}`}
+                    value={formData.proprietaire}
+                    onChange={(e) => handleInputChange('proprietaire', e.target.value)}
+                    disabled={isSubmitting}
+                  >
+                    <option value="">Sélectionner un Responsable</option>
+                    {availableUsers.map(user => (
+                      <option key={user.id} value={user.id}>
+                        {user.prenom} {user.nom} (@{user.username})
+                      </option>
+                    ))}
+                  </select>
+                  {errors.proprietaire && <span className="form-error">{errors.proprietaire}</span>}
+                </div>
               </div>
             </div>
 
@@ -305,18 +354,19 @@ const ProjectEditModal = ({ project, isOpen, onClose, onSave }) => {
               
               <div className="form-grid">
                 <div className="form-group">
-                  <label className="form-label">Date de début</label>
+                  <label className="form-label">Date de début *</label>
                   <input
                     type="date"
-                    className="form-input"
+                    className={`form-input ${errors.debut ? 'form-input-error' : ''}`}
                     value={formData.debut}
                     onChange={(e) => handleInputChange('debut', e.target.value)}
                     disabled={isSubmitting}
                   />
+                  {errors.debut && <span className="form-error">{errors.debut}</span>}
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Date de fin</label>
+                  <label className="form-label">Date de fin *</label>
                   <input
                     type="date"
                     className={`form-input ${errors.fin ? 'form-input-error' : ''}`}
@@ -373,7 +423,7 @@ const ProjectEditModal = ({ project, isOpen, onClose, onSave }) => {
                     className={`form-input ${errors.type ? 'form-input-error' : ''}`}
                     value={formData.type}
                     onChange={(e) => handleInputChange('type', e.target.value)}
-                    placeholder="Type de projet"
+                    placeholder="Ex : Nouvelle offre de forfait mobile , etc."
                     disabled={isSubmitting}
                   />
                   {errors.type && <span className="form-error">{errors.type}</span>}
@@ -381,14 +431,19 @@ const ProjectEditModal = ({ project, isOpen, onClose, onSave }) => {
 
                 <div className="form-group">
                   <label className="form-label">Créateur</label>
-                  <input
-                    type="text"
-                    className="form-input"
+                  <select
+                    className="form-select"
                     value={formData.nom_createur}
                     onChange={(e) => handleInputChange('nom_createur', e.target.value)}
-                    placeholder="Nom du créateur"
                     disabled={isSubmitting}
-                  />
+                  >
+                    <option value="">Sélectionner un Créateur</option>
+                    {availableUsers.map(user => (
+                      <option key={user.id} value={`${user.prenom} ${user.nom}`}>
+                        {user.prenom} {user.nom} (@{user.username})
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
             </div>

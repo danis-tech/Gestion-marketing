@@ -1,0 +1,323 @@
+/* PhasesEtapesManagement.css */
+
+.phases-etapes-management {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+}
+
+/* Animations personnalisées */
+@keyframes slideInFromLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInFromRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+/* Animations d'entrée */
+.phases-etapes-management .bg-gradient-to-r {
+  animation: slideInFromLeft 0.6s ease-out;
+}
+
+.phases-etapes-management .lg\\:col-span-1 {
+  animation: slideInFromLeft 0.8s ease-out;
+}
+
+.phases-etapes-management .lg\\:col-span-3 {
+  animation: slideInFromRight 0.8s ease-out;
+}
+
+/* Cartes avec effet de survol amélioré */
+.phases-etapes-management .bg-white {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.phases-etapes-management .bg-white:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Barres de progression animées */
+.phases-etapes-management .bg-gradient-to-r.from-blue-500.to-purple-500 {
+  background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.phases-etapes-management .bg-gradient-to-r.from-blue-500.to-purple-500::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+/* Effet de pulsation pour les boutons d'action */
+.phases-etapes-management button:hover {
+  animation: pulse 0.3s ease-in-out;
+}
+
+/* Styles pour les étapes */
+.etape-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid #e2e8f0;
+  transition: all 0.3s ease;
+}
+
+.etape-card:hover {
+  border-color: #8b5cf6;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
+}
+
+/* Indicateurs de priorité */
+.priority-critique {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+}
+
+.priority-elevee {
+  background: linear-gradient(135deg, #f97316, #ea580c);
+  color: white;
+  box-shadow: 0 2px 4px rgba(249, 115, 22, 0.3);
+}
+
+.priority-normale {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: white;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+}
+
+.priority-faible {
+  background: linear-gradient(135deg, #6b7280, #4b5563);
+  color: white;
+  box-shadow: 0 2px 4px rgba(107, 114, 128, 0.3);
+}
+
+/* Statuts avec couleurs dégradées */
+.status-terminee {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+}
+
+.status-en-cours {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: white;
+}
+
+.status-en-attente {
+  background: linear-gradient(135deg, #6b7280, #4b5563);
+  color: white;
+}
+
+.status-ignoree {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+}
+
+/* Effet de chargement */
+.loading-skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Responsive design amélioré */
+@media (max-width: 768px) {
+  .phases-etapes-management .grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .phases-etapes-management .lg\\:col-span-1,
+  .phases-etapes-management .lg\\:col-span-3 {
+    grid-column: span 1;
+  }
+  
+  .phases-etapes-management .sticky {
+    position: relative;
+    top: auto;
+  }
+}
+
+/* Thème sombre */
+@media (prefers-color-scheme: dark) {
+  .phases-etapes-management {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  }
+  
+  .phases-etapes-management .bg-white {
+    background-color: #1f2937;
+    border-color: #374151;
+    color: #f9fafb;
+  }
+  
+  .phases-etapes-management .text-gray-900 {
+    color: #f9fafb;
+  }
+  
+  .phases-etapes-management .text-gray-600 {
+    color: #d1d5db;
+  }
+  
+  .phases-etapes-management .border-gray-200 {
+    border-color: #374151;
+  }
+  
+  .phases-etapes-management .bg-gray-50 {
+    background-color: #374151;
+  }
+}
+
+/* Animations d'expansion */
+.expand-enter {
+  opacity: 0;
+  max-height: 0;
+  overflow: hidden;
+}
+
+.expand-enter-active {
+  opacity: 1;
+  max-height: 1000px;
+  transition: all 0.3s ease-in-out;
+}
+
+.expand-exit {
+  opacity: 1;
+  max-height: 1000px;
+}
+
+.expand-exit-active {
+  opacity: 0;
+  max-height: 0;
+  transition: all 0.3s ease-in-out;
+}
+
+/* Effet de focus amélioré */
+.phases-etapes-management input:focus,
+.phases-etapes-management select:focus,
+.phases-etapes-management textarea:focus {
+  outline: none;
+  ring: 2px;
+  ring-color: #8b5cf6;
+  border-color: transparent;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+/* Scrollbar personnalisée */
+.phases-etapes-management ::-webkit-scrollbar {
+  width: 8px;
+}
+
+.phases-etapes-management ::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.phases-etapes-management ::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.phases-etapes-management ::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Effet de glassmorphism pour les modals */
+.glass-effect {
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+/* Animation de notification */
+@keyframes slideInNotification {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.notification-enter {
+  animation: slideInNotification 0.3s ease-out;
+}
+
+/* Effet de parallaxe subtil */
+.parallax-bg {
+  background-attachment: fixed;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+/* Micro-interactions */
+.micro-interaction {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.micro-interaction:hover {
+  transform: scale(1.02);
+}
+
+.micro-interaction:active {
+  transform: scale(0.98);
+}
