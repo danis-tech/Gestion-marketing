@@ -20,20 +20,20 @@
 /* Modal Content - Spécifique au LoginModal */
 .login-modal-content {
   background: white !important;
-  border-radius: 8px !important;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15) !important;
-  max-width: 400px !important;
+  border-radius: 16px !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 102, 204, 0.1) !important;
+  max-width: 420px !important;
   width: 100% !important;
   max-height: 80vh !important;
   overflow: hidden !important;
   position: relative !important;
   animation: loginSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
-  border: 1px solid #e2e8f0 !important;
+  border: none !important;
 }
 
 /* Modal Header - Spécifique au LoginModal */
 .login-modal-header {
-  background: linear-gradient(135deg, #0066CC 0%, #0052A3 100%) !important;
+  background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%) !important;
   color: white !important;
   padding: 1.5rem 1.5rem !important;
   display: flex !important;
@@ -41,6 +41,7 @@
   align-items: center !important;
   position: relative !important;
   overflow: hidden !important;
+  border-radius: 16px 16px 0 0 !important;
 }
 
 .login-modal-header::before {
@@ -95,7 +96,19 @@
 .login-form,
 .password-reset-form {
   padding: 2rem 1.5rem;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  background: white;
+  position: relative;
+}
+
+.login-form::before,
+.password-reset-form::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(30, 64, 175, 0.2), transparent);
 }
 
 .form-group {
@@ -117,27 +130,28 @@
 .form-icon {
   width: 18px;
   height: 18px;
-  color: #0066CC;
+  color: #1e40af;
 }
 
 .form-input {
   width: 100%;
   padding: 0.875rem 1rem;
   border: 2px solid #e2e8f0;
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 0.95rem;
   font-weight: 500;
   color: #1e293b;
-  background: white;
+  background: #f8fafc;
   transition: all 0.3s ease;
   box-sizing: border-box;
 }
 
 .form-input:focus {
   outline: none;
-  border-color: #0066CC;
-  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+  border-color: #1e40af;
+  box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
   transform: translateY(-1px);
+  background: white;
 }
 
 .form-input::placeholder {
@@ -147,6 +161,7 @@
 
 .form-input:hover {
   border-color: #cbd5e1;
+  background: white;
 }
 
 /* Password Input Wrapper */
@@ -172,8 +187,8 @@
 }
 
 .password-toggle:hover {
-  color: #0066CC;
-  background: rgba(0, 102, 204, 0.05);
+  color: #1e40af;
+  background: rgba(30, 64, 175, 0.05);
 }
 
 .eye-icon {
@@ -204,14 +219,14 @@
 .checkbox-wrapper input[type="checkbox"] {
   width: 18px;
   height: 18px;
-  accent-color: #0066CC;
+  accent-color: #1e40af;
   cursor: pointer;
 }
 
 .forgot-password-link {
   background: none;
   border: none;
-  color: #0066CC;
+  color: #1e40af;
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
@@ -222,18 +237,19 @@
 }
 
 .forgot-password-link:hover {
-  color: #0052A3;
+  color: #3b82f6;
   text-decoration: underline;
 }
 
 /* Submit Button */
 .submit-button {
   width: 100%;
+  min-height: 48px;
   padding: 1rem 1.5rem;
-  background: linear-gradient(135deg, #0066CC 0%, #0052A3 100%);
+  background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 1rem;
   font-weight: 700;
   cursor: pointer;
@@ -246,6 +262,7 @@
   letter-spacing: 0.05em;
   position: relative;
   overflow: hidden;
+  box-shadow: 0 4px 12px rgba(30, 64, 175, 0.3);
 }
 
 .submit-button::before {
@@ -265,7 +282,7 @@
 
 .submit-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 25px rgba(0, 102, 204, 0.3);
+  box-shadow: 0 10px 25px rgba(30, 64, 175, 0.4);
 }
 
 .submit-button:active {
@@ -289,6 +306,8 @@
   align-items: center;
   gap: 0.75rem;
   color: white;
+  width: 100%;
+  justify-content: center;
 }
 
 /* Password Reset Form */
@@ -319,7 +338,7 @@
 .back-to-login {
   background: none;
   border: none;
-  color: #0066CC;
+  color: #1e40af;
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
@@ -331,7 +350,7 @@
 }
 
 .back-to-login:hover {
-  color: #0052A3;
+  color: #3b82f6;
   text-decoration: underline;
 }
 
@@ -421,7 +440,7 @@
 .form-input:focus-visible,
 .submit-button:focus-visible,
 .login-modal-close:focus-visible {
-  outline: 2px solid #0066CC !important;
+  outline: 2px solid #1e40af !important;
   outline-offset: 2px !important;
 }
 

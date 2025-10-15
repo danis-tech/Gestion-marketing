@@ -337,9 +337,10 @@ class TacheCreateUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tache
         fields = [
-            'projet', 'titre', 'description', 'statut', 'priorite', 'phase', 'debut', 'fin',
+            'id', 'projet', 'titre', 'description', 'statut', 'priorite', 'phase', 'debut', 'fin',
             'assigne_a', 'tache_dependante'
         ]
+        read_only_fields = ['id']
     
     def validate(self, data):
         """

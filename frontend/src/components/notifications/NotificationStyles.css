@@ -1,0 +1,466 @@
+/* Styles Professionnels pour les Notifications */
+
+/* ===========================================
+   NOTIFICATIONS GÉNÉRALES
+   =========================================== */
+
+/* Projets */
+.notification-item.type-projet-retard {
+  border-left: 4px solid #dc2626;
+  background: linear-gradient(90deg, #fef2f2 0%, #ffffff 100%);
+}
+
+.notification-item.type-projet-valide {
+  border-left: 4px solid #059669;
+  background: linear-gradient(90deg, #f0fdf4 0%, #ffffff 100%);
+}
+
+.notification-item.type-projet-en-cours {
+  border-left: 4px solid #2563eb;
+  background: linear-gradient(90deg, #eff6ff 0%, #ffffff 100%);
+}
+
+.notification-item.type-projet-supprime {
+  border-left: 4px solid #7c2d12;
+  background: linear-gradient(90deg, #fff7ed 0%, #ffffff 100%);
+}
+
+/* Documents */
+.notification-item.type-document-valide {
+  border-left: 4px solid #0891b2;
+  background: linear-gradient(90deg, #f0f9ff 0%, #ffffff 100%);
+}
+
+.notification-item.type-document-rejete {
+  border-left: 4px solid #ea580c;
+  background: linear-gradient(90deg, #fff7ed 0%, #ffffff 100%);
+}
+
+.notification-item.type-document-televerse {
+  border-left: 4px solid #7c3aed;
+  background: linear-gradient(90deg, #faf5ff 0%, #ffffff 100%);
+}
+
+.notification-item.type-document-supprime {
+  border-left: 4px solid #6b7280;
+  background: linear-gradient(90deg, #f9fafb 0%, #ffffff 100%);
+}
+
+/* Tâches */
+.notification-item.type-tache-retard {
+  border-left: 4px solid #d97706;
+  background: linear-gradient(90deg, #fffbeb 0%, #ffffff 100%);
+}
+
+.notification-item.type-tache-supprimee {
+  border-left: 4px solid #6b7280;
+  background: linear-gradient(90deg, #f9fafb 0%, #ffffff 100%);
+}
+
+/* Système */
+.notification-item.type-systeme-maintenance {
+  border-left: 4px solid #374151;
+  background: linear-gradient(90deg, #f3f4f6 0%, #ffffff 100%);
+}
+
+.notification-item.type-annonce-generale {
+  border-left: 4px solid #be185d;
+  background: linear-gradient(90deg, #fdf2f8 0%, #ffffff 100%);
+}
+
+.notification-item.type-session-connexion {
+  border-left: 4px solid #6b7280;
+  background: linear-gradient(90deg, #f9fafb 0%, #ffffff 100%);
+}
+
+/* Autres générales */
+.notification-item.type-etape-terminee {
+  border-left: 4px solid #059669;
+  background: linear-gradient(90deg, #f0fdf4 0%, #ffffff 100%);
+}
+
+.notification-item.type-phase-terminee {
+  border-left: 4px solid #059669;
+  background: linear-gradient(90deg, #f0fdf4 0%, #ffffff 100%);
+}
+
+.notification-item.type-permission-accordee {
+  border-left: 4px solid #2563eb;
+  background: linear-gradient(90deg, #eff6ff 0%, #ffffff 100%);
+}
+
+.notification-item.type-commentaire-document {
+  border-left: 4px solid #0891b2;
+  background: linear-gradient(90deg, #f0f9ff 0%, #ffffff 100%);
+}
+
+.notification-item.type-historique-document {
+  border-left: 4px solid #6b7280;
+  background: linear-gradient(90deg, #f9fafb 0%, #ffffff 100%);
+}
+
+.notification-item.type-message-chat {
+  border-left: 4px solid #7c3aed;
+  background: linear-gradient(90deg, #faf5ff 0%, #ffffff 100%);
+}
+
+.notification-item.type-utilisateur-inscrit {
+  border-left: 4px solid #059669;
+  background: linear-gradient(90deg, #f0fdf4 0%, #ffffff 100%);
+}
+
+.notification-item.type-service-cree {
+  border-left: 4px solid #2563eb;
+  background: linear-gradient(90deg, #eff6ff 0%, #ffffff 100%);
+}
+
+.notification-item.type-role-cree {
+  border-left: 4px solid #7c3aed;
+  background: linear-gradient(90deg, #faf5ff 0%, #ffffff 100%);
+}
+
+/* ===========================================
+   NOTIFICATIONS PERSONNELLES
+   =========================================== */
+
+.notification-item.type-tache-assignee {
+  border-left: 4px solid #d97706;
+  background: linear-gradient(90deg, #fffbeb 0%, #ffffff 100%);
+}
+
+.notification-item.type-tache-terminee {
+  border-left: 4px solid #059669;
+  background: linear-gradient(90deg, #f0fdf4 0%, #ffffff 100%);
+}
+
+.notification-item.type-projet-chef {
+  border-left: 4px solid #7c2d12;
+  background: linear-gradient(90deg, #fff7ed 0%, #ffffff 100%);
+}
+
+.notification-item.type-projet-retard-perso {
+  border-left: 4px solid #dc2626;
+  background: linear-gradient(90deg, #fef2f2 0%, #ffffff 100%);
+}
+
+.notification-item.type-equipe-membre {
+  border-left: 4px solid #7c3aed;
+  background: linear-gradient(90deg, #faf5ff 0%, #ffffff 100%);
+}
+
+.notification-item.type-permission-projet {
+  border-left: 4px solid #2563eb;
+  background: linear-gradient(90deg, #eff6ff 0%, #ffffff 100%);
+}
+
+.notification-item.type-notification-personnelle {
+  border-left: 4px solid #6b7280;
+  background: linear-gradient(90deg, #f9fafb 0%, #ffffff 100%);
+}
+
+/* ===========================================
+   ICÔNES PAR TYPE
+   =========================================== */
+
+.notification-type-icon {
+  width: 20px;
+  height: 20px;
+  margin-right: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Projets */
+.notification-type-icon.projet-retard {
+  background: #dc2626;
+  color: white;
+}
+
+.notification-type-icon.projet-valide {
+  background: #059669;
+  color: white;
+}
+
+.notification-type-icon.projet-en-cours {
+  background: #2563eb;
+  color: white;
+}
+
+.notification-type-icon.projet-supprime {
+  background: #7c2d12;
+  color: white;
+}
+
+/* Documents */
+.notification-type-icon.document-valide {
+  background: #0891b2;
+  color: white;
+}
+
+.notification-type-icon.document-rejete {
+  background: #ea580c;
+  color: white;
+}
+
+.notification-type-icon.document-televerse {
+  background: #7c3aed;
+  color: white;
+}
+
+.notification-type-icon.document-supprime {
+  background: #6b7280;
+  color: white;
+}
+
+/* Tâches */
+.notification-type-icon.tache-retard {
+  background: #d97706;
+  color: white;
+}
+
+.notification-type-icon.tache-supprimee {
+  background: #6b7280;
+  color: white;
+}
+
+/* Système */
+.notification-type-icon.systeme-maintenance {
+  background: #374151;
+  color: white;
+}
+
+.notification-type-icon.annonce-generale {
+  background: #be185d;
+  color: white;
+}
+
+.notification-type-icon.session-connexion {
+  background: #6b7280;
+  color: white;
+}
+
+/* Autres */
+.notification-type-icon.etape-terminee {
+  background: #059669;
+  color: white;
+}
+
+.notification-type-icon.phase-terminee {
+  background: #059669;
+  color: white;
+}
+
+.notification-type-icon.permission-accordee {
+  background: #2563eb;
+  color: white;
+}
+
+.notification-type-icon.commentaire-document {
+  background: #0891b2;
+  color: white;
+}
+
+.notification-type-icon.historique-document {
+  background: #6b7280;
+  color: white;
+}
+
+.notification-type-icon.message-chat {
+  background: #7c3aed;
+  color: white;
+}
+
+.notification-type-icon.utilisateur-inscrit {
+  background: #059669;
+  color: white;
+}
+
+.notification-type-icon.service-cree {
+  background: #2563eb;
+  color: white;
+}
+
+.notification-type-icon.role-cree {
+  background: #7c3aed;
+  color: white;
+}
+
+/* Personnelles */
+.notification-type-icon.tache-assignee {
+  background: #d97706;
+  color: white;
+}
+
+.notification-type-icon.tache-terminee {
+  background: #059669;
+  color: white;
+}
+
+.notification-type-icon.projet-chef {
+  background: #7c2d12;
+  color: white;
+}
+
+.notification-type-icon.projet-retard-perso {
+  background: #dc2626;
+  color: white;
+}
+
+.notification-type-icon.equipe-membre {
+  background: #7c3aed;
+  color: white;
+}
+
+.notification-type-icon.permission-projet {
+  background: #2563eb;
+  color: white;
+}
+
+.notification-type-icon.notification-personnelle {
+  background: #6b7280;
+  color: white;
+}
+
+/* ===========================================
+   BADGES DE TYPE
+   =========================================== */
+
+.notification-type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Générales */
+.notification-type-badge.generale {
+  background: #e0e7ff;
+  color: #3730a3;
+  border: 1px solid #c7d2fe;
+}
+
+/* Personnelles */
+.notification-type-badge.personnelle {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+/* ===========================================
+   PRIORITÉS
+   =========================================== */
+
+.priority-indicator.critique {
+  color: #dc2626;
+}
+
+.priority-indicator.elevee {
+  color: #d97706;
+}
+
+.priority-indicator.normale {
+  color: #2563eb;
+}
+
+.priority-indicator.faible {
+  color: #059669;
+}
+
+/* ===========================================
+   ÉTATS
+   =========================================== */
+
+.notification-item.non-lue {
+  background: linear-gradient(90deg, #fef3c7 0%, #ffffff 100%);
+  border-left: 4px solid #f59e0b;
+  font-weight: 600;
+}
+
+.notification-item.lue {
+  opacity: 0.85;
+  background: #ffffff;
+}
+
+.notification-item.archivee {
+  opacity: 0.6;
+  background: #f9fafb;
+  text-decoration: line-through;
+}
+
+/* ===========================================
+   HOVER EFFECTS
+   =========================================== */
+
+.notification-item:hover {
+  transform: translateX(4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.notification-item:hover .notification-type-badge {
+  transform: scale(1.05);
+  transition: transform 0.2s ease;
+}
+
+/* ===========================================
+   RESPONSIVE
+   =========================================== */
+
+@media (max-width: 768px) {
+  .notification-item {
+    padding: 12px 16px;
+  }
+  
+  .notification-type-badge {
+    font-size: 11px;
+    padding: 3px 8px;
+  }
+  
+  .notification-type-icon {
+    width: 16px;
+    height: 16px;
+    font-size: 10px;
+  }
+}
+
+/* ===========================================
+   ANIMATIONS
+   =========================================== */
+
+@keyframes notificationSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.notification-item {
+  animation: notificationSlideIn 0.3s ease-out;
+}
+
+/* Animation pour les nouvelles notifications */
+.notification-item.new-notification {
+  animation: notificationSlideIn 0.5s ease-out, pulse 2s ease-in-out;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(59, 130, 246, 0);
+  }
+}

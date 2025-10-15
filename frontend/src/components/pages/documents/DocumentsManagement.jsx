@@ -6,10 +6,12 @@ import DocumentsSidebar from './DocumentsSidebar';
 import DocumentsHeader from './DocumentsHeader';
 import DocumentsFilters from './DocumentsFilters';
 import DocumentCard from './DocumentCard';
+import UploadedDocumentCard from './UploadedDocumentCard';
 import DocumentGenerateModal from '../../modals/DocumentGenerateModal';
 import DocumentEditModal from '../../modals/DocumentEditModal';
+import DocumentUploadModal from '../../modals/DocumentUploadModal';
 import useNotification from '../../../hooks/useNotification';
-import { FileText, Plus, AlertCircle, CheckCircle } from 'lucide-react';
+import { FileText, Plus, AlertCircle, CheckCircle, Upload, FolderOpen } from 'lucide-react';
 import './DocumentsManagement.css';
 
 const DocumentsManagement = () => {
@@ -21,6 +23,7 @@ const DocumentsManagement = () => {
     etapes,
     documentTypes,
     documents,
+    documentsTeleverses,
     
     // États UI
     loading,
@@ -34,9 +37,11 @@ const DocumentsManagement = () => {
     // Statistiques
     stats,
     
-    // Actions
+    // Actions - Documents générés
     selectProject,
+    loadPhases,
     loadEtapes,
+    loadEtapesProjet,
     loadDocuments,
     generateDocument,
     saveDocument,
@@ -45,6 +50,13 @@ const DocumentsManagement = () => {
     deleteDocument,
     checkDocumentModifications,
     clearError,
+    
+    // Actions - Documents téléversés
+    loadDocumentsTeleverses,
+    televerserDocument,
+    telechargerDocumentTeleverse,
+    validerDocumentTeleverse,
+    supprimerDocumentTeleverse,
     
     // Setters
     setSearchTerm,
@@ -59,8 +71,12 @@ const DocumentsManagement = () => {
   // États des modals
   const [generateModalOpen, setGenerateModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState(null);
   const [monitoredDocumentId, setMonitoredDocumentId] = useState(null);
+  
+  // État pour les onglets
+  const [activeTab, setActiveTab] = useState('generated'); // 'generated' ou 'uploaded'
 
   // Surveillance automatique des modifications
   const { startMonitoring, stopMonitoring } = useFileMonitoring(
@@ -84,6 +100,8 @@ const DocumentsManagement = () => {
       }
     }
   );
+
+  // Les documents téléversés sont maintenant chargés automatiquement dans selectProject
 
   // Gestion des erreurs
   React.useEffect(() => {
@@ -190,6 +208,62 @@ const DocumentsManagement = () => {
     }
   };
 
+  // ========================================
+  // HANDLERS POUR DOCUMENTS TÉLÉVERSÉS
+  // ========================================
+  
+  const handleUploadDocument = async (formData) => {
+    try {
+      const result = await televerserDocument(formData);
+      showNotification('Document téléversé avec succès !', 'success');
+      setUploadModalOpen(false);
+    } catch (error) {
+      showNotification(error.message || 'Erreur lors du téléversement', 'error');
+    }
+  };
+
+  const handleDownloadUploadedDocument = async (documentId, nomFichier, typeFichier) => {
+    try {
+      await telechargerDocumentTeleverse(documentId, nomFichier, false, typeFichier);
+      showNotification('Téléchargement démarré !', 'success');
+    } catch (error) {
+      showNotification(error.message || 'Erreur lors du téléchargement', 'error');
+    }
+  };
+
+  const handleValidateUploadedDocument = async (documentId, statut) => {
+    const action = statut === 'valide' ? 'valider' : 'rejeter';
+    
+    // Demander les informations de validation
+    const nomValidateur = window.prompt(`Nom du validateur pour ${action} le document:`);
+    if (!nomValidateur) return;
+    
+    const fonctionValidateur = window.prompt(`Fonction du validateur:`);
+    if (!fonctionValidateur) return;
+    
+    const commentaire = window.prompt(`Commentaire pour ${action} le document (optionnel):`);
+    if (commentaire === null) return; // L'utilisateur a annulé
+    
+    try {
+      await validerDocumentTeleverse(documentId, statut, commentaire || '', nomValidateur, fonctionValidateur);
+      showNotification(`Document ${action} avec succès !`, 'success');
+    } catch (error) {
+      showNotification(error.message || `Erreur lors de la ${action}`, 'error');
+    }
+  };
+
+  const handleDeleteUploadedDocument = async (documentId) => {
+    if (window.confirm('Êtes-vous sûr de vouloir supprimer ce document téléversé ?')) {
+      try {
+        await supprimerDocumentTeleverse(documentId);
+        showNotification('Document supprimé avec succès !', 'success');
+      } catch (error) {
+        showNotification(error.message || 'Erreur lors de la suppression', 'error');
+      }
+    }
+  };
+
+
   // Fonctions utilitaires pour les icônes et couleurs
   const getDocumentIcon = (type) => {
     const docType = documentTypes.find(dt => dt.id === type);
@@ -219,8 +293,9 @@ const DocumentsManagement = () => {
             {/* Header */}
             <DocumentsHeader
               selectedProject={selectedProject}
-              documentsCount={documents.length}
+              documentsCount={documents.length + documentsTeleverses.length}
               onGenerateDocument={() => setGenerateModalOpen(true)}
+              onUploadDocument={() => setUploadModalOpen(true)}
               onFilterChange={setFilterStatus}
               onSearchChange={setSearchTerm}
               searchTerm={searchTerm}
@@ -277,6 +352,42 @@ const DocumentsManagement = () => {
               onTypeChange={setSelectedType}
             />
 
+            {/* Onglets pour distinguer les types de documents */}
+            {selectedProject && (
+              <div className="mb-6">
+                <div className="border-b border-gray-200">
+                  <nav className="-mb-px flex space-x-8">
+                    <button
+                      onClick={() => setActiveTab('generated')}
+                      className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                        activeTab === 'generated'
+                          ? 'border-blue-500 text-blue-600'
+                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <FileText className="w-4 h-4" />
+                        Documents Générés ({documents.length})
+                      </div>
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('uploaded')}
+                      className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                        activeTab === 'uploaded'
+                          ? 'border-blue-500 text-blue-600'
+                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Upload className="w-4 h-4" />
+                        Documents Téléversés ({documentsTeleverses.length})
+                      </div>
+                    </button>
+                  </nav>
+                </div>
+              </div>
+            )}
+
             {/* Liste des documents */}
             {!selectedProject ? (
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-16 text-center">
@@ -290,44 +401,97 @@ const DocumentsManagement = () => {
                   Choisissez un projet dans la sidebar pour voir ses documents
                 </p>
               </div>
-            ) : documents.length === 0 ? (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-16 text-center">
-                <div className="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <span className="text-4xl">📄</span>
-                </div>
-                <h3 className="text-2xl font-medium text-gray-900 mb-4">
-                  Aucun document trouvé
-                </h3>
-                <p className="text-lg text-gray-500 mb-6">
-                  Ce projet n'a pas encore de documents générés
-                </p>
-                <button
-                  onClick={() => setGenerateModalOpen(true)}
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-lg font-medium"
-                >
-                  <span className="text-xl">+</span>
-                  Générer le premier document
-                </button>
-              </div>
             ) : (
-              <div className={`grid gap-4 ${
-                viewMode === 'grid' 
-                  ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' 
-                  : 'grid-cols-1'
-              }`}>
-                {documents.map((document) => (
-                  <DocumentCard
-                    key={document.id}
-                    document={document}
-                    viewMode={viewMode}
-                    onEdit={handleEditDocument}
-                    onDelete={handleDeleteDocument}
-                    onView={handleViewDocument}
-                    getDocumentIcon={getDocumentIcon}
-                    getDocumentColor={getDocumentColor}
-                  />
-                ))}
-              </div>
+              <>
+                {/* Documents Générés */}
+                {activeTab === 'generated' && (
+                  <>
+                    {documents.length === 0 ? (
+                      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-16 text-center">
+                        <div className="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                          <FileText className="w-12 h-12 text-blue-600" />
+                        </div>
+                        <h3 className="text-2xl font-medium text-gray-900 mb-4">
+                          Aucun document généré
+                        </h3>
+                        <p className="text-lg text-gray-500 mb-6">
+                          Ce projet n'a pas encore de documents générés automatiquement
+                        </p>
+                        <button
+                          onClick={() => setGenerateModalOpen(true)}
+                          className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-lg font-medium"
+                        >
+                          <Plus className="w-5 h-5" />
+                          Générer le premier document
+                        </button>
+                      </div>
+                    ) : (
+                      <div className={`grid gap-4 ${
+                        viewMode === 'grid' 
+                          ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' 
+                          : 'grid-cols-1'
+                      }`}>
+                        {documents.map((document) => (
+                          <DocumentCard
+                            key={document.id}
+                            document={document}
+                            viewMode={viewMode}
+                            onEdit={handleEditDocument}
+                            onDelete={handleDeleteDocument}
+                            onView={handleViewDocument}
+                            getDocumentIcon={getDocumentIcon}
+                            getDocumentColor={getDocumentColor}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* Documents Téléversés */}
+                {activeTab === 'uploaded' && (
+                  <>
+                    {documentsTeleverses.length === 0 ? (
+                      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-16 text-center">
+                        <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                          <Upload className="w-12 h-12 text-green-600" />
+                        </div>
+                        <h3 className="text-2xl font-medium text-gray-900 mb-4">
+                          Aucun document téléversé
+                        </h3>
+                        <p className="text-lg text-gray-500 mb-6">
+                          Ce projet n'a pas encore de documents téléversés
+                        </p>
+                        <button
+                          onClick={() => setUploadModalOpen(true)}
+                          className="inline-flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-lg font-medium"
+                        >
+                          <Upload className="w-5 h-5" />
+                          Téléverser le premier document
+                        </button>
+                      </div>
+                    ) : (
+                      <div className={`grid gap-4 ${
+                        viewMode === 'grid' 
+                          ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' 
+                          : 'grid-cols-1'
+                      }`}>
+                        {documentsTeleverses.map((document) => (
+                          <UploadedDocumentCard
+                            key={document.id}
+                            document={document}
+                            onDownload={handleDownloadUploadedDocument}
+                            onDelete={handleDeleteUploadedDocument}
+                            onValidate={handleValidateUploadedDocument}
+                            canValidate={true} // TODO: Basé sur les permissions utilisateur
+                            canDelete={true} // TODO: Basé sur les permissions utilisateur
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+              </>
             )}
 
           </div>
@@ -353,6 +517,18 @@ const DocumentsManagement = () => {
         document={selectedDocument}
         onSave={handleSaveDocument}
         loading={loading}
+      />
+
+      <DocumentUploadModal
+        isOpen={uploadModalOpen}
+        onClose={() => setUploadModalOpen(false)}
+        selectedProject={selectedProject}
+        phases={phases}
+        etapes={etapes}
+        onUpload={handleUploadDocument}
+        loading={loading}
+        onLoadEtapes={loadEtapes}
+        onLoadPhases={loadPhases}
       />
     </div>
   );

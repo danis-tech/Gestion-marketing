@@ -5,10 +5,17 @@ import os
 from datetime import timedelta
 
 
+
+
+
+
+
+
 # (optionnel mais pratique pour .env)
 try:
     from dotenv import load_dotenv
     load_dotenv()
+    DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
 except Exception:
     pass
 
@@ -18,9 +25,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 # --- Sécurité / Debug ---
-SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-p)z2579b)&7#o)g1#@$8f8p@lsp!$lr&qp6q%h6ig=q0=ht-b_")
+SECRET_KEY = os.getenv("SECRET_KEY", "  ")
 DEBUG = os.getenv("DEBUG", "True") == "True"
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "*").split(",")
+# ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "127.0.0.1,localhost,7658ab23c8a9.ngrok-free.app").split(",")
 
 # SECURITY WARNING: keep the secret key used in production secret!
 #SECRET_KEY = 'django-insecure-p)z2579b)&7#o)g1#@$8f8p@lsp!$lr&qp6q%h6ig=q0=ht-b_'
@@ -49,8 +57,11 @@ INSTALLED_APPS = [
     "corsheaders",
     'projects',
     'documents',
-
-   
+    'chatbot',
+    'notifications',
+    
+    # Django Channels
+    'channels',
 ]
 
 
@@ -98,7 +109,24 @@ TEMPLATES = [
 
 
 
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "WARNING",
+    },
+}
+
+
+
 WSGI_APPLICATION = 'gestion.wsgi.application'
+ASGI_APPLICATION = 'gestion.asgi.application'
 
 
 # Database
@@ -150,11 +178,11 @@ PASSWORD_RESET_TIMEOUT = 86400  # 24 heures en secondes
 
 # Configuration JWT
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
-    'ROTATE_REFRESH_TOKENS': False,
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),  # Réduit pour plus de sécurité
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),     # Augmenté pour meilleure UX
+    'ROTATE_REFRESH_TOKENS': True,                   # Activé pour plus de sécurité
     'BLACKLIST_AFTER_ROTATION': True,
-    'UPDATE_LAST_LOGIN': False,
+    'UPDATE_LAST_LOGIN': True,                       # Activé pour le suivi
 
     'ALGORITHM': 'HS256',
     'SIGNING_KEY': SECRET_KEY,
@@ -182,16 +210,29 @@ SIMPLE_JWT = {
 }
 
 
-# --- CORS (souple en dev) ---
-CORS_ALLOW_ALL_ORIGINS = True  # Pour le développement
-CORS_ALLOW_CREDENTIALS = True
+# --- CORS Configuration ---
+if DEBUG:
+    CORS_ALLOW_ALL_ORIGINS = True  # Pour le développement
+else:
+    # En production, utilise des origines spécifiques
+    CORS_ALLOWED_ORIGINS = [
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "https://ton-domaine.com"  # Remplacer par votre domaine de production
+    ]
 
-# En production, utilise plutôt :
-# CORS_ALLOWED_ORIGINS = [
-#     "http://localhost:3000",
-#     "http://localhost:5173",
-#     "https://ton-domaine.com"
-# ]
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
@@ -251,7 +292,7 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'jacquesboussengui@gmail.com'
-EMAIL_HOST_PASSWORD = ''
+EMAIL_HOST_PASSWORD = ' '
 DEFAULT_FROM_EMAIL = 'noreply@gestion-marketing.com'
 
 # Default primary key field type
@@ -261,6 +302,24 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Site ID pour django.contrib.sites
 SITE_ID = 1
+
+# Configuration Django Channels
+# Configuration pour le développement (sans Redis)
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer'
+    }
+}
+
+# Configuration alternative pour la production (avec Redis)
+# CHANNEL_LAYERS = {
+#     'default': {
+#         'BACKEND': 'channels_redis.core.RedisChannelLayer',
+#         'CONFIG': {
+#             "hosts": [('127.0.0.1', 6379)],
+#         },
+#     },
+# }
 
 
 

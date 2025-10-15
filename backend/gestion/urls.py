@@ -8,4 +8,6 @@ urlpatterns = [
     path("api/", include("projects.urls")),  # URLs des projets avec préfixe /api/
     path("api/documents/", include("documents.urls")),  # URLs des documents avec préfixe /api/documents/
     path("password-reset-confirm/<str:uidb64>/<str:token>/", PasswordResetConfirmPageView.as_view(), name='password_reset_confirm_page'),
+    path("api/chatbot/", include("chatbot.urls")),
+    path("api/notifications/", include("notifications.urls")),  # URLs des notifications
 ]

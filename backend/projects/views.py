@@ -7,6 +7,12 @@ from django.utils import timezone
 from django.core.exceptions import ValidationError
 from datetime import datetime, timedelta
 
+# Import du service de notifications
+try:
+    from notifications.services import NotificationService
+except ImportError:
+    NotificationService = None
+
 from .models import Projet, MembreProjet, HistoriqueEtat, PermissionProjet, Tache, PhaseProjet, ProjetPhaseEtat, Etape
 from .serializers import (
     ProjetListSerializer, ProjetDetailSerializer, ProjetDetailWithPhasesSerializer, ProjetCreateUpdateSerializer,
@@ -142,7 +148,14 @@ class MembreProjetViewSet(viewsets.ModelViewSet):
     
     def create(self, request, *args, **kwargs):
         """Créer un nouveau membre de projet."""
-        return super().create(request, *args, **kwargs)
+        response = super().create(request, *args, **kwargs)
+        
+        # Envoyer une notification au nouveau membre
+        if response.status_code == 201 and NotificationService:
+            membre = MembreProjet.objects.get(id=response.data['id'])
+            NotificationService.notify_team_member_added(membre.projet, membre.membre)
+        
+        return response
     
     def destroy(self, request, *args, **kwargs):
         """Supprimer un membre de projet et envoyer un email de notification."""
@@ -360,6 +373,24 @@ class TacheViewSet(viewsets.ModelViewSet):
             return TacheStatutUpdateSerializer
         return TacheListSerializer
     
+    def create(self, request, *args, **kwargs):
+        """Créer une nouvelle tâche."""
+        response = super().create(request, *args, **kwargs)
+        
+        # Envoyer une notification si la tâche est assignée
+        if response.status_code == 201 and NotificationService:
+            # Récupérer l'ID de la tâche créée depuis la réponse
+            tache_id = response.data.get('id')
+            if tache_id:
+                try:
+                    tache = Tache.objects.get(id=tache_id)
+                    if tache.assigne_a:
+                        NotificationService.notify_task_assigned(tache, tache.assigne_a)
+                except Tache.DoesNotExist:
+                    pass  # Ignorer si la tâche n'existe pas
+        
+        return response
+    
     @action(detail=True, methods=['patch'])
     def update_statut(self, request, pk=None):
         """Mettre à jour le statut d'une tâche."""
@@ -368,6 +399,10 @@ class TacheViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(tache, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         tache = serializer.save()
+        
+        # Envoyer une notification si la tâche est terminée
+        if NotificationService and tache.statut == 'termine' and ancien_statut != 'termine':
+            NotificationService.notify_task_completed(tache)
         
         return Response({
             'message': f'Statut mis à jour de {ancien_statut} vers {tache.statut}',

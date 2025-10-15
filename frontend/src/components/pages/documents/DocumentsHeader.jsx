@@ -1,10 +1,11 @@
 import React from 'react';
-import { FileText, Download, Plus, Filter } from 'lucide-react';
+import { FileText, Download, Plus, Filter, Upload } from 'lucide-react';
 
 const DocumentsHeader = ({ 
   selectedProject, 
   documentsCount, 
   onGenerateDocument,
+  onUploadDocument,
   onFilterChange,
   onSearchChange,
   searchTerm,
@@ -60,15 +61,25 @@ const DocumentsHeader = ({
             <option value="archived">Archivés</option>
           </select>
 
-          {/* Bouton générer */}
-          <button
-            onClick={onGenerateDocument}
-            disabled={!selectedProject}
-            className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium text-lg"
-          >
-            <Plus className="w-5 h-5" />
-            Générer Document
-          </button>
+          {/* Boutons d'action */}
+          <div className="flex gap-2">
+            <button
+              onClick={onUploadDocument}
+              disabled={!selectedProject}
+              className="flex items-center gap-2 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium"
+            >
+              <Upload className="w-4 h-4" />
+              Téléverser
+            </button>
+            <button
+              onClick={onGenerateDocument}
+              disabled={!selectedProject}
+              className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium text-lg"
+            >
+              <Plus className="w-5 h-5" />
+              Générer Document
+            </button>
+          </div>
         </div>
       </div>
 

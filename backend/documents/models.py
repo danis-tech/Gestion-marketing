@@ -2,7 +2,9 @@ from django.db import models
 from django.core.validators import FileExtensionValidator
 from django.utils import timezone
 from django.contrib.auth import get_user_model
+from django.conf import settings
 from projects.models import Projet, ProjetPhaseEtat, Etape
+import os
 
 User = get_user_model()
 
@@ -425,3 +427,288 @@ class CommentaireDocumentProjet(models.Model):
     
     def __str__(self):
         return f"Commentaire sur {self.document} par {self.auteur.username}"
+
+
+class DocumentTeleverse(models.Model):
+    """
+    Modèle pour les documents téléversés par les utilisateurs.
+    Distinction avec les documents générés automatiquement.
+    """
+    
+    TYPE_FICHIER_CHOICES = [
+        ('pdf', 'PDF'),
+        ('docx', 'Document Word'),
+        ('doc', 'Document Word (ancien format)'),
+        ('xlsx', 'Fichier Excel'),
+        ('xls', 'Fichier Excel (ancien format)'),
+        ('pptx', 'Présentation PowerPoint'),
+        ('ppt', 'Présentation PowerPoint (ancien format)'),
+        ('jpg', 'Image JPEG'),
+        ('jpeg', 'Image JPEG'),
+        ('png', 'Image PNG'),
+        ('gif', 'Image GIF'),
+        ('bmp', 'Image BMP'),
+        ('tiff', 'Image TIFF'),
+        ('txt', 'Fichier texte'),
+        ('csv', 'Fichier CSV'),
+        ('zip', 'Archive ZIP'),
+        ('rar', 'Archive RAR'),
+        ('autre', 'Autre'),
+    ]
+    
+    STATUT_CHOICES = [
+        ('en_attente', 'En attente de validation'),
+        ('valide', 'Validé'),
+        ('rejete', 'Rejeté'),
+        ('archive', 'Archivé'),
+    ]
+    
+    # Relations
+    projet = models.ForeignKey(
+        Projet,
+        on_delete=models.CASCADE,
+        related_name='documents_televerses',
+        verbose_name="Projet associé"
+    )
+    
+    phase = models.ForeignKey(
+        ProjetPhaseEtat,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='documents_televerses',
+        verbose_name="Phase associée"
+    )
+    
+    etape = models.ForeignKey(
+        Etape,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='documents_televerses',
+        verbose_name="Étape associée"
+    )
+    
+    # Informations du fichier
+    nom_fichier_original = models.CharField(
+        max_length=255,
+        verbose_name="Nom du fichier original"
+    )
+    
+    nom_fichier_stocke = models.CharField(
+        max_length=255,
+        verbose_name="Nom du fichier stocké"
+    )
+    
+    chemin_fichier = models.CharField(
+        max_length=500,
+        verbose_name="Chemin du fichier"
+    )
+    
+    taille_fichier = models.BigIntegerField(
+        verbose_name="Taille du fichier (en octets)"
+    )
+    
+    type_fichier = models.CharField(
+        max_length=10,
+        choices=TYPE_FICHIER_CHOICES,
+        verbose_name="Type de fichier"
+    )
+    
+    extension_fichier = models.CharField(
+        max_length=10,
+        verbose_name="Extension du fichier"
+    )
+    
+    # Métadonnées
+    titre = models.CharField(
+        max_length=200,
+        verbose_name="Titre du document"
+    )
+    
+    description = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name="Description du document"
+    )
+    
+    mots_cles = models.CharField(
+        max_length=500,
+        blank=True,
+        null=True,
+        verbose_name="Mots-clés"
+    )
+    
+    version = models.CharField(
+        max_length=20,
+        default='1.0',
+        verbose_name="Version du document"
+    )
+    
+    statut = models.CharField(
+        max_length=20,
+        choices=STATUT_CHOICES,
+        default='en_attente',
+        verbose_name="Statut du document"
+    )
+    
+    # Relations utilisateur
+    televerse_par = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='documents_televerses',
+        verbose_name="Téléversé par"
+    )
+    
+    valide_par = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='documents_valides',
+        verbose_name="Validé par"
+    )
+    
+    # Dates
+    date_televersement = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Date de téléversement"
+    )
+    
+    date_validation = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Date de validation"
+    )
+    
+    date_modification = models.DateTimeField(
+        auto_now=True,
+        verbose_name="Date de dernière modification"
+    )
+    
+    # Champs de validation
+    commentaire_validation = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name="Commentaire de validation"
+    )
+    
+    nom_validateur = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        verbose_name="Nom du validateur"
+    )
+    
+    fonction_validateur = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        verbose_name="Fonction du validateur"
+    )
+    
+    # Sécurité
+    est_public = models.BooleanField(
+        default=False,
+        verbose_name="Document public"
+    )
+    
+    # Métadonnées techniques
+    hash_fichier = models.CharField(
+        max_length=64,
+        blank=True,
+        null=True,
+        verbose_name="Hash du fichier (SHA-256)"
+    )
+    
+    class Meta:
+        db_table = "documents_televerses"
+        verbose_name = "Document téléversé"
+        verbose_name_plural = "Documents téléversés"
+        ordering = ['-date_televersement']
+        indexes = [
+            models.Index(fields=['projet', 'date_televersement']),
+            models.Index(fields=['phase', 'date_televersement']),
+            models.Index(fields=['etape', 'date_televersement']),
+            models.Index(fields=['televerse_par', 'date_televersement']),
+            models.Index(fields=['statut', 'date_televersement']),
+            models.Index(fields=['type_fichier', 'date_televersement']),
+        ]
+    
+    def __str__(self):
+        return f"{self.titre} - {self.projet.nom} ({self.type_fichier.upper()})"
+    
+    def save(self, *args, **kwargs):
+        # Déterminer le type de fichier basé sur l'extension
+        if not self.type_fichier or self.type_fichier == 'autre':
+            self.type_fichier = self._determiner_type_fichier()
+        
+        # Déterminer l'extension
+        if not self.extension_fichier:
+            self.extension_fichier = self._determiner_extension()
+        
+        super().save(*args, **kwargs)
+    
+    def _determiner_type_fichier(self):
+        """Détermine le type de fichier basé sur l'extension."""
+        if not self.nom_fichier_original:
+            return 'autre'
+        
+        extension = self.nom_fichier_original.lower().split('.')[-1]
+        
+        type_mapping = {
+            'pdf': 'pdf',
+            'docx': 'docx',
+            'doc': 'doc',
+            'xlsx': 'xlsx',
+            'xls': 'xls',
+            'pptx': 'pptx',
+            'ppt': 'ppt',
+            'jpg': 'jpg',
+            'jpeg': 'jpeg',
+            'png': 'png',
+            'gif': 'gif',
+            'bmp': 'bmp',
+            'tiff': 'tiff',
+            'txt': 'txt',
+            'csv': 'csv',
+            'zip': 'zip',
+            'rar': 'rar',
+        }
+        
+        return type_mapping.get(extension, 'autre')
+    
+    def _determiner_extension(self):
+        """Détermine l'extension du fichier."""
+        if not self.nom_fichier_original:
+            return ''
+        
+        return self.nom_fichier_original.lower().split('.')[-1]
+    
+    @property
+    def taille_fichier_mb(self):
+        """Retourne la taille du fichier en MB."""
+        return round(self.taille_fichier / (1024 * 1024), 2)
+    
+    @property
+    def est_image(self):
+        """Retourne True si le fichier est une image."""
+        return self.type_fichier in ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff']
+    
+    @property
+    def est_document_office(self):
+        """Retourne True si le fichier est un document Office."""
+        return self.type_fichier in ['docx', 'doc', 'xlsx', 'xls', 'pptx', 'ppt']
+    
+    @property
+    def est_archive(self):
+        """Retourne True si le fichier est une archive."""
+        return self.type_fichier in ['zip', 'rar']
+    
+    def get_chemin_complet(self):
+        """Retourne le chemin complet du fichier."""
+        return os.path.join(settings.MEDIA_ROOT, self.chemin_fichier)
+    
+    def get_url_fichier(self):
+        """Retourne l'URL du fichier."""
+        return f"{settings.MEDIA_URL}{self.chemin_fichier}"

@@ -498,6 +498,18 @@ class PDFGenerationService:
             return FicheDataMapper.map_fiche_projet_marketing_data(projet)
         elif fiche_type == 'fiche_plan_projet':
             return FicheDataMapper.map_fiche_plan_projet_data(projet)
+        elif fiche_type == 'fiche_analyse_offre':
+            return FicheDataMapper.map_fiche_analyse_offre_data(projet, phase_etat)
+        elif fiche_type == 'fiche_test':
+            return FicheDataMapper.map_fiche_test_data(projet, phase_etat)
+        elif fiche_type == 'fiche_implementation_technique':
+            return FicheDataMapper.map_fiche_implementation_technique_data(projet, phase_etat)
+        elif fiche_type == 'fiche_suppression_offre':
+            return FicheDataMapper.map_fiche_suppression_offre_data(projet, phase_etat)
+        elif fiche_type == 'specifications_marketing_offre':
+            return FicheDataMapper.map_specifications_marketing_offre_data(projet, phase_etat)
+        elif fiche_type == 'ordre_travaux':
+            return FicheDataMapper.map_ordre_travaux_data(projet, phase_etat)
         elif fiche_type == 'fiche_etude_si':
             return FicheDataMapper.map_fiche_etude_si_data(projet, phase_etat)
         elif fiche_type == 'fiche_etude_technique':

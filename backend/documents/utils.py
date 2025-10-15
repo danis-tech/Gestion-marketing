@@ -2,27 +2,35 @@ import os
 import uuid
 import subprocess
 import shutil
+import tempfile
+import logging
 from datetime import datetime
 from django.conf import settings
 from django.core.files.storage import default_storage
 from docxtpl import DocxTemplate
-# WeasyPrint désactivé pour Windows
+
+logger = logging.getLogger(__name__)
+
+# WeasyPrint - gestion des erreurs sur Windows
 WEASYPRINT_AVAILABLE = False
+HTML = None
+CSS = None
+FontConfiguration = None
+
 try:
     from weasyprint import HTML, CSS
     from weasyprint.text.fonts import FontConfiguration
     WEASYPRINT_AVAILABLE = True
-except ImportError:
-    # WeasyPrint non disponible, utiliser les fallbacks
+    logger.info("✅ WeasyPrint chargé avec succès")
+except ImportError as e:
+    logger.warning(f"⚠️ WeasyPrint non disponible (ImportError): {e}")
     WEASYPRINT_AVAILABLE = False
-    HTML = None
-    CSS = None
-    FontConfiguration = None
-
-import tempfile
-import logging
-
-logger = logging.getLogger(__name__)
+except OSError as e:
+    logger.warning(f"⚠️ WeasyPrint non disponible (OSError - dépendances manquantes): {e}")
+    WEASYPRINT_AVAILABLE = False
+except Exception as e:
+    logger.warning(f"⚠️ WeasyPrint non disponible (erreur inattendue): {e}")
+    WEASYPRINT_AVAILABLE = False
 
 
 class DocumentGenerator:
@@ -295,29 +303,82 @@ class DocumentGenerator:
         Convertit du HTML en PDF.
         """
         if not WEASYPRINT_AVAILABLE or HTML is None or CSS is None or FontConfiguration is None:
-            # Fallback: sauvegarder le HTML
+            # Fallback: utiliser ReportLab pour générer un PDF simple
+            logger.info("WeasyPrint non disponible, utilisation de ReportLab comme fallback")
+            return self._generate_pdf_with_reportlab(html_content, pdf_path)
+        
+        try:
+            font_config = FontConfiguration()
+            
+            html_doc = HTML(string=html_content)
+            html_doc.write_pdf(
+                pdf_path,
+                font_config=font_config,
+                stylesheets=[CSS(string='''
+                    @page {
+                        size: A4;
+                        margin: 2cm;
+                    }
+                    body {
+                        font-family: Arial, sans-serif;
+                        line-height: 1.6;
+                    }
+                ''')]
+            )
+            logger.info(f"PDF généré avec WeasyPrint: {pdf_path}")
+        except Exception as e:
+            logger.warning(f"Erreur WeasyPrint, fallback vers ReportLab: {e}")
+            return self._generate_pdf_with_reportlab(html_content, pdf_path)
+    
+    def _generate_pdf_with_reportlab(self, html_content, pdf_path):
+        """
+        Génère un PDF simple avec ReportLab en fallback.
+        """
+        try:
+            from reportlab.lib.pagesizes import A4
+            from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+            from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+            from reportlab.lib.units import inch
+            import re
+            
+            # Nettoyer le HTML pour extraire le texte
+            clean_text = re.sub(r'<[^>]+>', '', html_content)
+            clean_text = clean_text.replace('&nbsp;', ' ').replace('&amp;', '&')
+            
+            # Créer le PDF
+            doc = SimpleDocTemplate(pdf_path, pagesize=A4)
+            styles = getSampleStyleSheet()
+            story = []
+            
+            # Style personnalisé
+            custom_style = ParagraphStyle(
+                'CustomStyle',
+                parent=styles['Normal'],
+                fontSize=12,
+                spaceAfter=12,
+                leftIndent=0,
+                rightIndent=0
+            )
+            
+            # Diviser le texte en paragraphes
+            paragraphs = clean_text.split('\n')
+            for para in paragraphs:
+                if para.strip():
+                    story.append(Paragraph(para.strip(), custom_style))
+                    story.append(Spacer(1, 6))
+            
+            # Construire le PDF
+            doc.build(story)
+            logger.info(f"PDF généré avec ReportLab: {pdf_path}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Erreur ReportLab: {e}")
+            # Dernier recours: sauvegarder en HTML
             html_path = pdf_path.replace('.pdf', '.html')
             with open(html_path, 'w', encoding='utf-8') as f:
                 f.write(html_content)
-            raise Exception(f"WeasyPrint non disponible. HTML sauvegardé: {html_path}")
-        
-        font_config = FontConfiguration()
-        
-        html_doc = HTML(string=html_content)
-        html_doc.write_pdf(
-            pdf_path,
-            font_config=font_config,
-            stylesheets=[CSS(string='''
-                @page {
-                    size: A4;
-                    margin: 2cm;
-                }
-                body {
-                    font-family: Arial, sans-serif;
-                    line-height: 1.6;
-                }
-            ''')]
-        )
+            raise Exception(f"Impossible de générer le PDF. HTML sauvegardé: {html_path}")
     
     def get_available_templates(self):
         """
@@ -411,6 +472,12 @@ class TemplateManager:
         return {
             'fiche_projet_marketing': 'fiche_projet_marketing.docx',
             'fiche_plan_projet': 'fiche_plan_projet.docx',
+            'fiche_analyse_offre': 'fiche_analyse_offre.docx',
+            'fiche_test': 'fiche_test.docx',
+            'fiche_implementation_technique': 'fiche_implementation_technique.docx',
+            'fiche_suppression_offre': 'fiche_suppression_offre.docx',
+            'specifications_marketing_offre': 'specifications_marketing_offre.docx',
+            'ordre_travaux': 'ordre_travaux.docx',
             'fiche_etude_si': 'fiche_etude_si.docx',
             'fiche_etude_technique': 'fiche_etude_technique.docx',
             'fiche_etude_financiere': 'fiche_etude_financiere.docx',
@@ -418,6 +485,10 @@ class TemplateManager:
             'fiche_implementation': 'fiche_implementation.docx',
             'fiche_recette_uat': 'fiche_recette_uat.docx',
             'fiche_lancement_commercial': 'fiche_lancement_commercial.docx',
+            'fiche_projet_complete': 'fiche_projet_complete.docx',
+            'contrat': 'contrat.docx',
+            'devis': 'devis.docx',
+            'facture': 'facture.docx',
             'fiche_suppression': 'fiche_suppression.docx',
             'fiche_bilan_3_mois': 'fiche_bilan_3_mois.docx',
             'fiche_bilan_6_mois': 'fiche_bilan_6_mois.docx',

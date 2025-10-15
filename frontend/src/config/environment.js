@@ -34,7 +34,7 @@ const ENV_CONFIG = {
   // Configuration des routes
   ROUTES: {
     HOME: '/',
-    LOGIN: '/login',
+    LOGIN: '/', // Page d'accueil avec modal de connexion
     DASHBOARD: '/dashboard',
     PROFILE: '/profile',
     PASSWORD_RESET: '/password-reset',

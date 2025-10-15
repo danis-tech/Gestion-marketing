@@ -929,12 +929,12 @@ const ProjectsDataTable = ({
                   <span>Priorité</span>
                 </div>
               </th>
-              <th className="px-4 py-5 text-center text-base font-bold text-blue-900 uppercase tracking-wider">
+              {/* <th className="px-4 py-5 text-center text-base font-bold text-blue-900 uppercase tracking-wider">
                 <div className="flex items-center justify-center space-x-2">
                   <FileText className="w-5 h-5 text-green-600" />
                   <span>Documents</span>
                 </div>
-              </th>
+              </th> */}
               <th 
                 className="px-4 py-5 text-left text-base font-bold text-blue-900 uppercase tracking-wider cursor-pointer hover:bg-blue-100 transition-all duration-200"
                 onClick={() => handleSort('statut')}
@@ -1036,14 +1036,14 @@ const ProjectsDataTable = ({
                        {truncateText(getFieldValue(project, 'priorite', 'Non définie'), 120)}
                      </span>
                    </td>
-                  <td className="px-4 py-5 text-center">
+                  {/* <td className="px-4 py-5 text-center">
                                          <button
                        onClick={() => onManageDocuments(project)}
                        className="w-12 h-12 bg-green-100 hover:bg-green-200 flex items-center justify-center transition-all duration-200 border-2 border-green-200 hover:border-green-300"
                      >
                       <FileText className="w-5 h-5 text-green-700" />
                     </button>
-                  </td>
+                  </td> */}
                                      <td className="px-4 py-5">
                      <span className={`inline-flex px-3 py-2 text-sm font-bold border-2 ${getStatusColor(getFieldValue(project, ['statut', 'etat']))}`} title={getStatusText(getFieldValue(project, ['statut', 'etat']))}>
                        {truncateText(getStatusText(getFieldValue(project, ['statut', 'etat'])), 120)}

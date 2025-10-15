@@ -57,12 +57,29 @@ const LoginModal = ({
       console.error('Erreur de connexion:', error);
       
       let errorMessage = 'Erreur lors de la connexion.';
-      if (error.response?.data?.detail) {
-        errorMessage = error.response.data.detail;
-      } else if (error.response?.data?.email) {
-        errorMessage = error.response.data.email[0];
-      } else if (error.response?.data?.password) {
-        errorMessage = error.response.data.password[0];
+      
+      // Gestion améliorée des erreurs
+      if (error.response?.data) {
+        const errorData = error.response.data;
+        
+        // Erreur générale
+        if (errorData.detail) {
+          errorMessage = errorData.detail;
+        }
+        // Erreur de validation sur l'email
+        else if (errorData.email && Array.isArray(errorData.email)) {
+          errorMessage = errorData.email[0];
+        }
+        // Erreur de validation sur le mot de passe
+        else if (errorData.password && Array.isArray(errorData.password)) {
+          errorMessage = errorData.password[0];
+        }
+        // Erreur non_field_errors (erreurs générales)
+        else if (errorData.non_field_errors && Array.isArray(errorData.non_field_errors)) {
+          errorMessage = errorData.non_field_errors[0];
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
       }
       
       // Appeler le callback d'erreur
@@ -195,7 +212,6 @@ const LoginModal = ({
                   onChange={handleInputChange}
                   disabled={isLoading}
                 />
-                <span className="checkmark"></span>
                 Se souvenir de moi
               </label>
               

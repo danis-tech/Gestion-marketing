@@ -1,0 +1,104 @@
+/* Styles personnalisés pour le carrousel de questions */
+
+/* Scrollbar personnalisée */
+.questions-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.questions-scroll::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.questions-scroll::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.questions-scroll::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Animation pour les questions */
+.question-transition {
+  transition: all 0.3s ease-in-out;
+}
+
+/* Effet de focus pour les boutons */
+.question-button:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+}
+
+/* Animation de hover pour les questions aléatoires */
+.random-question:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Style pour les indicateurs de navigation */
+.nav-dots {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.nav-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.nav-dot.active {
+  width: 8px;
+  height: 8px;
+  background-color: #3b82f6;
+}
+
+.nav-dot.inactive {
+  background-color: #d1d5db;
+}
+
+/* Styles pour les messages du chatbot */
+.message-bubble {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+  line-height: 1.6;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.message-text {
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  line-height: 1.6;
+  font-size: 1rem;
+  color: inherit;
+}
+
+/* Amélioration de la lisibilité */
+.message-container {
+  max-width: 100%;
+  overflow: visible;
+}
+
+/* Responsive pour mobile */
+@media (max-width: 640px) {
+  .question-text {
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+  
+  .question-category {
+    font-size: 0.875rem;
+  }
+  
+  .message-text {
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+}

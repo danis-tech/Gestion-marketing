@@ -9,6 +9,7 @@ export const useDocuments = () => {
   const [etapes, setEtapes] = useState([]);
   const [documentTypes, setDocumentTypes] = useState([]);
   const [documents, setDocuments] = useState([]);
+  const [documentsTeleverses, setDocumentsTeleverses] = useState([]);
   
   // États UI
   const [loading, setLoading] = useState(false);
@@ -60,6 +61,16 @@ export const useDocuments = () => {
     }
   }, []);
 
+  // Charger toutes les étapes d'un projet
+  const loadEtapesProjet = useCallback(async (projectId) => {
+    try {
+      const response = await apiClient.get(`/api/documents/dashboard/etapes_projet/?projet_id=${projectId}`);
+      setEtapes(response.data.etapes);
+    } catch (error) {
+      console.error('Erreur loadEtapesProjet:', error);
+    }
+  }, []);
+
   // Charger les documents d'un projet
   const loadDocuments = useCallback(async (projectId) => {
     try {
@@ -74,6 +85,20 @@ export const useDocuments = () => {
     }
   }, []);
 
+  // Charger les documents téléversés d'un projet
+  const loadDocumentsTeleverses = useCallback(async (projectId) => {
+    try {
+      setLoading(true);
+      const response = await apiClient.get(`/api/documents/dashboard/documents_televerses_projet/?projet_id=${projectId}`);
+      setDocumentsTeleverses(response.data.documents_televerses);
+    } catch (error) {
+      setError('Erreur lors du chargement des documents téléversés');
+      console.error('Erreur loadDocumentsTeleverses:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   // Sélectionner un projet
   const selectProject = useCallback((project) => {
     setSelectedProject(project);
@@ -82,8 +107,9 @@ export const useDocuments = () => {
     if (project) {
       loadPhases(project.id);
       loadDocuments(project.id);
+      loadDocumentsTeleverses(project.id);
     }
-  }, [loadPhases, loadDocuments]);
+  }, [loadPhases, loadDocuments, loadDocumentsTeleverses]);
 
   // Générer un document
   const generateDocument = useCallback(async (data) => {
@@ -297,6 +323,135 @@ export const useDocuments = () => {
     setError('');
   }, []);
 
+  // ========================================
+  // GESTION DES DOCUMENTS TÉLÉVERSÉS
+  // ========================================
+  
+  // Téléverser un document
+  const televerserDocument = useCallback(async (formData) => {
+    try {
+      setLoading(true);
+      setError('');
+      
+      const response = await apiClient.post('/api/documents/dashboard/televerser_document/', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      
+      if (response.data.success) {
+        // Recharger les documents téléversés
+        if (selectedProject) {
+          await loadDocumentsTeleverses(selectedProject.id);
+        }
+        return response.data;
+      } else {
+        throw new Error(response.data.error || 'Erreur lors du téléversement');
+      }
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || error.message || 'Erreur lors du téléversement';
+      setError(errorMessage);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedProject, loadDocumentsTeleverses]);
+  
+  // Télécharger un document téléversé
+  const telechargerDocumentTeleverse = useCallback(async (documentId, nomFichier = null, ouvrirDirectement = false, typeFichier = null) => {
+    try {
+      const response = await apiClient.get(`/api/documents/dashboard/telecharger_document_televerse/?document_id=${documentId}`, {
+        responseType: 'blob',
+      });
+      
+      // Créer un lien de téléchargement avec le nom de fichier original
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      
+      if (ouvrirDirectement) {
+        // Ouvrir dans le navigateur - le backend gère le type de fichier
+        link.setAttribute('target', '_blank');
+        link.setAttribute('rel', 'noopener noreferrer');
+        // Ne pas ajouter l'attribut download pour permettre l'affichage
+      } else {
+        // Télécharger le fichier
+        link.setAttribute('download', nomFichier || `document_${documentId}`);
+      }
+      
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      
+      return { success: true };
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || error.message || 'Erreur lors du téléchargement';
+      setError(errorMessage);
+      throw error;
+    }
+  }, []);
+  
+  // Valider un document téléversé
+  const validerDocumentTeleverse = useCallback(async (documentId, statut, commentaire = '', nomValidateur = '', fonctionValidateur = '') => {
+    try {
+      setLoading(true);
+      setError('');
+      
+      const response = await apiClient.put('/api/documents/dashboard/valider_document_televerse/', {
+        document_id: documentId,
+        statut: statut,
+        commentaire: commentaire,
+        nom_validateur: nomValidateur,
+        fonction_validateur: fonctionValidateur,
+      });
+      
+      if (response.data.success) {
+        // Recharger les documents téléversés
+        if (selectedProject) {
+          await loadDocumentsTeleverses(selectedProject.id);
+        }
+        return response.data;
+      } else {
+        throw new Error(response.data.error || 'Erreur lors de la validation');
+      }
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || error.message || 'Erreur lors de la validation';
+      setError(errorMessage);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedProject, loadDocumentsTeleverses]);
+  
+  // Supprimer un document téléversé
+  const supprimerDocumentTeleverse = useCallback(async (documentId) => {
+    try {
+      setLoading(true);
+      setError('');
+      
+      const response = await apiClient.delete('/api/documents/dashboard/supprimer_document_televerse/', {
+        data: { document_id: documentId }
+      });
+      
+      if (response.data.success) {
+        // Recharger les documents téléversés
+        if (selectedProject) {
+          await loadDocumentsTeleverses(selectedProject.id);
+        }
+        return response.data;
+      } else {
+        throw new Error(response.data.error || 'Erreur lors de la suppression');
+      }
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || error.message || 'Erreur lors de la suppression';
+      setError(errorMessage);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedProject, loadDocumentsTeleverses]);
+
   // Charger les données au montage
   useEffect(() => {
     loadInitialData();
@@ -310,6 +465,7 @@ export const useDocuments = () => {
     etapes,
     documentTypes,
     documents: filteredDocuments,
+    documentsTeleverses,
     
     // États UI
     loading,
@@ -323,10 +479,11 @@ export const useDocuments = () => {
     // Statistiques
     stats,
     
-    // Actions
+    // Actions - Documents générés
     selectProject,
     loadPhases,
     loadEtapes,
+    loadEtapesProjet,
     loadDocuments,
     generateDocument,
     saveDocument,
@@ -335,6 +492,13 @@ export const useDocuments = () => {
     deleteDocument,
     checkDocumentModifications,
     clearError,
+    
+    // Actions - Documents téléversés
+    loadDocumentsTeleverses,
+    televerserDocument,
+    telechargerDocumentTeleverse,
+    validerDocumentTeleverse,
+    supprimerDocumentTeleverse,
     
     // Setters
     setSearchTerm,

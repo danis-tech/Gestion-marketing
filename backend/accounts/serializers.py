@@ -247,15 +247,21 @@ class EmailLoginSerializer(serializers.Serializer):
         try:
             user = User.objects.get(email__iexact=email)
         except User.DoesNotExist:
-            raise serializers.ValidationError("Aucun utilisateur trouvé avec cette adresse email.")
+            raise serializers.ValidationError({
+                'email': ["Aucun utilisateur trouvé avec cette adresse email."]
+            })
+
+        # Vérifier que l'utilisateur est actif AVANT de vérifier le mot de passe
+        if not user.is_active:
+            raise serializers.ValidationError({
+                'email': ["Ce compte est désactivé. Contactez l'administrateur."]
+            })
 
         # Vérifier le mot de passe
         if not user.check_password(password):
-            raise serializers.ValidationError("Mot de passe incorrect.")
-
-        # Vérifier que l'utilisateur est actif
-        if not user.is_active:
-            raise serializers.ValidationError("Ce compte est désactivé.")
+            raise serializers.ValidationError({
+                'password': ["Mot de passe incorrect."]
+            })
 
         # Stocker l'utilisateur pour l'utiliser plus tard
         attrs['user'] = user

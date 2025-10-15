@@ -48,6 +48,18 @@ apiClient.interceptors.response.use(
     
     // Gérer les erreurs 401 (non autorisé)
     if (error.response?.status === 401) {
+      // Éviter les boucles infinies de refresh
+      if (error.config.url?.includes('/accounts/refresh/')) {
+        // Le refresh token a expiré, déconnecter l'utilisateur
+        localStorage.removeItem(getConfig('TOKENS.ACCESS_TOKEN_KEY'));
+        localStorage.removeItem(getConfig('TOKENS.REFRESH_TOKEN_KEY'));
+        localStorage.removeItem(getConfig('TOKENS.USER_DATA_KEY'));
+        
+        // Rediriger vers la page d'accueil qui affichera le modal de connexion
+        window.location.href = getConfig('ROUTES.HOME');
+        return Promise.reject(error);
+      }
+      
       // Essayer de rafraîchir le token
       const refreshToken = localStorage.getItem(getConfig('TOKENS.REFRESH_TOKEN_KEY'));
       if (refreshToken) {
@@ -59,7 +71,7 @@ apiClient.interceptors.response.use(
           const newAccessToken = refreshResponse.data.access;
           localStorage.setItem(getConfig('TOKENS.ACCESS_TOKEN_KEY'), newAccessToken);
           
-          // Réessayer la requête originale
+          // Réessayer la requête originale avec le nouveau token
           error.config.headers.Authorization = `Bearer ${newAccessToken}`;
           return apiClient(error.config);
         } catch (refreshError) {
@@ -68,9 +80,12 @@ apiClient.interceptors.response.use(
           localStorage.removeItem(getConfig('TOKENS.REFRESH_TOKEN_KEY'));
           localStorage.removeItem(getConfig('TOKENS.USER_DATA_KEY'));
           
-          // Rediriger vers la page de connexion
-          window.location.href = getConfig('ROUTES.LOGIN');
+          // Rediriger vers la page d'accueil qui affichera le modal de connexion
+          window.location.href = getConfig('ROUTES.HOME');
         }
+      } else {
+        // Pas de refresh token, rediriger vers la connexion
+        window.location.href = getConfig('ROUTES.HOME');
       }
     }
     

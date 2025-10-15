@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from .models import DocumentProjet, HistoriqueDocumentProjet, CommentaireDocumentProjet
+from .models import DocumentProjet, HistoriqueDocumentProjet, CommentaireDocumentProjet, DocumentTeleverse
 # Import des sérialiseurs depuis projects
 try:
     from projects.serializers import ProjetSerializer, ProjetPhaseEtatSerializer, EtapeSerializer
@@ -22,7 +22,7 @@ except ImportError:
     class EtapeSerializer(serializers.ModelSerializer):
         class Meta:
             model = Etape
-            fields = ['id', 'nom', 'description', 'statut', 'priorite', 'date_debut', 'date_fin']
+            fields = ['id', 'nom', 'description', 'statut', 'priorite', 'date_debut_prevue', 'date_fin_prevue', 'date_debut_reelle', 'date_fin_reelle']
 
 User = get_user_model()
 
@@ -345,3 +345,89 @@ class CommentaireDocumentProjetCreateSerializer(serializers.ModelSerializer):
         )
         
         return commentaire
+
+
+class DocumentTeleverseListSerializer(serializers.ModelSerializer):
+    """Sérialiseur pour la liste des documents téléversés (version allégée)."""
+    projet = serializers.StringRelatedField(read_only=True)
+    televerse_par = UserSimpleSerializer(read_only=True)
+    valide_par = UserSimpleSerializer(read_only=True)
+    phase = serializers.StringRelatedField(read_only=True)
+    etape = serializers.StringRelatedField(read_only=True)
+    taille_fichier_mb = serializers.ReadOnlyField()
+    est_image = serializers.ReadOnlyField()
+    est_document_office = serializers.ReadOnlyField()
+    est_archive = serializers.ReadOnlyField()
+    
+    class Meta:
+        model = DocumentTeleverse
+        fields = [
+            'id', 'projet', 'phase', 'etape', 'titre', 'description',
+            'nom_fichier_original', 'type_fichier', 'extension_fichier',
+            'taille_fichier', 'taille_fichier_mb', 'version', 'statut',
+            'televerse_par', 'valide_par', 'date_televersement',
+            'date_validation', 'date_modification', 'est_public',
+            'est_image', 'est_document_office', 'est_archive',
+            'mots_cles', 'commentaire_validation', 'nom_validateur', 'fonction_validateur'
+        ]
+
+
+class DocumentTeleverseDetailSerializer(serializers.ModelSerializer):
+    """Sérialiseur détaillé pour les documents téléversés."""
+    projet = ProjetSerializer(read_only=True)
+    phase = ProjetPhaseEtatSerializer(read_only=True)
+    etape = EtapeSerializer(read_only=True)
+    televerse_par = UserSimpleSerializer(read_only=True)
+    valide_par = UserSimpleSerializer(read_only=True)
+    taille_fichier_mb = serializers.ReadOnlyField()
+    est_image = serializers.ReadOnlyField()
+    est_document_office = serializers.ReadOnlyField()
+    est_archive = serializers.ReadOnlyField()
+    url_fichier = serializers.ReadOnlyField()
+    
+    class Meta:
+        model = DocumentTeleverse
+        fields = [
+            'id', 'projet', 'phase', 'etape', 'titre', 'description',
+            'nom_fichier_original', 'nom_fichier_stocke', 'chemin_fichier',
+            'type_fichier', 'extension_fichier', 'taille_fichier',
+            'taille_fichier_mb', 'version', 'statut', 'mots_cles',
+            'televerse_par', 'valide_par', 'date_televersement',
+            'date_validation', 'date_modification', 'commentaire_validation',
+            'est_public', 'hash_fichier', 'est_image', 'est_document_office',
+            'est_archive', 'url_fichier', 'nom_validateur', 'fonction_validateur'
+        ]
+
+
+class DocumentTeleverseCreateSerializer(serializers.ModelSerializer):
+    """Sérialiseur pour la création de documents téléversés."""
+    
+    class Meta:
+        model = DocumentTeleverse
+        fields = [
+            'projet', 'phase', 'etape', 'titre', 'description',
+            'mots_cles', 'version', 'est_public'
+        ]
+    
+    def create(self, validated_data):
+        # Le fichier sera géré dans la vue
+        return super().create(validated_data)
+
+
+class DocumentTeleverseUpdateSerializer(serializers.ModelSerializer):
+    """Sérialiseur pour la mise à jour de documents téléversés."""
+    
+    class Meta:
+        model = DocumentTeleverse
+        fields = [
+            'titre', 'description', 'mots_cles', 'version',
+            'statut', 'commentaire_validation', 'est_public'
+        ]
+    
+    def update(self, instance, validated_data):
+        # Mettre à jour les champs modifiables
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        
+        instance.save()
+        return instance

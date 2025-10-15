@@ -10,7 +10,7 @@ import os
 import tempfile
 import subprocess
 import platform
-from .models import DocumentProjet, HistoriqueDocumentProjet
+from .models import DocumentProjet, HistoriqueDocumentProjet, DocumentTeleverse
 from .services import PDFGenerationService
 from .utils import TemplateManager
 from projects.models import Projet, ProjetPhaseEtat, Etape
@@ -42,6 +42,54 @@ class DocumentDashboardViewSet(viewsets.ViewSet):
                 'icone': '📅',
                 'couleur': '#2ecc71',
                 'template': 'fiche_plan_projet.docx'
+            },
+            {
+                'id': 'fiche_analyse_offre',
+                'nom': 'Fiche Analyse d\'Offre',
+                'description': 'Analyse détaillée de l\'offre commerciale',
+                'icone': '🔍',
+                'couleur': '#e74c3c',
+                'template': 'fiche_analyse_offre.docx'
+            },
+            {
+                'id': 'fiche_test',
+                'nom': 'Fiche de Test',
+                'description': 'Document de test et validation',
+                'icone': '🧪',
+                'couleur': '#f39c12',
+                'template': 'fiche_test.docx'
+            },
+            {
+                'id': 'fiche_implementation_technique',
+                'nom': 'Fiche Implémentation Technique',
+                'description': 'Plan d\'implémentation technique détaillé',
+                'icone': '🚀',
+                'couleur': '#34495e',
+                'template': 'fiche_implementation_technique.docx'
+            },
+            {
+                'id': 'fiche_suppression_offre',
+                'nom': 'Fiche Suppression d\'Offre',
+                'description': 'Document de suppression et archivage d\'offre',
+                'icone': '🗑️',
+                'couleur': '#c0392b',
+                'template': 'fiche_suppression_offre.docx'
+            },
+            {
+                'id': 'specifications_marketing_offre',
+                'nom': 'Spécifications Marketing d\'Offre',
+                'description': 'Spécifications marketing pour une offre spécifique',
+                'icone': '📊',
+                'couleur': '#9b59b6',
+                'template': 'specifications_marketing_offre.docx'
+            },
+            {
+                'id': 'ordre_travaux',
+                'nom': 'Ordre de Travaux',
+                'description': 'Ordre de travaux et instructions d\'exécution',
+                'icone': '📝',
+                'couleur': '#27ae60',
+                'template': 'ordre_travaux.docx'
             },
             {
                 'id': 'fiche_etude_si',
@@ -249,6 +297,56 @@ class DocumentDashboardViewSet(viewsets.ViewSet):
                 'error': 'Phase non trouvée'
             }, status=status.HTTP_404_NOT_FOUND)
     
+    @action(detail=False, methods=['get'])
+    def etapes_projet(self, request):
+        """Retourne toutes les étapes d'un projet."""
+        projet_id = request.query_params.get('projet_id')
+        
+        if not projet_id:
+            return Response({
+                'error': 'projet_id est requis'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            projet = Projet.objects.get(id=projet_id)
+            
+            # Récupérer toutes les étapes de toutes les phases du projet
+            etapes_data = []
+            for phase_etat in projet.phases_etat.all().order_by('phase__ordre'):
+                for etape in phase_etat.etapes.all().order_by('ordre'):
+                    etapes_data.append({
+                        'id': etape.id,
+                        'nom': etape.nom,
+                        'ordre': etape.ordre,
+                        'statut': etape.get_statut_display(),
+                        'priorite': etape.get_priorite_display(),
+                        'responsable': etape.responsable.get_full_name() if etape.responsable else 'Non assigné',
+                        'date_debut_prevue': etape.date_debut_prevue.strftime('%d/%m/%Y') if etape.date_debut_prevue else '',
+                        'date_fin_prevue': etape.date_fin_prevue.strftime('%d/%m/%Y') if etape.date_fin_prevue else '',
+                        'progression': etape.progression_pourcentage,
+                        'documents_count': DocumentProjet.objects.filter(etape=etape).count(),
+                        'phase': {
+                            'id': phase_etat.id,
+                            'nom': phase_etat.phase.nom,
+                            'ordre': phase_etat.phase.ordre
+                        }
+                    })
+            
+            return Response({
+                'projet': {
+                    'id': projet.id,
+                    'nom': projet.nom,
+                    'code': projet.code
+                },
+                'etapes': etapes_data,
+                'total': len(etapes_data)
+            })
+            
+        except Projet.DoesNotExist:
+            return Response({
+                'error': 'Projet non trouvé'
+            }, status=status.HTTP_404_NOT_FOUND)
+    
     @action(detail=False, methods=['post'])
     def generer_document_word(self, request):
         """Génère un document Word personnalisé et l'ouvre pour édition."""
@@ -267,9 +365,49 @@ class DocumentDashboardViewSet(viewsets.ViewSet):
             # Récupérer le projet
             projet = Projet.objects.get(id=projet_id)
             
-            # Récupérer les données du projet depuis la DB
-            from .mappers import DocumentDataMapper
-            projet_data = DocumentDataMapper.map_projet_data(projet)
+            # Récupérer les données du projet depuis la DB avec le bon mapper
+            from .mappers import DocumentDataMapper, FicheDataMapper
+            
+            # Utiliser le mapper spécifique selon le type de document
+            if type_document == 'fiche_projet_marketing':
+                projet_data = FicheDataMapper.map_fiche_projet_marketing_data(projet)
+            elif type_document == 'fiche_plan_projet':
+                projet_data = FicheDataMapper.map_fiche_plan_projet_data(projet)
+            elif type_document == 'fiche_etude_si':
+                projet_data = FicheDataMapper.map_fiche_etude_si_data(projet)
+            elif type_document == 'fiche_etude_technique':
+                projet_data = FicheDataMapper.map_fiche_etude_technique_data(projet)
+            elif type_document == 'fiche_etude_financiere':
+                projet_data = FicheDataMapper.map_fiche_etude_financiere_data(projet)
+            elif type_document == 'fiche_specifications_marketing':
+                projet_data = FicheDataMapper.map_fiche_specifications_marketing_data(projet)
+            elif type_document == 'fiche_implementation':
+                projet_data = FicheDataMapper.map_fiche_implementation_data(projet)
+            elif type_document == 'fiche_recette_uat':
+                projet_data = FicheDataMapper.map_fiche_recette_uat_data(projet)
+            elif type_document == 'fiche_lancement_commercial':
+                projet_data = FicheDataMapper.map_fiche_lancement_commercial_data(projet)
+            elif type_document == 'fiche_suppression':
+                projet_data = FicheDataMapper.map_fiche_suppression_data(projet)
+            elif type_document == 'fiche_bilan_3_mois':
+                projet_data = FicheDataMapper.map_fiche_bilan_data(projet, 3)
+            elif type_document == 'fiche_bilan_6_mois':
+                projet_data = FicheDataMapper.map_fiche_bilan_data(projet, 6)
+            elif type_document == 'fiche_analyse_offre':
+                projet_data = FicheDataMapper.map_fiche_analyse_offre_data(projet)
+            elif type_document == 'fiche_test':
+                projet_data = FicheDataMapper.map_fiche_test_data(projet)
+            elif type_document == 'fiche_implementation_technique':
+                projet_data = FicheDataMapper.map_fiche_implementation_technique_data(projet)
+            elif type_document == 'fiche_suppression_offre':
+                projet_data = FicheDataMapper.map_fiche_suppression_offre_data(projet)
+            elif type_document == 'specifications_marketing_offre':
+                projet_data = FicheDataMapper.map_specifications_marketing_offre_data(projet)
+            elif type_document == 'ordre_travaux':
+                projet_data = FicheDataMapper.map_ordre_travaux_data(projet)
+            else:
+                # Fallback vers le mapper de base
+                projet_data = DocumentDataMapper.map_projet_data(projet)
             
             # Fusionner avec les données personnalisées
             merged_data = {**projet_data, **custom_data}
@@ -753,4 +891,301 @@ class DocumentDashboardViewSet(viewsets.ViewSet):
         except Exception as e:
             return Response({
                 'error': f'Erreur lors de la synchronisation forcée: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    # ========================================
+    # GESTION DES DOCUMENTS TÉLÉVERSÉS
+    # ========================================
+    
+    @action(detail=False, methods=['get'])
+    def documents_televerses_projet(self, request):
+        """Retourne tous les documents téléversés d'un projet."""
+        projet_id = request.query_params.get('projet_id')
+        
+        if not projet_id:
+            return Response({
+                'error': 'projet_id est requis'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            documents = DocumentTeleverse.objects.filter(projet_id=projet_id).order_by('-date_televersement')
+            
+            # Sérialiser les documents
+            from .serializers import DocumentTeleverseListSerializer
+            serializer = DocumentTeleverseListSerializer(documents, many=True)
+            
+            return Response({
+                'success': True,
+                'documents_televerses': serializer.data,
+                'total': documents.count()
+            })
+            
+        except Exception as e:
+            return Response({
+                'error': f'Erreur lors du chargement des documents téléversés: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    @action(detail=False, methods=['post'])
+    def televerser_document(self, request):
+        """Téléverse un nouveau document."""
+        try:
+            # Vérifier que le fichier est présent
+            if 'fichier' not in request.FILES:
+                return Response({
+                    'error': 'Aucun fichier fourni'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            fichier = request.FILES['fichier']
+            projet_id = request.data.get('projet_id')
+            phase_id = request.data.get('phase_id')
+            etape_id = request.data.get('etape_id')
+            titre = request.data.get('titre', fichier.name)
+            description = request.data.get('description', '')
+            mots_cles = request.data.get('mots_cles', '')
+            version = request.data.get('version', '1.0')
+            est_public_str = request.data.get('est_public', 'false')
+            est_public = est_public_str.lower() in ['true', '1', 'yes', 'on']
+            
+            if not projet_id:
+                return Response({
+                    'error': 'projet_id est requis'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Vérifier que le projet existe
+            try:
+                projet = Projet.objects.get(id=projet_id)
+            except Projet.DoesNotExist:
+                return Response({
+                    'error': 'Projet non trouvé'
+                }, status=status.HTTP_404_NOT_FOUND)
+            
+            # Vérifier la phase si fournie
+            phase = None
+            if phase_id:
+                try:
+                    phase = ProjetPhaseEtat.objects.get(id=phase_id, projet=projet)
+                except ProjetPhaseEtat.DoesNotExist:
+                    return Response({
+                        'error': 'Phase non trouvée'
+                    }, status=status.HTTP_404_NOT_FOUND)
+            
+            # Vérifier l'étape si fournie
+            etape = None
+            if etape_id:
+                try:
+                    etape = Etape.objects.get(id=etape_id)
+                except Etape.DoesNotExist:
+                    return Response({
+                        'error': 'Étape non trouvée'
+                    }, status=status.HTTP_404_NOT_FOUND)
+            
+            # Créer le dossier de stockage
+            upload_dir = os.path.join(settings.MEDIA_ROOT, 'documents_televerses', str(projet.id))
+            os.makedirs(upload_dir, exist_ok=True)
+            
+            # Générer un nom de fichier unique
+            timestamp = timezone.now().strftime("%Y%m%d_%H%M%S")
+            nom_fichier_stocke = f"{timestamp}_{fichier.name}"
+            chemin_fichier = os.path.join('documents_televerses', str(projet.id), nom_fichier_stocke)
+            chemin_complet = os.path.join(settings.MEDIA_ROOT, chemin_fichier)
+            
+            # Sauvegarder le fichier
+            with open(chemin_complet, 'wb') as destination:
+                for chunk in fichier.chunks():
+                    destination.write(chunk)
+            
+            # Calculer le hash du fichier
+            import hashlib
+            hash_fichier = hashlib.sha256()
+            with open(chemin_complet, 'rb') as f:
+                for chunk in iter(lambda: f.read(4096), b""):
+                    hash_fichier.update(chunk)
+            hash_hex = hash_fichier.hexdigest()
+            
+            # Créer l'entrée en base de données
+            document = DocumentTeleverse.objects.create(
+                projet=projet,
+                phase=phase,
+                etape=etape,
+                nom_fichier_original=fichier.name,
+                nom_fichier_stocke=nom_fichier_stocke,
+                chemin_fichier=chemin_fichier,
+                taille_fichier=fichier.size,
+                titre=titre,
+                description=description,
+                mots_cles=mots_cles,
+                version=version,
+                televerse_par=request.user,
+                est_public=est_public,
+                hash_fichier=hash_hex
+            )
+            
+            # Sérialiser le document créé
+            from .serializers import DocumentTeleverseDetailSerializer
+            serializer = DocumentTeleverseDetailSerializer(document)
+            
+            return Response({
+                'success': True,
+                'message': 'Document téléversé avec succès',
+                'document': serializer.data
+            }, status=status.HTTP_201_CREATED)
+            
+        except Exception as e:
+            return Response({
+                'error': f'Erreur lors du téléversement: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    @action(detail=False, methods=['get'])
+    def telecharger_document_televerse(self, request):
+        """Télécharge un document téléversé."""
+        document_id = request.query_params.get('document_id')
+        
+        if not document_id:
+            return Response({
+                'error': 'document_id est requis'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            document = DocumentTeleverse.objects.get(id=document_id)
+            
+            # Vérifier les permissions (optionnel)
+            # if not document.est_public and document.televerse_par != request.user:
+            #     return Response({
+            #         'error': 'Accès non autorisé'
+            #     }, status=status.HTTP_403_FORBIDDEN)
+            
+            chemin_complet = document.get_chemin_complet()
+            
+            if not os.path.exists(chemin_complet):
+                return Response({
+                    'error': 'Fichier non trouvé'
+                }, status=status.HTTP_404_NOT_FOUND)
+            
+            from django.http import FileResponse
+            import mimetypes
+            
+            # Déterminer le type MIME du fichier
+            content_type, _ = mimetypes.guess_type(document.nom_fichier_original)
+            if not content_type:
+                content_type = 'application/octet-stream'
+            
+            # Pour les PDF et images, ne pas forcer le téléchargement
+            force_download = not (
+                content_type == 'application/pdf' or 
+                content_type.startswith('image/') or
+                content_type == 'text/plain'
+            )
+            
+            response = FileResponse(
+                open(chemin_complet, 'rb'),
+                as_attachment=force_download,
+                filename=document.nom_fichier_original,
+                content_type=content_type
+            )
+            
+            return response
+            
+        except DocumentTeleverse.DoesNotExist:
+            return Response({
+                'error': 'Document non trouvé'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({
+                'error': f'Erreur lors du téléchargement: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    @action(detail=False, methods=['put'])
+    def valider_document_televerse(self, request):
+        """Valide ou rejette un document téléversé."""
+        document_id = request.data.get('document_id')
+        statut = request.data.get('statut')  # 'valide' ou 'rejete'
+        commentaire = request.data.get('commentaire', '')
+        nom_validateur = request.data.get('nom_validateur', '')
+        fonction_validateur = request.data.get('fonction_validateur', '')
+        
+        if not document_id or not statut:
+            return Response({
+                'error': 'document_id et statut sont requis'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        if statut not in ['valide', 'rejete']:
+            return Response({
+                'error': 'statut doit être "valide" ou "rejete"'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            document = DocumentTeleverse.objects.get(id=document_id)
+            
+            # Mettre à jour le document
+            document.statut = statut
+            document.valide_par = request.user
+            document.date_validation = timezone.now()
+            document.commentaire_validation = commentaire
+            
+            # Ajouter les informations du validateur
+            if nom_validateur:
+                document.nom_validateur = nom_validateur
+            if fonction_validateur:
+                document.fonction_validateur = fonction_validateur
+            
+            document.save()
+            
+            # Sérialiser le document mis à jour
+            from .serializers import DocumentTeleverseDetailSerializer
+            serializer = DocumentTeleverseDetailSerializer(document)
+            
+            return Response({
+                'success': True,
+                'message': f'Document {statut} avec succès',
+                'document': serializer.data
+            })
+            
+        except DocumentTeleverse.DoesNotExist:
+            return Response({
+                'error': 'Document non trouvé'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({
+                'error': f'Erreur lors de la validation: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    @action(detail=False, methods=['delete'])
+    def supprimer_document_televerse(self, request):
+        """Supprime un document téléversé."""
+        document_id = request.data.get('document_id')
+        
+        if not document_id:
+            return Response({
+                'error': 'document_id est requis'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            document = DocumentTeleverse.objects.get(id=document_id)
+            
+            # Vérifier les permissions (seul le créateur ou un admin peut supprimer)
+            if document.televerse_par != request.user:
+                return Response({
+                    'error': 'Accès non autorisé'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            # Supprimer le fichier physique
+            chemin_complet = document.get_chemin_complet()
+            if os.path.exists(chemin_complet):
+                os.remove(chemin_complet)
+            
+            # Supprimer l'entrée en base
+            document.delete()
+            
+            return Response({
+                'success': True,
+                'message': 'Document supprimé avec succès'
+            })
+            
+        except DocumentTeleverse.DoesNotExist:
+            return Response({
+                'error': 'Document non trouvé'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({
+                'error': f'Erreur lors de la suppression: {str(e)}'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
