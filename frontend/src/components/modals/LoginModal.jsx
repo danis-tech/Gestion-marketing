@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { authService } from '../../services/apiService';
 import { getConfig } from '../../config/environment';
+import permissionService from '../../services/permissionService';
 import LoadingSpinner from '../ui/LoadingSpinner';
 import './LoginModal.css';
 
@@ -51,6 +52,14 @@ const LoginModal = ({
       localStorage.setItem(getConfig('TOKENS.ACCESS_TOKEN_KEY'), data.access);
       localStorage.setItem(getConfig('TOKENS.REFRESH_TOKEN_KEY'), data.refresh);
       localStorage.setItem(getConfig('TOKENS.USER_DATA_KEY'), JSON.stringify(data.user));
+      
+      // Debug temporaire - Afficher les données utilisateur avec rôle et permissions
+      console.log('Données utilisateur reçues:', data.user);
+      console.log('Rôle:', data.user.role);
+      console.log('Permissions:', data.user.role_permissions);
+      
+      // Initialiser le service de permissions avec le token (DÉSACTIVÉ TEMPORAIREMENT)
+      // permissionService.initialize(data.access);
       
       onLogin(data);
     } catch (error) {

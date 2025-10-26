@@ -17,11 +17,6 @@ apiClient.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
     
-    if (isDevelopment()) {
-      console.log(` API Request: ${config.method?.toUpperCase()} ${config.url}`, config.data);
-      console.log(` API Request Headers:`, config.headers);
-      console.log(` API Request Method:`, config.method);
-    }
     
     return config;
   },
@@ -33,12 +28,38 @@ apiClient.interceptors.request.use(
   }
 );
 
+// Fonction utilitaire pour gérer les erreurs API
+const handleApiError = (error) => {
+  if (error.response) {
+    // Le serveur a répondu avec un code d'erreur
+    const message = error.response.data?.detail || 
+                   error.response.data?.message || 
+                   error.response.data?.error || 
+                   `Erreur ${error.response.status}: ${error.response.statusText}`;
+    return new Error(message);
+  } else if (error.request) {
+    // La requête a été faite mais aucune réponse n'a été reçue
+    return new Error('Aucune réponse du serveur. Vérifiez votre connexion internet.');
+  } else {
+    // Quelque chose s'est mal passé lors de la configuration de la requête
+    return new Error(error.message || 'Une erreur inattendue s\'est produite');
+  }
+};
+
+// Fonction utilitaire pour obtenir le message d'erreur
+const getErrorMessage = (error) => {
+  if (error.response) {
+    return error.response.data?.detail || 
+           error.response.data?.message || 
+           error.response.data?.error || 
+           `Erreur ${error.response.status}: ${error.response.statusText}`;
+  }
+  return error.message || 'Une erreur inattendue s\'est produite';
+};
+
 // Intercepteur pour gérer les réponses et les erreurs
 apiClient.interceptors.response.use(
   (response) => {
-    if (isDevelopment()) {
-      console.log(` API Response: ${response.status} ${response.config.url}`, response.data);
-    }
     return response;
   },
   async (error) => {
@@ -391,6 +412,21 @@ export const permissionService = {
     const response = await apiClient.get(API_ENDPOINTS.PERMISSION_DETAIL(id));
     return response.data;
   },
+  
+  createPermission: async (permissionData) => {
+    const response = await apiClient.post(API_ENDPOINTS.PERMISSIONS_LIST, permissionData);
+    return response.data;
+  },
+  
+  updatePermission: async (id, permissionData) => {
+    const response = await apiClient.put(API_ENDPOINTS.PERMISSION_DETAIL(id), permissionData);
+    return response.data;
+  },
+  
+  deletePermission: async (id) => {
+    const response = await apiClient.delete(API_ENDPOINTS.PERMISSION_DETAIL(id));
+    return response.data;
+  },
 };
 
 // Service des services
@@ -402,6 +438,21 @@ export const serviceService = {
   
   getService: async (id) => {
     const response = await apiClient.get(API_ENDPOINTS.SERVICE_DETAIL(id));
+    return response.data;
+  },
+  
+  createService: async (serviceData) => {
+    const response = await apiClient.post(API_ENDPOINTS.SERVICES_LIST, serviceData);
+    return response.data;
+  },
+  
+  updateService: async (id, serviceData) => {
+    const response = await apiClient.put(API_ENDPOINTS.SERVICE_DETAIL(id), serviceData);
+    return response.data;
+  },
+  
+  deleteService: async (id) => {
+    const response = await apiClient.delete(API_ENDPOINTS.SERVICE_DETAIL(id));
     return response.data;
   },
 };
@@ -722,8 +773,173 @@ export const etapesService = {
   }
 };
 
+// ========================================
+// SERVICES ANALYTICS
+// ========================================
+
+const analyticsService = {
+  // Récupérer les données du tableau de bord
+  getDashboard: async (periodDays = 30) => {
+    try {
+      const response = await apiClient.get(`/api/analytics/metrics/dashboard/?period_days=${periodDays}`);
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  },
+
+  // Récupérer les métriques
+  getMetrics: async (params = {}) => {
+    try {
+      const response = await apiClient.get('/api/analytics/metrics/', { params });
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  },
+
+  // Calculer les métriques
+  calculateMetrics: async (data) => {
+    try {
+      const response = await apiClient.post('/api/analytics/metrics/calculate/', data);
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  },
+
+  // Récupérer les tendances
+  getTrends: async (metricName, periodDays = 30, groupBy = 'day') => {
+    try {
+      const response = await apiClient.get('/api/analytics/metrics/trends/', {
+        params: { metric_name: metricName, period_days: periodDays, group_by: groupBy }
+      });
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  },
+
+  // Récupérer l'aperçu général
+  getOverview: async (periodDays = 30) => {
+    try {
+      const response = await apiClient.get(`/api/analytics/analytics/overview/?period_days=${periodDays}`);
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  },
+
+  // Récupérer les KPIs
+  getKPIs: async (periodDays = 30) => {
+    try {
+      const response = await apiClient.get(`/api/analytics/analytics/kpis/?period_days=${periodDays}`);
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  },
+
+  // Générer un rapport
+  generateReport: async (data) => {
+    try {
+      const response = await apiClient.post('/api/analytics/reports/generate/', data);
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  },
+
+  // Récupérer les rapports
+  getReports: async (params = {}) => {
+    try {
+      const response = await apiClient.get('/api/analytics/reports/', { params });
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  },
+
+  // Télécharger un rapport
+  downloadReport: async (reportId) => {
+    try {
+      const response = await apiClient.get(`/api/analytics/reports/${reportId}/download/`);
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  },
+
+  // Récupérer la santé du système
+  getSystemHealth: async (hours = 24) => {
+    try {
+      const response = await apiClient.get(`/api/analytics/health/?hours=${hours}`);
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  },
+
+  // Récupérer l'état actuel du système
+  getCurrentSystemStatus: async () => {
+    try {
+      const response = await apiClient.get('/api/analytics/health/current/');
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  },
+
+  // Récupérer les métriques de performance
+  getPerformanceMetrics: async (hours = 24) => {
+    try {
+      const response = await apiClient.get(`/api/analytics/health/metrics/?hours=${hours}`);
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  },
+
+  // Gestion des widgets du tableau de bord
+  getWidgets: async (params = {}) => {
+    try {
+      const response = await apiClient.get('/api/analytics/widgets/', { params });
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  },
+
+  createWidget: async (data) => {
+    try {
+      const response = await apiClient.post('/api/analytics/widgets/', data);
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  },
+
+  updateWidget: async (id, data) => {
+    try {
+      const response = await apiClient.put(`/api/analytics/widgets/${id}/`, data);
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  },
+
+  deleteWidget: async (id) => {
+    try {
+      const response = await apiClient.delete(`/api/analytics/widgets/${id}/`);
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  }
+};
+
 // Export de l'instance Axios pour les cas spéciaux
-export { apiClient };
+export { apiClient, analyticsService };
 
 export default {
   auth: authService,
@@ -736,4 +952,5 @@ export default {
   tasks: taskService,
   phases: phasesService,
   etapes: etapesService,
+  analytics: analyticsService,
 };

@@ -1,0 +1,304 @@
+/* Styles professionnels Gabon Telecom - Grille 2x2 */
+.dashboard-sections {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 24px;
+  margin: 32px 0;
+  padding: 0 24px;
+  max-width: 1400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.chart-card {
+  background: #ffffff;
+  border-radius: 0px;
+  padding: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e5e7eb;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  height: 600px;
+  max-height: 600px;
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #f59e0b, #d97706);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.chart-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  border-color: #d1d5db;
+}
+
+.chart-card:hover::before {
+  opacity: 1;
+}
+
+/* Couleurs spécifiques par carte */
+.projects-card::before {
+  background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+}
+
+.tasks-card::before {
+  background: linear-gradient(90deg, #10b981, #059669);
+}
+
+.teams-card::before {
+  background: linear-gradient(90deg, #8b5cf6, #7c3aed);
+}
+
+.progress-card::before {
+  background: linear-gradient(90deg, #f59e0b, #d97706);
+}
+
+/* Header des cartes */
+.chart-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.chart-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 0px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.projects-card .chart-icon {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  color: white;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.tasks-card .chart-icon {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.teams-card .chart-icon {
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  color: white;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+.progress-card .chart-icon {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}
+
+.chart-title h3 {
+  margin: 0 0 4px 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #1f2937;
+  line-height: 1.2;
+}
+
+.chart-subtitle {
+  font-size: 14px;
+  color: #6b7280;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+/* Contenu des cartes */
+.chart-card > div:last-child {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: calc(100% - 80px);
+}
+
+/* Scrollbar personnalisée pour les cartes */
+.chart-card > div:last-child::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chart-card > div:last-child::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+.chart-card > div:last-child::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 0px;
+}
+
+.chart-card > div:last-child::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .dashboard-sections {
+    gap: 20px;
+    padding: 0 20px;
+  }
+  
+  .chart-card {
+    padding: 20px;
+    min-height: 450px;
+  }
+  
+  .chart-header {
+    margin-bottom: 20px;
+  }
+  
+  .chart-title h3 {
+    font-size: 18px;
+  }
+  
+  .chart-subtitle {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-sections {
+    grid-template-columns: 1fr;
+    grid-template-rows: repeat(4, auto);
+    gap: 16px;
+    padding: 0 16px;
+  }
+  
+  .chart-card {
+    padding: 16px;
+    height: 500px;
+    max-height: 500px;
+  }
+  
+  .chart-header {
+    margin-bottom: 16px;
+    gap: 12px;
+  }
+  
+  .chart-icon {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .chart-title h3 {
+    font-size: 16px;
+  }
+  
+  .chart-subtitle {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-sections {
+    padding: 0 12px;
+    gap: 12px;
+  }
+  
+  .chart-card {
+    padding: 12px;
+    height: 450px;
+    max-height: 450px;
+  }
+  
+  .chart-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .chart-icon {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .chart-title h3 {
+    font-size: 14px;
+  }
+  
+  .chart-subtitle {
+    font-size: 11px;
+  }
+}
+
+/* Animations d'entrée */
+.dashboard-sections {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Effets de survol avancés */
+.chart-card:hover .chart-icon {
+  transform: scale(1.05);
+  transition: transform 0.3s ease;
+}
+
+.chart-card:hover .chart-title h3 {
+  color: #374151;
+  transition: color 0.3s ease;
+}
+
+/* Indicateurs de performance */
+.chart-card::after {
+  content: '';
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.chart-card:hover::after {
+  opacity: 1;
+}
+
+/* Styles pour les graphiques intégrés */
+.chart-card .summary-charts-container,
+.chart-card .project-progress-container {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+  border: none;
+  border-radius: 0;
+}
+
+.chart-card .summary-charts-container::before,
+.chart-card .project-progress-container::before {
+  display: none;
+}

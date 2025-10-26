@@ -5,7 +5,7 @@ from .views import (
     UserViewSet, RoleViewSet, PermissionViewSet, 
     ServiceViewSet, RolePermissionViewSet,
     MeView, LoginView, SignupView, PasswordResetRequestView, 
-    PasswordResetConfirmView, PasswordResetConfirmPageView
+    PasswordResetConfirmView, PasswordResetConfirmPageView, PhotoUploadView, MediaFileView
 )
 
 # Router pour les comptes utilisateurs
@@ -29,4 +29,6 @@ urlpatterns = [
     path('password-reset-request/', PasswordResetRequestView.as_view(), name='password_reset_request'),
     path('password-reset-confirm/', PasswordResetConfirmView.as_view(), name='password_reset_confirm'),
     path('password-reset-confirm/<str:uidb64>/<str:token>/', PasswordResetConfirmPageView.as_view(), name='password_reset_confirm_page'),
+    path('upload-photo/', PhotoUploadView.as_view(), name='upload_photo'),
+    path('media/<path:path>', MediaFileView.as_view(), name='serve_media'),
 ]

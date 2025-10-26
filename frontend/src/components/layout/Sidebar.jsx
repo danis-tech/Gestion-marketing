@@ -21,7 +21,7 @@ const Sidebar = ({ isCollapsed, onToggleCollapse, onLogout }) => {
     },
     {
       id: 'projets',
-      label: 'Projets',
+      label: 'Projets & Equipes',
       icon: (
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
@@ -44,11 +44,11 @@ const Sidebar = ({ isCollapsed, onToggleCollapse, onLogout }) => {
           label: 'Ajouter une tâche',
           path: '/dashboard/projets/taches/ajouter'
         },
-        {
-          id: 'stats-projets',
-          label: 'Voir les stats',
-          path: '/dashboard/projets/stats'
-        }
+        // {
+        //   id: 'stats-projets',
+        //   label: 'Voir les stats',
+        //   path: '/dashboard/projets/stats'
+        // }
       ]
     },
     {
@@ -103,36 +103,46 @@ const Sidebar = ({ isCollapsed, onToggleCollapse, onLogout }) => {
       path: '/dashboard/documents'
     },
     {
-      id: 'lancement',
-      label: 'Lancement',
+      id: 'analytics',
+      label: 'Analytiques',
       icon: (
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
         </svg>
       ),
-      path: '/dashboard/lancement'
+      path: '/dashboard/analytics'
     },
-    {
-      id: 'archivage',
-      label: 'Archivage/Bilan',
-      icon: (
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
-      ),
-      subItems: [
-        {
-          id: 'archives',
-          label: 'Archives',
-          path: '/dashboard/archivage/archives'
-        },
-        {
-          id: 'bilan',
-          label: 'Bilan',
-          path: '/dashboard/archivage/bilan'
-        }
-      ]
-    },
+    // {
+    //   id: 'lancement',
+    //   label: 'Lancement',
+    //   icon: (
+    //     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    //       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+    //     </svg>
+    //   ),
+    //   path: '/dashboard/lancement'
+    // },
+    // {
+    //   id: 'archivage',
+    //   label: 'Archivage/Bilan',
+    //   icon: (
+    //     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    //       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+    //     </svg>
+    //   ),
+    //   subItems: [
+    //     {
+    //       id: 'archives',
+    //       label: 'Archives',
+    //       path: '/dashboard/archivage/archives'
+    //     },
+    //     {
+    //       id: 'bilan',
+    //       label: 'Bilan',
+    //       path: '/dashboard/archivage/bilan'
+    //     }
+    //   ]
+    // },
     {
       id: 'administration',
       label: 'Administration',

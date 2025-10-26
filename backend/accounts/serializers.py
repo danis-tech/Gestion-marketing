@@ -37,6 +37,33 @@ class RolePermissionSerializer(serializers.ModelSerializer):
     class Meta:
         model = RolePermission
         fields = ['id', 'role', 'permission']
+        depth = 1  # Charger les relations automatiquement
+
+
+class RolePermissionCreateSerializer(serializers.ModelSerializer):
+    """Sérialiseur pour créer des assignations rôle-permission."""
+    role_id = serializers.IntegerField(write_only=True)
+    permission_id = serializers.IntegerField(write_only=True)
+    
+    class Meta:
+        model = RolePermission
+        fields = ['role_id', 'permission_id']
+    
+    def create(self, validated_data):
+        role_id = validated_data.pop('role_id')
+        permission_id = validated_data.pop('permission_id')
+        
+        try:
+            role = Role.objects.get(id=role_id)
+            permission = Permission.objects.get(id=permission_id)
+        except (Role.DoesNotExist, Permission.DoesNotExist):
+            raise serializers.ValidationError("Rôle ou permission introuvable")
+        
+        # Vérifier si l'assignation existe déjà
+        if RolePermission.objects.filter(role=role, permission=permission).exists():
+            raise serializers.ValidationError("Cette assignation existe déjà")
+        
+        return RolePermission.objects.create(role=role, permission=permission)
 
 
 # -------- Users --------
@@ -49,7 +76,7 @@ class UserListSerializer(serializers.ModelSerializer):
         model = User
         fields = [
             'id', 'username', 'email', 'prenom', 'nom', 
-            'phone', 'photo_url', 'role', 'service', 'is_active'
+            'phone', 'photo_url', 'role', 'service', 'is_active', 'is_superuser'
         ]
 
 
@@ -63,7 +90,7 @@ class UserDetailSerializer(serializers.ModelSerializer):
         model = User
         fields = [
             'id', 'username', 'email', 'prenom', 'nom', 
-            'phone', 'photo_url', 'role', 'service', 'is_active',
+            'phone', 'photo_url', 'role', 'service', 'is_active', 'is_superuser',
             'date_joined', 'last_login', 'permissions_codes'
         ]
         read_only_fields = ['date_joined', 'last_login', 'permissions_codes']
@@ -102,11 +129,47 @@ class UserUpdateSerializer(serializers.ModelSerializer):
 class UserCreateUpdateSerializer(serializers.ModelSerializer):
     role_code = serializers.CharField(write_only=True, required=False, allow_blank=True)
     service_code = serializers.CharField(write_only=True, required=False, allow_blank=True)
-    password = serializers.CharField(write_only=True, required=False, min_length=8)
+    password = serializers.CharField(write_only=True, required=False, allow_blank=True)
+    
+    # Rendre tous les champs optionnels pour les mises à jour
+    username = serializers.CharField(required=False, allow_blank=True)
+    email = serializers.EmailField(required=False, allow_blank=True)
+    prenom = serializers.CharField(required=False, allow_blank=True)
+    nom = serializers.CharField(required=False, allow_blank=True)
+    phone = serializers.CharField(required=False, allow_blank=True)
+    photo_url = serializers.URLField(required=False, allow_blank=True)
+    is_active = serializers.BooleanField(required=False)
+    is_superuser = serializers.BooleanField(required=False)
 
     class Meta:
         model = User
-        fields = ("id","username","email","prenom","nom","phone","photo_url","password","role_code","service_code","is_active")
+        fields = ("id","username","email","prenom","nom","phone","photo_url","password","role_code","service_code","is_active","is_superuser")
+
+    def validate_password(self, value):
+        """Validation personnalisée du mot de passe"""
+        # Si le mot de passe est fourni et non vide, il doit faire au moins 8 caractères
+        if value and value.strip() and len(value) < 8:
+            raise serializers.ValidationError("Le mot de passe doit contenir au moins 8 caractères.")
+        return value
+
+    def validate(self, attrs):
+        """Validation globale du serializer"""
+        # Si c'est une création (pas d'instance), valider les champs obligatoires
+        if not self.instance:
+            required_fields = ['username', 'email', 'prenom', 'nom', 'password']
+            missing_fields = []
+            
+            for field in required_fields:
+                if field not in attrs or not attrs.get(field) or str(attrs.get(field)).strip() == "":
+                    missing_fields.append(field)
+            
+            if missing_fields:
+                raise serializers.ValidationError({
+                    field: [f"Le champ {field} est obligatoire lors de la création."] 
+                    for field in missing_fields
+                })
+        
+        return attrs
 
     def create(self, validated_data):
         role_code = validated_data.pop("role_code", None) or None
@@ -114,7 +177,7 @@ class UserCreateUpdateSerializer(serializers.ModelSerializer):
         password = validated_data.pop("password", None)
 
         user = User(**validated_data)
-        user.set_password(password or User.objects.make_random_password())
+        user.set_password(password)
 
         if role_code:
             user.role = Role.objects.filter(code=role_code).first()
@@ -300,6 +363,36 @@ class EmailOrUsernameTokenObtainPairSerializer(TokenObtainPairSerializer):
     email = serializers.EmailField(write_only=True)
     remember_me = serializers.BooleanField(write_only=True, required=False, default=False)
     username = serializers.CharField(required=False)  # Rendre optionnel car on utilise email
+
+    @classmethod
+    def get_token(cls, user):
+        """
+        Surcharge pour inclure le rôle et les permissions dans le token JWT.
+        """
+        token = super().get_token(user)
+        
+        # Ajouter les informations du rôle
+        if user.role:
+            token['role'] = {
+                'id': user.role.id,
+                'code': user.role.code,
+                'nom': user.role.nom
+            }
+            
+            # Ajouter les permissions du rôle
+            token['permissions'] = user.permissions_codes
+        else:
+            token['role'] = None
+            token['permissions'] = []
+        
+        # Ajouter les informations utilisateur de base
+        token['user_id'] = user.id
+        token['username'] = user.username
+        token['email'] = user.email
+        token['is_superuser'] = user.is_superuser
+        token['is_active'] = user.is_active
+        
+        return token
 
     def validate(self, attrs):
         email = attrs.pop("email", None)

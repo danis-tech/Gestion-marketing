@@ -1,0 +1,669 @@
+/* DataTable Styles */
+.custom-datatable {
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  margin-bottom: 24px;
+  width: 100%;
+  max-width: 100%;
+}
+
+/* En-tête du tableau */
+.datatable-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.datatable-title h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.datatable-count {
+  font-size: 14px;
+  color: #6b7280;
+  font-weight: 500;
+  margin-left: 8px;
+}
+
+.datatable-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.datatable-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.datatable-action-btn:hover {
+  background: #3b82f6;
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+/* Barre de filtres */
+.datatable-filters {
+  display: flex;
+  gap: 16px;
+  padding: 20px 24px;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.search-box {
+  position: relative;
+  flex: 1;
+  min-width: 300px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6b7280;
+  z-index: 1;
+}
+
+.search-input {
+  width: 100%;
+  padding: 12px 16px 12px 48px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  background: #f9fafb;
+  color: #1f2937;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.search-input::placeholder {
+  color: #9ca3af;
+}
+
+.custom-filters {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* Conteneur du tableau */
+.datatable-container {
+  background: #ffffff;
+}
+
+/* Styles pour les cellules spéciales */
+.user-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.user-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.user-name {
+  font-weight: 600;
+  color: #1f2937;
+  font-size: 14px;
+}
+
+.user-username {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.email-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #374151;
+  font-size: 14px;
+}
+
+.role-badge, .service-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  background: #f0f9ff;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+}
+
+.service-badge {
+  background: #f0fdf4;
+  color: #166534;
+  border-color: #bbf7d0;
+}
+
+.no-role, .no-service {
+  color: #9ca3af;
+  font-style: italic;
+  font-size: 12px;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.status-badge.active {
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.status-badge.inactive {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-edit {
+  background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+  color: white;
+}
+
+.btn-edit:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
+
+.btn-delete {
+  background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+  color: white;
+}
+
+.btn-delete:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
+}
+
+/* Message "Aucune donnée" */
+.no-data {
+  text-align: center;
+  padding: 60px 20px;
+  color: #6b7280;
+}
+
+.no-data-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.no-data h4 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.no-data p {
+  margin: 0;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+/* Loading */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  gap: 16px;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e5e7eb;
+  border-top: 4px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Informations de sélection */
+.selection-info {
+  padding: 12px 24px;
+  background: #f0f9ff;
+  border-top: 1px solid #bae6fd;
+  font-size: 14px;
+  color: #0369a1;
+  font-weight: 500;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .datatable-header {
+    flex-direction: column;
+    gap: 16px;
+    align-items: stretch;
+  }
+  
+  .datatable-actions {
+    justify-content: center;
+  }
+  
+  .datatable-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .search-box {
+    min-width: auto;
+  }
+  
+  .custom-filters {
+    justify-content: center;
+  }
+  
+  .datatable-container {
+    overflow-x: auto;
+  }
+  
+  .user-cell {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+    gap: 4px;
+  }
+}
+
+@media (max-width: 480px) {
+  .datatable-header {
+    padding: 16px;
+  }
+  
+  .datatable-filters {
+    padding: 16px;
+  }
+  
+  .user-avatar {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .btn-icon {
+    width: 28px;
+    height: 28px;
+  }
+}
+
+/* Amélioration de la visibilité du tableau */
+.custom-data-table {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.custom-data-table .rdt_Table {
+  border: none;
+  border-radius: 0;
+}
+
+.custom-data-table .rdt_TableHead {
+  background: #1e40af;
+}
+
+.custom-data-table .rdt_TableHeadRow {
+  background: #1e40af;
+}
+
+.custom-data-table .rdt_TableCol {
+  background: #1e40af;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 12px;
+  padding: 12px 6px;
+  border: none;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.custom-data-table .rdt_TableRow {
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  transition: background-color 0.2s ease;
+}
+
+.custom-data-table .rdt_TableRow:hover {
+  background: #f8fafc;
+}
+
+.custom-data-table .rdt_TableCell {
+  padding: 8px 4px;
+  font-size: 14px;
+  color: #1f2937;
+  font-weight: 500;
+  line-height: 1.4;
+  border: none;
+  vertical-align: middle;
+}
+
+.custom-data-table .rdt_TableCell:first-child {
+  padding-left: 8px;
+}
+
+.custom-data-table .rdt_TableCell:last-child {
+  padding-right: 8px;
+}
+
+/* Amélioration des badges et éléments */
+.custom-data-table .role-badge,
+.custom-data-table .service-badge,
+.custom-data-table .status-badge {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.custom-data-table .role-badge {
+  background: #dbeafe;
+  color: #1e40af;
+  border: 1px solid #93c5fd;
+}
+
+.custom-data-table .service-badge {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #86efac;
+}
+
+.custom-data-table .status-badge.active {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #86efac;
+}
+
+.custom-data-table .status-badge.inactive {
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+}
+
+/* Amélioration des noms d'utilisateurs */
+.custom-data-table .user-name {
+  font-weight: 600;
+  color: #111827;
+  font-size: 15px;
+}
+
+.custom-data-table .user-username {
+  font-weight: 500;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+/* Amélioration des emails */
+.custom-data-table .email-cell {
+  font-weight: 500;
+  color: #374151;
+}
+
+/* Amélioration des boutons d'action */
+.custom-data-table .action-buttons {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  max-width: 100px;
+  padding: 0 2px;
+  overflow: visible;
+}
+
+.custom-data-table .btn-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  font-size: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.custom-data-table .btn-icon svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+  flex-shrink: 0;
+}
+
+.custom-data-table .btn-edit {
+  background: #3b82f6;
+  color: #ffffff;
+  border: 2px solid #2563eb;
+}
+
+.custom-data-table .btn-edit:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.custom-data-table .btn-edit svg {
+  color: #ffffff;
+}
+
+.custom-data-table .btn-delete {
+  background: #ef4444;
+  color: #ffffff;
+  border: 2px solid #dc2626;
+}
+
+.custom-data-table .btn-delete:hover {
+  background: #dc2626;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.custom-data-table .btn-delete svg {
+  color: #ffffff;
+}
+
+/* Styles spécifiques pour les boutons d'action des tableaux */
+.custom-data-table .table-action-container {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  padding: 2px;
+  min-width: 90px;
+}
+
+.custom-data-table .table-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  padding: 0;
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.custom-data-table .table-action-btn-edit {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+}
+
+.custom-data-table .table-action-btn-delete {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+}
+
+/* Styles hover pour les boutons d'action */
+.custom-data-table .table-action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
+}
+
+.custom-data-table .table-action-btn-edit:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  box-shadow: 0 6px 12px rgba(59, 130, 246, 0.4);
+}
+
+.custom-data-table .table-action-btn-delete:hover {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  box-shadow: 0 6px 12px rgba(239, 68, 68, 0.4);
+}
+
+.custom-data-table .table-action-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Styles pour les icônes des boutons d'action */
+.custom-data-table .table-action-btn svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.custom-data-table .table-action-btn svg[color="white"] {
+  color: white !important;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+}
+
+.custom-data-table .table-action-btn svg[color="red"] {
+  color: #ff6b6b !important;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+}
+
+.custom-data-table .table-action-btn:hover svg[color="white"] {
+  color: #f8fafc !important;
+  transform: scale(1.1);
+}
+
+.custom-data-table .table-action-btn:hover svg[color="red"] {
+  color: #ff5252 !important;
+  transform: scale(1.1);
+}
+
+/* Styles pour la largeur réduite du tableau */
+.custom-data-table {
+  width: 100%;
+  max-width: 100%;
+}
+
+.custom-data-table .rdt_Table {
+  width: 100%;
+  max-width: 100%;
+}
+
+.custom-data-table .rdt_TableHead {
+  width: 100%;
+}
+
+.custom-data-table .rdt_TableBody {
+  width: 100%;
+}
+
+.custom-data-table .rdt_TableRow {
+  width: 100%;
+}
+
+.custom-data-table .rdt_TableCell {
+  max-width: none;
+  word-wrap: break-word;
+}

@@ -46,3 +46,6 @@ channels-redis==4.2.0
 redis==5.0.1
 daphne==4.2.1
 websockets==15.0.1
+
+# Gestion des fichiers et uploads
+Pillow==10.4.0

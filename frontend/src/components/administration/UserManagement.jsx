@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Users, 
   UserPlus, 
@@ -18,8 +18,13 @@ import {
   Save,
   X,
   Check,
-  AlertCircle
+  AlertCircle,
+  Image,
+  Upload
 } from 'lucide-react';
+import { userService, roleService, serviceService } from '../../services/apiService';
+import CustomDataTable from '../ui/DataTable';
+import PhotoUpload from '../ui/PhotoUpload';
 import './UserManagement.css';
 
 const UserManagement = () => {
@@ -28,6 +33,7 @@ const UserManagement = () => {
   const [roles, setRoles] = useState([]);
   const [services, setServices] = useState([]);
   const [permissions, setPermissions] = useState([]);
+  const [userStats, setUserStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -51,10 +57,12 @@ const UserManagement = () => {
     prenom: '',
     nom: '',
     phone: '',
+    photo_url: '',
     password: '',
     role_code: '',
     service_code: '',
-    is_active: true
+    is_active: true,
+    is_superuser: false
   });
 
   const [serviceForm, setServiceForm] = useState({
@@ -76,55 +84,20 @@ const UserManagement = () => {
   const loadInitialData = async () => {
     try {
       setLoading(true);
-      const [usersRes, rolesRes, servicesRes, permissionsRes] = await Promise.all([
-        fetch('/api/accounts/users/', {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-            'Content-Type': 'application/json'
-          }
-        }),
-        fetch('/api/accounts/roles/', {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-            'Content-Type': 'application/json'
-          }
-        }),
-        fetch('/api/accounts/services/', {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-            'Content-Type': 'application/json'
-          }
-        }),
-        fetch('/api/accounts/permissions/', {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-            'Content-Type': 'application/json'
-          }
-        })
+      const [usersData, rolesData, servicesData, statsData] = await Promise.all([
+        userService.getUsers(),
+        roleService.getRoles(),
+        serviceService.getServices(),
+        userService.getUsersStats()
       ]);
 
-      if (usersRes.ok) {
-        const usersData = await usersRes.json();
         setUsers(usersData.results || usersData);
-      }
-
-      if (rolesRes.ok) {
-        const rolesData = await rolesRes.json();
         setRoles(rolesData.results || rolesData);
-      }
-
-      if (servicesRes.ok) {
-        const servicesData = await servicesRes.json();
         setServices(servicesData.results || servicesData);
-      }
-
-      if (permissionsRes.ok) {
-        const permissionsData = await permissionsRes.json();
-        setPermissions(permissionsData.results || permissionsData);
-      }
+      setUserStats(statsData);
 
     } catch (err) {
-      setError('Erreur lors du chargement des données');
+      setError('Erreur lors du chargement des données: ' + (err.response?.data?.detail || err.message));
       console.error('Erreur:', err);
     } finally {
       setLoading(false);
@@ -134,26 +107,29 @@ const UserManagement = () => {
   // Gestion des utilisateurs
   const handleCreateUser = async (e) => {
     e.preventDefault();
+    
+    // Validation côté frontend
+    if (!userForm.password || userForm.password.length < 8) {
+      setError('Le mot de passe doit contenir au moins 8 caractères');
+      return;
+    }
+    
+    if (!userForm.username || !userForm.email || !userForm.prenom || !userForm.nom) {
+      setError('Tous les champs obligatoires doivent être remplis');
+      return;
+    }
+    
     try {
-      const response = await fetch('/api/accounts/users/', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(userForm)
-      });
-
-      if (response.ok) {
+      // Préparer les données avec is_superuser
+      const userData = {
+        ...userForm
+      };
+      await userService.createUser(userData);
         await loadInitialData();
         setShowUserModal(false);
         resetUserForm();
-      } else {
-        const errorData = await response.json();
-        setError('Erreur lors de la création de l\'utilisateur: ' + JSON.stringify(errorData));
-      }
     } catch (err) {
-      setError('Erreur lors de la création de l\'utilisateur');
+      setError('Erreur lors de la création de l\'utilisateur: ' + (err.response?.data?.detail || err.message));
       console.error('Erreur:', err);
     }
   };
@@ -161,26 +137,17 @@ const UserManagement = () => {
   const handleUpdateUser = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch(`/api/accounts/users/${editingUser.id}/`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(userForm)
-      });
-
-      if (response.ok) {
+      // Préparer les données avec is_superuser
+      const userData = {
+        ...userForm
+      };
+      await userService.updateUser(editingUser.id, userData);
         await loadInitialData();
         setShowUserModal(false);
         setEditingUser(null);
         resetUserForm();
-      } else {
-        const errorData = await response.json();
-        setError('Erreur lors de la mise à jour de l\'utilisateur: ' + JSON.stringify(errorData));
-      }
     } catch (err) {
-      setError('Erreur lors de la mise à jour de l\'utilisateur');
+      setError('Erreur lors de la mise à jour de l\'utilisateur: ' + (err.response?.data?.detail || err.message));
       console.error('Erreur:', err);
     }
   };
@@ -188,21 +155,10 @@ const UserManagement = () => {
   const handleDeleteUser = async (userId) => {
     if (window.confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')) {
       try {
-        const response = await fetch(`/api/accounts/users/${userId}/`, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        if (response.ok) {
+        await userService.deleteUser(userId);
           await loadInitialData();
-        } else {
-          setError('Erreur lors de la suppression de l\'utilisateur');
-        }
       } catch (err) {
-        setError('Erreur lors de la suppression de l\'utilisateur');
+        setError('Erreur lors de la suppression de l\'utilisateur: ' + (err.response?.data?.detail || err.message));
         console.error('Erreur:', err);
       }
     }
@@ -212,25 +168,12 @@ const UserManagement = () => {
   const handleCreateService = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch('/api/accounts/services/', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(serviceForm)
-      });
-
-      if (response.ok) {
+      await serviceService.createService(serviceForm);
         await loadInitialData();
         setShowServiceModal(false);
         resetServiceForm();
-      } else {
-        const errorData = await response.json();
-        setError('Erreur lors de la création du service: ' + JSON.stringify(errorData));
-      }
     } catch (err) {
-      setError('Erreur lors de la création du service');
+      setError('Erreur lors de la création du service: ' + (err.response?.data?.detail || err.message));
       console.error('Erreur:', err);
     }
   };
@@ -243,10 +186,12 @@ const UserManagement = () => {
       prenom: '',
       nom: '',
       phone: '',
+      photo_url: '',
       password: '',
       role_code: '',
       service_code: '',
-      is_active: true
+      is_active: true,
+      is_superuser: false
     });
   };
 
@@ -265,87 +210,177 @@ const UserManagement = () => {
       prenom: user.prenom,
       nom: user.nom,
       phone: user.phone || '',
+      photo_url: user.photo_url || '',
       password: '',
       role_code: user.role?.code || '',
       service_code: user.service?.code || '',
-      is_active: user.is_active
+      is_active: user.is_active,
+      is_superuser: user.is_superuser || false
     });
     setShowUserModal(true);
   };
 
-  // Filtrage des utilisateurs
-  const filteredUsers = users.filter(user => {
-    const matchesSearch = user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.prenom.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.nom.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesRole = !filterRole || user.role?.code === filterRole;
-    const matchesService = !filterService || user.service?.code === filterService;
-    const matchesStatus = filterStatus === '' || 
-                         (filterStatus === 'active' && user.is_active) ||
-                         (filterStatus === 'inactive' && !user.is_active);
-
-    return matchesSearch && matchesRole && matchesService && matchesStatus;
-  });
-
-  if (loading) {
-    return (
-      <div className="user-management">
-        <div className="loading-container">
-          <div className="loading-spinner"></div>
-          <p>Chargement des données...</p>
+  // Configuration des colonnes pour la DataTable
+  const columns = useMemo(() => [
+    {
+      name: 'Utilisateur',
+      selector: row => `${row.prenom} ${row.nom}`,
+      sortable: true,
+      cell: (row) => (
+        <div className="user-cell">
+          <div className="user-avatar">
+            {row.photo_url ? (
+              <img 
+                src={row.photo_url} 
+                alt={row.username}
+                onError={(e) => {
+                  console.log('Erreur de chargement de l\'image:', row.photo_url);
+                  e.target.style.display = 'none';
+                  e.target.nextSibling.style.display = 'flex';
+                }}
+              />
+            ) : null}
+            <div 
+              className="avatar-placeholder" 
+              style={{ display: row.photo_url ? 'none' : 'flex' }}
+            >
+              <User size={20} />
         </div>
       </div>
-    );
-  }
-
-  return (
-    <div className="user-management">
-      {/* En-tête */}
-      <div className="admin-section-header">
-        <div className="admin-section-title">
-          <Users size={32} />
-          <div>
-            <h1>Gestion des Utilisateurs</h1>
-            <p style={{ fontSize: '14px', color: '#6b7280', margin: '4px 0 0 0', fontWeight: 'normal' }}>Administration • Utilisateurs</p>
+          <div className="user-info">
+            <div className="user-name">{row.prenom} {row.nom}</div>
+            <div className="user-username">@{row.username}</div>
           </div>
         </div>
-        <div className="admin-section-actions">
+      ),
+      wrap: true
+    },
+    {
+      name: 'Email',
+      selector: row => row.email,
+      sortable: true,
+      cell: (row) => (
+        <div className="email-cell" title={row.email}>
+          <Mail size={16} />
+          <span>{row.email}</span>
+        </div>
+      ),
+      wrap: true
+    },
+    {
+      name: 'Rôle',
+      selector: row => row.role?.nom || 'Aucun rôle',
+      sortable: true,
+      cell: (row) => (
+        row.role ? (
+          <div className="role-badge" title={row.role.description || row.role.nom}>
+            <Shield size={16} />
+            {row.role.nom}
+          </div>
+        ) : (
+          <span className="no-role">Aucun rôle</span>
+        )
+      ),
+    },
+    {
+      name: 'Service',
+      selector: row => row.service?.nom || 'Aucun service',
+      sortable: true,
+      cell: (row) => (
+        row.service ? (
+          <div className="service-badge">
+            <Building2 size={16} />
+            {row.service.nom}
+          </div>
+        ) : (
+          <span className="no-service">Aucun service</span>
+        )
+      ),
+    },
+    {
+      name: 'Statut',
+      selector: row => row.is_active ? 'Actif' : 'Inactif',
+      sortable: true,
+      cell: (row) => (
+        <span className={`status-badge ${row.is_active ? 'active' : 'inactive'}`}>
+          {row.is_active ? (
+            <>
+              <Check size={16} />
+              Actif
+            </>
+          ) : (
+            <>
+              <X size={16} />
+              Inactif
+            </>
+          )}
+        </span>
+      ),
+    },
+    {
+      name: 'Super Admin',
+      selector: row => row.is_superuser ? 'Oui' : 'Non',
+      sortable: true,
+      cell: (row) => {
+        return (
+          <span className={`status-badge ${row.is_superuser ? 'superuser' : 'normal'}`}>
+            {row.is_superuser ? (
+              <>
+                <Shield size={16} />
+                Super Admin
+              </>
+            ) : (
+              <>
+                <User size={16} />
+                Utilisateur
+              </>
+            )}
+          </span>
+        );
+      }
+    },
+    {
+      name: 'Actions',
+      cell: (row) => (
+        <div className="table-action-container">
           <button 
-            className="admin-btn admin-btn-primary"
-            onClick={() => {
-              resetUserForm();
-              setEditingUser(null);
-              setShowUserModal(true);
-            }}
+            className="table-action-btn table-action-btn-edit"
+            onClick={() => openEditUser(row)}
+            title="Modifier l'utilisateur"
+            type="button"
           >
-            <UserPlus size={20} />
-            Nouvel Utilisateur
+            <Edit size={14} color="white" />
           </button>
           <button 
-            className="admin-btn admin-btn-secondary"
-            onClick={() => setShowServiceModal(true)}
+            className="table-action-btn table-action-btn-delete"
+            onClick={() => handleDeleteUser(row.id)}
+            title="Supprimer l'utilisateur"
+            type="button"
           >
-            <Plus size={20} />
-            Nouveau Service
+            <Trash2 size={14} color="white" />
           </button>
         </div>
-      </div>
+      ),
+      ignoreRowClick: true
+    }
+  ], []);
 
-      {/* Filtres et recherche */}
-      <div className="admin-search-container">
-        <div className="admin-search-box">
-          <Search className="admin-search-icon" />
-          <input
-            type="text"
-            placeholder="Rechercher un utilisateur..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="admin-search-input"
-          />
-        </div>
-        
+  // Filtrage des utilisateurs
+  const filteredUsers = useMemo(() => {
+    return users.filter(user => {
+      const matchesRole = !filterRole || user.role?.code === filterRole;
+      const matchesService = !filterService || user.service?.code === filterService;
+      const matchesStatus = filterStatus === '' || 
+                           (filterStatus === 'active' && user.is_active) ||
+                           (filterStatus === 'inactive' && !user.is_active);
+
+      return matchesRole && matchesService && matchesStatus;
+    });
+  }, [users, filterRole, filterService, filterStatus]);
+
+  // Composant de filtres personnalisés
+  const customFilters = (
+    <div className="custom-filters">
         <select 
           value={filterRole} 
           onChange={(e) => setFilterRole(e.target.value)}
@@ -381,101 +416,113 @@ const UserManagement = () => {
           <option value="inactive">Inactif</option>
         </select>
       </div>
+  );
 
-      {/* Tableau des utilisateurs */}
-      <div className="admin-table-container">
-        <table className="admin-table">
-          <thead>
-            <tr>
-              <th>Utilisateur</th>
-              <th>Email</th>
-              <th>Rôle</th>
-              <th>Service</th>
-              <th>Statut</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredUsers.map(user => (
-              <tr key={user.id}>
-                <td>
-                  <div className="user-info">
-                    <div className="user-avatar">
-                      {user.photo_url ? (
-                        <img src={user.photo_url} alt={user.username} />
-                      ) : (
-                        <User size={20} />
-                      )}
-                    </div>
-                    <div className="user-details">
-                      <div className="user-name">{user.prenom} {user.nom}</div>
-                      <div className="user-username">@{user.username}</div>
+  if (loading) {
+    return (
+      <div className="user-management">
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <p>Chargement des données...</p>
                     </div>
                   </div>
-                </td>
-                <td>
-                  <div className="email-cell">
-                    <Mail size={16} />
-                    {user.email}
+    );
+  }
+
+  return (
+    <div className="user-management">
+      {/* En-tête */}
+      <div className="admin-section-header">
+        <div className="admin-section-title">
+          <Users size={32} />
+          <div>
+            <h1>Gestion des Utilisateurs</h1>
+            <p style={{ fontSize: '14px', color: '#ffffff', margin: '4px 0 0 0', fontWeight: 'normal' }}>Administration • Utilisateurs</p>
                   </div>
-                </td>
-                <td>
-                  {user.role ? (
-                    <div className="role-badge">
-                      <Shield size={16} />
-                      {user.role.nom}
                     </div>
-                  ) : (
-                    <span className="no-role">Aucun rôle</span>
-                  )}
-                </td>
-                <td>
-                  {user.service ? (
-                    <div className="service-badge">
-                      <Building2 size={16} />
-                      {user.service.nom}
-                    </div>
-                  ) : (
-                    <span className="no-service">Aucun service</span>
-                  )}
-                </td>
-                <td>
-                  <span className={`status-badge ${user.is_active ? 'active' : 'inactive'}`}>
-                    {user.is_active ? (
-                      <>
-                        <Check size={16} />
-                        Actif
-                      </>
-                    ) : (
-                      <>
-                        <X size={16} />
-                        Inactif
-                      </>
-                    )}
-                  </span>
-                </td>
-                <td>
-                  <div className="action-buttons">
+        <div className="admin-section-actions">
                     <button 
-                      className="btn-icon btn-edit"
-                      onClick={() => openEditUser(user)}
-                      title="Modifier"
-                    >
-                      <Edit size={16} />
+            className="admin-btn admin-btn-primary"
+            onClick={() => {
+              resetUserForm();
+              setEditingUser(null);
+              setShowUserModal(true);
+            }}
+          >
+            <UserPlus size={20} />
+            Nouvel Utilisateur
                     </button>
                     <button 
-                      className="btn-icon btn-delete"
-                      onClick={() => handleDeleteUser(user.id)}
-                      title="Supprimer"
+            className="admin-btn admin-btn-secondary"
+            onClick={() => setShowServiceModal(true)}
                     >
-                      <Trash2 size={16} />
+            <Plus size={20} />
+            Nouveau Service
                     </button>
                   </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      </div>
+
+      {/* Statistiques */}
+      {userStats && (
+        <div className="stats-container">
+          <div className="stats-grid">
+            <div className="stat-card">
+              <div className="stat-icon">
+                <Users size={24} />
+              </div>
+              <div className="stat-content">
+                <div className="stat-number">{userStats.total_users}</div>
+                <div className="stat-label">Utilisateurs total</div>
+              </div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-icon">
+                <Check size={24} />
+              </div>
+              <div className="stat-content">
+                <div className="stat-number">{userStats.active_today}</div>
+                <div className="stat-label">Actifs aujourd'hui</div>
+              </div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-icon">
+                <Building2 size={24} />
+              </div>
+              <div className="stat-content">
+                <div className="stat-number">{Object.keys(userStats.par_service || {}).length}</div>
+                <div className="stat-label">Services</div>
+              </div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-icon">
+                <Shield size={24} />
+              </div>
+              <div className="stat-content">
+                <div className="stat-number">{Object.keys(userStats.par_role || {}).length}</div>
+                <div className="stat-label">Rôles</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* DataTable des utilisateurs */}
+      <div className="table-container">
+        <CustomDataTable
+          data={filteredUsers}
+          columns={columns}
+          title="Liste des utilisateurs"
+          searchable={true}
+          filterable={true}
+          exportable={true}
+          pagination={true}
+          loading={loading}
+          searchPlaceholder="Rechercher un utilisateur..."
+          exportFileName="utilisateurs"
+          customFilterComponent={customFilters}
+          onRefresh={loadInitialData}
+          noDataMessage="Aucun utilisateur trouvé"
+        />
       </div>
 
       {/* Modale Utilisateur */}
@@ -565,6 +612,19 @@ const UserManagement = () => {
 
                   <div className="form-group">
                     <label>
+                      <Image size={16} />
+                      Photo de profil
+                    </label>
+                    <PhotoUpload
+                      value={userForm.photo_url}
+                      onChange={(photoUrl) => setUserForm({...userForm, photo_url: photoUrl})}
+                      maxSize={500}
+                      className="photo-upload-field"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>
                       <Key size={16} />
                       Mot de passe {editingUser ? '(laisser vide pour ne pas changer)' : '*'}
                     </label>
@@ -573,7 +633,14 @@ const UserManagement = () => {
                       value={userForm.password}
                       onChange={(e) => setUserForm({...userForm, password: e.target.value})}
                       required={!editingUser}
+                      minLength={8}
+                      placeholder="Minimum 8 caractères"
                     />
+                    {!editingUser && (
+                      <small className="form-help">
+                        Le mot de passe doit contenir au moins 8 caractères
+                      </small>
+                    )}
                   </div>
 
                   <div className="form-group">
@@ -617,6 +684,18 @@ const UserManagement = () => {
                       />
                       <span className="checkmark"></span>
                       Compte actif
+                    </label>
+                  </div>
+
+                  <div className="form-group checkbox-group">
+                    <label className="checkbox-label">
+                      <input
+                        type="checkbox"
+                        checked={userForm.is_superuser}
+                        onChange={(e) => setUserForm({...userForm, is_superuser: e.target.checked})}
+                      />
+                      <span className="checkmark"></span>
+                      Super administrateur
                     </label>
                   </div>
                 </div>

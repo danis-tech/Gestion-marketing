@@ -16,11 +16,16 @@ from django.conf import settings
 from django.utils.http import urlsafe_base64_decode
 from django.utils.encoding import force_str
 from django.shortcuts import render
-from django.http import HttpResponse
+from django.http import HttpResponse, FileResponse
+from django.views.static import serve
+import os
+import uuid
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
 
 from .models import Role, Permission, RolePermission, Service
 from .serializers import (
-    RoleSerializer, PermissionSerializer, ServiceSerializer, RolePermissionSerializer,
+    RoleSerializer, PermissionSerializer, ServiceSerializer, RolePermissionSerializer, RolePermissionCreateSerializer,
     UserListSerializer, UserCreateUpdateSerializer, SetPasswordSerializer, MeSerializer,
     EmailOrUsernameTokenObtainPairSerializer, SignupSerializer,
     PasswordResetRequestSerializer, PasswordResetConfirmSerializer, EmailLoginSerializer
@@ -54,26 +59,32 @@ class RoleViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-class PermissionViewSet(viewsets.ReadOnlyModelViewSet):
+class PermissionViewSet(viewsets.ModelViewSet):
     """
-    ViewSet en lecture seule pour les permissions.
+    ViewSet pour la gestion des permissions.
     
     Endpoints disponibles :
     - GET /api/accounts/permissions/ - Liste des permissions
+    - POST /api/accounts/permissions/ - Créer une permission
     - GET /api/accounts/permissions/{id}/ - Détails d'une permission
+    - PUT /api/accounts/permissions/{id}/ - Modifier une permission
+    - DELETE /api/accounts/permissions/{id}/ - Supprimer une permission
     """
     permission_classes = [permissions.IsAuthenticated]
     queryset = Permission.objects.all()
     serializer_class = PermissionSerializer
 
 
-class ServiceViewSet(viewsets.ReadOnlyModelViewSet):
+class ServiceViewSet(viewsets.ModelViewSet):
     """
-    ViewSet en lecture seule pour les services.
+    ViewSet pour la gestion des services.
     
     Endpoints disponibles :
     - GET /api/accounts/services/ - Liste des services
+    - POST /api/accounts/services/ - Créer un service
     - GET /api/accounts/services/{id}/ - Détails d'un service
+    - PUT /api/accounts/services/{id}/ - Modifier un service
+    - DELETE /api/accounts/services/{id}/ - Supprimer un service
     """
     permission_classes = [permissions.IsAuthenticated]
     queryset = Service.objects.all()
@@ -90,10 +101,15 @@ class RolePermissionViewSet(viewsets.ModelViewSet):
     - DELETE /api/accounts/role-permissions/{id}/ - Retirer une permission d'un rôle
     """
     permission_classes = [permissions.IsAuthenticated]
-    queryset = RolePermission.objects.all()
-    serializer_class = RolePermissionSerializer
+    queryset = RolePermission.objects.select_related('role', 'permission').all()
+    
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return RolePermissionCreateSerializer
+        return RolePermissionSerializer
 
-# -------- Users --------
+
+# -------- Utilisateurs --------
 class UserViewSet(viewsets.ModelViewSet):
     """
     /users/ CRUD admin
@@ -153,7 +169,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
         user.set_password(ser.validated_data["new_password"])
         user.save()
-        return Response({"detail": "Mot de passe mis à jour."}, status=200)
+        return Response({"detail": "Mot de passe mis à jour."})
 
     @action(detail=False, methods=['get'])
     def stats(self, request):
@@ -161,30 +177,15 @@ class UserViewSet(viewsets.ModelViewSet):
         from django.utils import timezone
         from datetime import timedelta
         
-        # Calculer les statistiques
-        total_users = User.objects.filter(is_active=True).count()
-        
-        # Utilisateurs connectés aujourd'hui (dernière connexion dans les dernières 24h)
-        today = timezone.now()
-        yesterday = today - timedelta(hours=24)
-        active_today = User.objects.filter(
-            is_active=True,
-            last_login__gte=yesterday
-        ).count()
-        
-        # Utilisateurs connectés cette semaine
+        today = timezone.now().date()
         week_ago = today - timedelta(days=7)
-        active_this_week = User.objects.filter(
-            is_active=True,
-            last_login__gte=week_ago
-        ).count()
-        
-        # Utilisateurs connectés ce mois
         month_ago = today - timedelta(days=30)
-        active_this_month = User.objects.filter(
-            is_active=True,
-            last_login__gte=month_ago
-        ).count()
+        
+        # Statistiques générales
+        total_users = User.objects.count()
+        active_today = User.objects.filter(last_login__date=today).count()
+        active_this_week = User.objects.filter(last_login__date__gte=week_ago).count()
+        active_this_month = User.objects.filter(last_login__date__gte=month_ago).count()
         
         # Statistiques par rôle
         role_stats = {}
@@ -239,12 +240,7 @@ class SignupView(generics.CreateAPIView):
     permission_classes = [AllowAny]
     serializer_class = SignupSerializer
 
-
 class PasswordResetRequestView(APIView):
-    """
-    Vue pour demander une réinitialisation de mot de passe.
-    POST /accounts/password-reset-request/
-    """
     permission_classes = [AllowAny]
     
     def post(self, request):
@@ -252,77 +248,40 @@ class PasswordResetRequestView(APIView):
         serializer.is_valid(raise_exception=True)
         
         email = serializer.validated_data['email']
-        
         try:
-            user = User.objects.get(email__iexact=email)
+            user = User.objects.get(email=email)
         except User.DoesNotExist:
-            # Pour des raisons de sécurité, on ne révèle pas si l'email existe ou non
+            # Pour des raisons de sécurité, on ne révèle pas si l'email existe
             return Response({
-                "detail": "Si un compte avec cet email existe, un email de réinitialisation a été envoyé."
+                "detail": "Si cet email existe dans notre système, vous recevrez un lien de réinitialisation."
             }, status=status.HTTP_200_OK)
         
-        # Générer le token de réinitialisation
+        # Générer le token et l'URL de réinitialisation
         token = default_token_generator.make_token(user)
         uid = urlsafe_base64_encode(force_bytes(user.pk))
         
-        # Construire l'URL de réinitialisation
-        reset_url = f"{request.scheme}://{request.get_host()}/password-reset-confirm/{uid}/{token}/"
+        reset_url = f"{settings.FRONTEND_URL}/reset-password/{uid}/{token}/"
         
         # Envoyer l'email
         try:
-            # Sujet de l'email
-            subject = "Réinitialisation de votre mot de passe - Gestion Marketing"
+            subject = "Réinitialisation de votre mot de passe"
+            html_message = render_to_string('emails/password_reset.html', {
+                'user': user,
+                'reset_url': reset_url,
+            })
+            plain_message = strip_tags(html_message)
             
-            # Contenu HTML de l'email
-            html_message = f"""
-            <html>
-            <body>
-                <h2>Réinitialisation de votre mot de passe</h2>
-                <p>Bonjour,</p>
-                <p>Vous avez demandé la réinitialisation de votre mot de passe pour votre compte Gestion Marketing.</p>
-                <p>Cliquez sur le lien ci-dessous pour réinitialiser votre mot de passe :</p>
-                <p><a href="{reset_url}" style="background-color: #0066cc; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">Réinitialiser mon mot de passe</a></p>
-                <p>Ou copiez ce lien dans votre navigateur :</p>
-                <p>{reset_url}</p>
-                <p>Ce lien expirera dans 24 heures.</p>
-                <p>Si vous n'avez pas demandé cette réinitialisation, ignorez cet email.</p>
-                <br>
-                <p>Cordialement,<br>L'équipe Gestion Marketing</p>
-            </body>
-            </html>
-            """
-            
-            # Contenu texte simple
-            plain_message = f"""
-            Réinitialisation de votre mot de passe
-            
-            Bonjour,
-            
-            Vous avez demandé la réinitialisation de votre mot de passe pour votre compte Gestion Marketing.
-            
-            Cliquez sur le lien suivant pour réinitialiser votre mot de passe :
-            {reset_url}
-            
-            Ce lien expirera dans 24 heures.
-            
-            Si vous n'avez pas demandé cette réinitialisation, ignorez cet email.
-            
-            Cordialement,
-            L'équipe Gestion Marketing
-            """
-            
-            # Envoyer l'email
             send_mail(
-                subject=subject,
-                message=strip_tags(plain_message),
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[email],
+                subject,
+                plain_message,
+                settings.DEFAULT_FROM_EMAIL,
+                [user.email],
                 html_message=html_message,
                 fail_silently=False,
             )
             
             return Response({
-                "detail": "Email de réinitialisation envoyé avec succès. Vérifiez votre boîte de réception."
+                "detail": "Email de réinitialisation envoyé avec succès."
             }, status=status.HTTP_200_OK)
             
         except Exception as e:
@@ -337,12 +296,7 @@ class PasswordResetRequestView(APIView):
                     "detail": "Erreur lors de l'envoi de l'email. Veuillez réessayer."
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
 class PasswordResetConfirmView(APIView):
-    """
-    Vue pour confirmer la réinitialisation de mot de passe.
-    POST /accounts/password-reset-confirm/
-    """
     permission_classes = [AllowAny]
     
     def post(self, request):
@@ -354,170 +308,139 @@ class PasswordResetConfirmView(APIView):
         new_password = serializer.validated_data['new_password']
         
         try:
-            # Décoder l'uid depuis l'uidb64
-            uid = urlsafe_base64_decode(uidb64)
-            uid = force_str(uid)
+            uid = force_str(urlsafe_base64_decode(uidb64))
             user = User.objects.get(pk=uid)
-            
-            # Vérifier que le token est valide
-            if not default_token_generator.check_token(user, token):
-                return Response({
-                    "detail": "Token invalide ou expiré."
-                }, status=status.HTTP_400_BAD_REQUEST)
-            
-            # Mettre à jour le mot de passe
-            user.set_password(new_password)
-            user.save()
-            
-            return Response({
-                "detail": "Mot de passe mis à jour avec succès."
-            }, status=status.HTTP_200_OK)
-            
         except (TypeError, ValueError, OverflowError, User.DoesNotExist):
             return Response({
                 "detail": "Token invalide."
             }, status=status.HTTP_400_BAD_REQUEST)
-
+        
+        if not default_token_generator.check_token(user, token):
+            return Response({
+                "detail": "Token invalide ou expiré."
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Mettre à jour le mot de passe
+        user.set_password(new_password)
+        user.save()
+        
+        return Response({
+            "detail": "Mot de passe réinitialisé avec succès."
+        }, status=status.HTTP_200_OK)
 
 class PasswordResetConfirmPageView(APIView):
-    """
-    Vue pour afficher la page de réinitialisation (GET) et traiter la soumission (POST).
-    GET/POST /accounts/password-reset-confirm/<uidb64>/<token>/
-    """
     permission_classes = [AllowAny]
     
     def get(self, request, uidb64, token):
-        """
-        Afficher la page de réinitialisation (pour React Router)
-        """
+        """Page de confirmation de réinitialisation de mot de passe."""
         try:
-            # Vérifier que le token est valide
-            uid = urlsafe_base64_decode(uidb64)
-            uid = force_str(uid)
+            uid = force_str(urlsafe_base64_decode(uidb64))
             user = User.objects.get(pk=uid)
-            
-            if not default_token_generator.check_token(user, token):
-                return HttpResponse("""
-                <html>
-                <head>
-                    <title>Token invalide</title>
-                    <style>
-                        body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
-                        .error { color: #dc2626; }
-                    </style>
-                </head>
-                <body>
-                    <h1 class="error">Token invalide ou expiré</h1>
-                    <p>Le lien de réinitialisation n'est plus valide.</p>
-                    <p><a href="/">Retour à la page d'accueil</a></p>
-                </body>
-                </html>
-                """, status=400)
-            
-            # Si le token est valide, rediriger vers la page React
-            return HttpResponse("""
-            <html>
-            <head>
-                <title>Réinitialisation du mot de passe</title>
-                <meta charset="utf-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1">
-                <style>
-                    body { 
-                        margin: 0; 
-                        padding: 0; 
-                        font-family: Arial, sans-serif; 
-                        background: linear-gradient(135deg, #0066cc 0%, #0052a3 100%);
-                        min-height: 100vh;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                    }
-                    .loading {
-                        background: white;
-                        padding: 40px;
-                        border-radius: 10px;
-                        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-                        text-align: center;
-                    }
-                    .spinner {
-                        width: 40px;
-                        height: 40px;
-                        border: 4px solid #f3f3f3;
-                        border-top: 4px solid #0066cc;
-                        border-radius: 50%;
-                        animation: spin 1s linear infinite;
-                        margin: 0 auto 20px;
-                    }
-                    @keyframes spin {
-                        0% { transform: rotate(0deg); }
-                        100% { transform: rotate(360deg); }
-                    }
-                </style>
-            </head>
-            <body>
-                <div class="loading">
-                    <div class="spinner"></div>
-                    <h2>Chargement de la page de réinitialisation...</h2>
-                    <p>Si la page ne se charge pas automatiquement, <a href="http://localhost:5173/password-reset-confirm/""" + uidb64 + "/" + token + """" target="_blank">cliquez ici</a></p>
-                </div>
-                <script>
-                    // Rediriger vers l'application React
-                    window.location.href = 'http://localhost:5173/password-reset-confirm/""" + uidb64 + "/" + token + """';
-                </script>
-            </body>
-            </html>
-            """)
-            
         except (TypeError, ValueError, OverflowError, User.DoesNotExist):
-            return HttpResponse("""
-            <html>
-            <head>
-                <title>Token invalide</title>
-                <style>
-                    body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
-                    .error { color: #dc2626; }
-                </style>
-            </head>
-            <body>
-                <h1 class="error">Token invalide</h1>
-                <p>Le lien de réinitialisation n'est pas valide.</p>
-                <p><a href="/">Retour à la page d'accueil</a></p>
-            </body>
-            </html>
-            """, status=400)
+            return HttpResponse("Token invalide.", status=400)
+        
+        if not default_token_generator.check_token(user, token):
+            return HttpResponse("Token invalide ou expiré.", status=400)
+        
+        # Ici, vous pourriez rendre une page HTML avec un formulaire
+        return HttpResponse(f"Token valide pour {user.email}. Vous pouvez maintenant réinitialiser votre mot de passe.")
+
+# -------- Upload de photo --------
+class PhotoUploadView(APIView):
+    """
+    Vue pour l'upload de photos de profil utilisateur.
+    POST /accounts/upload-photo/
+    """
+    permission_classes = [permissions.IsAuthenticated]
     
-    def post(self, request, uidb64, token):
-        """
-        Traiter la réinitialisation du mot de passe
-        """
+    def post(self, request):
         try:
-            # Décoder l'uid depuis l'URL
-            uid = urlsafe_base64_decode(uidb64)
-            uid = force_str(uid)
-            user = User.objects.get(pk=uid)
-            
-            # Vérifier que le token est valide
-            if not default_token_generator.check_token(user, token):
+            # Vérifier qu'un fichier a été envoyé
+            if 'photo' not in request.FILES:
                 return Response({
-                    "detail": "Token invalide ou expiré."
+                    "detail": "Aucun fichier photo fourni."
                 }, status=status.HTTP_400_BAD_REQUEST)
             
-            # Valider le nouveau mot de passe
-            new_password = request.data.get('new_password')
-            if not new_password or len(new_password) < 8:
+            photo_file = request.FILES['photo']
+            
+            # Vérifier le type de fichier
+            allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif']
+            print(f"Content-Type reçu: {photo_file.content_type}")
+            print(f"Nom du fichier: {photo_file.name}")
+            if photo_file.content_type not in allowed_types:
                 return Response({
-                    "detail": "Le mot de passe doit contenir au moins 8 caractères."
+                    "detail": f"Type de fichier non supporté. Reçu: {photo_file.content_type}. Utilisez JPG, PNG ou GIF."
                 }, status=status.HTTP_400_BAD_REQUEST)
             
-            # Mettre à jour le mot de passe
-            user.set_password(new_password)
-            user.save()
+            # Vérifier la taille (500KB max)
+            max_size = 500 * 1024  # 500KB en bytes
+            if photo_file.size > max_size:
+                return Response({
+                    "detail": "La taille du fichier ne doit pas dépasser 500KB."
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Générer un nom de fichier unique
+            file_extension = os.path.splitext(photo_file.name)[1]
+            unique_filename = f"{uuid.uuid4()}{file_extension}"
+            
+            # Créer le répertoire photoUser s'il n'existe pas
+            upload_dir = 'photoUser'
+            if not os.path.exists(os.path.join(settings.MEDIA_ROOT, upload_dir)):
+                os.makedirs(os.path.join(settings.MEDIA_ROOT, upload_dir))
+            
+            # Sauvegarder le fichier
+            file_path = os.path.join(upload_dir, unique_filename)
+            saved_path = default_storage.save(file_path, ContentFile(photo_file.read()))
+            
+            # Construire l'URL complète de la photo via notre API
+            base_url = request.build_absolute_uri('/').rstrip('/')
+            photo_url = f"{base_url}/api/accounts/media/{saved_path}"
             
             return Response({
-                "detail": "Mot de passe mis à jour avec succès."
+                "detail": "Photo uploadée avec succès.",
+                "photo_url": photo_url,
+                "filename": unique_filename
             }, status=status.HTTP_200_OK)
             
-        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        except Exception as e:
             return Response({
-                "detail": "Token invalide."
-            }, status=status.HTTP_400_BAD_REQUEST)
+                "detail": f"Erreur lors de l'upload: {str(e)}"
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class MediaFileView(APIView):
+    """
+    Vue pour servir les fichiers médias en développement.
+    """
+    permission_classes = [AllowAny]
+
+    def get(self, request, path):
+        try:
+            # Construire le chemin complet du fichier
+            file_path = os.path.join(settings.MEDIA_ROOT, path)
+            
+            # Vérifier que le fichier existe
+            if not os.path.exists(file_path):
+                return Response({
+                    "detail": "Fichier non trouvé",
+                    "file_path": file_path
+                }, status=404)
+            
+            # Déterminer le type MIME
+            import mimetypes
+            content_type, _ = mimetypes.guess_type(file_path)
+            if content_type is None:
+                content_type = 'application/octet-stream'
+            
+            # Servir le fichier
+            with open(file_path, 'rb') as f:
+                response = HttpResponse(f.read(), content_type=content_type)
+                response['Content-Disposition'] = f'inline; filename="{os.path.basename(file_path)}"'
+                return response
+                
+        except Exception as e:
+            return Response({
+                "detail": f"Erreur lors du chargement du fichier: {str(e)}"
+            }, status=500)
+
+

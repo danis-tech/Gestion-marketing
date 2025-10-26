@@ -6,6 +6,8 @@ import Dashboard from './components/layout/Dashboard';
 import LoadingSpinner from './components/ui/LoadingSpinner';
 import NotificationModal from './components/modals/NotificationModal';
 import useNotification from './hooks/useNotification';
+import permissionService from './services/permissionService';
+import { getConfig } from './config/environment';
 
 
 import { 
@@ -32,13 +34,22 @@ function App() {
   useEffect(() => {
     // Vérifier si l'utilisateur est connecté au chargement
     const userData = localStorage.getItem('user_data');
-    if (userData) {
+    const accessToken = localStorage.getItem(getConfig('TOKENS.ACCESS_TOKEN_KEY'));
+    
+    if (userData && accessToken) {
       try {
         setUser(JSON.parse(userData));
+        
+        // Initialiser le service de permissions avec le token (DÉSACTIVÉ TEMPORAIREMENT)
+        // permissionService.initialize(accessToken);
+        
         showSuccess('Connexion réussie', 'Bienvenue ! Vous êtes connecté.');
       } catch (error) {
         console.error('Erreur lors du parsing des données utilisateur:', error);
         localStorage.removeItem('user_data');
+        localStorage.removeItem(getConfig('TOKENS.ACCESS_TOKEN_KEY'));
+        localStorage.removeItem(getConfig('TOKENS.REFRESH_TOKEN_KEY'));
+        // permissionService.clear();
         showError('Erreur de session', 'Votre session a expiré. Veuillez vous reconnecter.');
       }
     }
@@ -71,9 +82,10 @@ function App() {
 
   const handleLogout = () => {
     setUser(null);
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    localStorage.removeItem('user_data');
+    localStorage.removeItem(getConfig('TOKENS.ACCESS_TOKEN_KEY'));
+    localStorage.removeItem(getConfig('TOKENS.REFRESH_TOKEN_KEY'));
+    localStorage.removeItem(getConfig('TOKENS.USER_DATA_KEY'));
+    // permissionService.clear();
     showInfo('Déconnexion', 'Vous avez été déconnecté avec succès.');
   };
 

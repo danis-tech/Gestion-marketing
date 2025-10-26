@@ -1,0 +1,392 @@
+/* PermissionSelector.css - Styles pour le sélecteur de permissions */
+
+.permission-selector {
+  position: relative;
+  width: 100%;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.permission-selector-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  background: #f9fafb;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-height: 48px;
+}
+
+.permission-selector-trigger:hover:not(.disabled) {
+  border-color: #3b82f6;
+  background: white;
+}
+
+.permission-selector-trigger.open {
+  border-color: #3b82f6;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.permission-selector-trigger.disabled {
+  background: #f3f4f6;
+  color: #6b7280;
+  cursor: not-allowed;
+  border-color: #d1d5db;
+}
+
+.permission-selector-text {
+  flex: 1;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.permission-selector-arrow {
+  color: #6b7280;
+  transition: transform 0.3s ease;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+
+.permission-selector-arrow.rotated {
+  transform: rotate(180deg);
+}
+
+.permission-selector-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  margin-top: 4px;
+  max-height: 400px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.permission-selector-search {
+  position: relative;
+  padding: 16px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+.permission-selector-search svg {
+  position: absolute;
+  left: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6b7280;
+  z-index: 1;
+}
+
+.permission-selector-search-input {
+  width: 100%;
+  padding: 10px 16px 10px 40px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  background: white;
+  transition: border-color 0.3s ease;
+}
+
+.permission-selector-search-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.permission-selector-search-clear {
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.permission-selector-search-clear:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.permission-selector-list {
+  flex: 1;
+  overflow-y: auto;
+  max-height: 300px;
+}
+
+.permission-category {
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.permission-category:last-child {
+  border-bottom: none;
+}
+
+.permission-category-header {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+  background: #f9fafb;
+}
+
+.permission-category-header:hover {
+  background: #f3f4f6;
+}
+
+.permission-category-toggle {
+  margin-right: 8px;
+  color: #6b7280;
+  transition: color 0.3s ease;
+}
+
+.permission-category-header:hover .permission-category-toggle {
+  color: #374151;
+}
+
+.permission-category-checkbox {
+  margin-right: 8px;
+}
+
+.permission-category-checkbox input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #3b82f6;
+}
+
+.permission-category-icon {
+  margin-right: 8px;
+  font-size: 16px;
+}
+
+.permission-category-name {
+  flex: 1;
+  font-weight: 600;
+  color: #374151;
+  font-size: 14px;
+}
+
+.permission-category-count {
+  color: #6b7280;
+  font-size: 12px;
+  background: #e5e7eb;
+  padding: 2px 6px;
+  border-radius: 10px;
+}
+
+.permission-category-items {
+  background: white;
+}
+
+.permission-item {
+  display: flex;
+  align-items: center;
+  padding: 10px 16px 10px 40px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border-bottom: 1px solid #f9fafb;
+}
+
+.permission-item:hover {
+  background: #f0f9ff;
+}
+
+.permission-item.selected {
+  background: #eff6ff;
+  border-left: 3px solid #3b82f6;
+}
+
+.permission-item:last-child {
+  border-bottom: none;
+}
+
+.permission-checkbox {
+  margin-right: 12px;
+}
+
+.permission-checkbox input[type="checkbox"],
+.permission-checkbox input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #3b82f6;
+}
+
+.permission-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.permission-code {
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  color: #3b82f6;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.permission-description {
+  font-size: 13px;
+  color: #374151;
+  line-height: 1.4;
+}
+
+.permission-check-icon {
+  color: #059669;
+  margin-left: 8px;
+  flex-shrink: 0;
+}
+
+.permission-selector-empty {
+  padding: 20px;
+  text-align: center;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.permission-selector-actions {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-top: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+.permission-selector-clear,
+.permission-selector-close {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.permission-selector-clear {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.permission-selector-clear:hover:not(:disabled) {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.permission-selector-clear:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.permission-selector-close {
+  background: #3b82f6;
+  color: white;
+}
+
+.permission-selector-close:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .permission-selector-dropdown {
+    max-height: 300px;
+  }
+  
+  .permission-selector-list {
+    max-height: 200px;
+  }
+  
+  .permission-item {
+    padding: 8px 12px 8px 32px;
+  }
+  
+  .permission-category-header {
+    padding: 10px 12px;
+  }
+}
+
+/* Animation pour l'ouverture/fermeture */
+.permission-selector-dropdown {
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Style pour les checkboxes indéterminées */
+.permission-category-checkbox input[type="checkbox"]:indeterminate {
+  background: #3b82f6;
+  border-color: #3b82f6;
+}
+
+/* Style spécifique pour le PermissionSelector dans les modales */
+.permission-selector-modal {
+  width: 100%;
+}
+
+.permission-selector-modal .permission-selector-trigger {
+  min-height: 44px;
+  border: 1px solid #d1d5db;
+  background: white;
+}
+
+.permission-selector-modal .permission-selector-trigger:hover {
+  border-color: #3b82f6;
+}
+
+.permission-selector-modal .permission-selector-dropdown {
+  max-height: 400px;
+  z-index: 1001;
+}
+
+/* Agrandir la modale de permission */
+.permission-modal {
+  max-width: 800px !important;
+  width: 90vw !important;
+  max-height: 90vh !important;
+}
+
+.permission-modal .modal-body {
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+/* Style pour les inputs désactivés */
+.form-input-disabled {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 14px;
+  background: #f3f4f6;
+  color: #6b7280;
+  cursor: not-allowed;
+}

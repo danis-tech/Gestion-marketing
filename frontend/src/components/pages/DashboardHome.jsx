@@ -5,12 +5,18 @@ import {
   CheckCircle, 
   Users, 
   Clock, 
-  ChevronDown
+  ChevronDown,
+  Target,
+  FolderOpen,
+  Users2
 } from 'lucide-react';
 import StatsCard from '../ui/StatsCard';
 import OnlineUsersCard from '../ui/OnlineUsersCard';
 import StatsModal from '../ui/StatsModal';
+import SummaryCharts from '../dashboard/SummaryCharts';
+import ProjectProgress from '../dashboard/ProjectProgress';
 import { useStats } from '../../hooks/useStats';
+import './DashboardHome.css';
 
 const DashboardHome = ({ user }) => {
   const [selectedStat, setSelectedStat] = useState(null);
@@ -169,6 +175,65 @@ const DashboardHome = ({ user }) => {
           </div>
         </div>
        <div className="w-3 h-full bg-transparent flex-shrink-0"></div>
+      </div>
+
+      {/* Nouvelles sections - Grille 2x2 professionnelle */}
+      <div className="dashboard-sections">
+        {/* Section 1: Projets */}
+        <div className="chart-card projects-card">
+          <div className="chart-header">
+            <div className="chart-icon">
+              <BarChart3 size={24} />
+            </div>
+            <div className="chart-title">
+              <h3>Projets</h3>
+              <span className="chart-subtitle">Gestion et suivi des projets</span>
+            </div>
+          </div>
+          <SummaryCharts type="projects" />
+        </div>
+
+        {/* Section 2: Tâches */}
+        <div className="chart-card tasks-card">
+          <div className="chart-header">
+            <div className="chart-icon">
+              <ClipboardList size={24} />
+            </div>
+            <div className="chart-title">
+              <h3>Tâches</h3>
+              <span className="chart-subtitle">Performance et productivité</span>
+            </div>
+          </div>
+          <SummaryCharts type="tasks" />
+        </div>
+
+        {/* Section 3: Équipes */}
+        <div className="chart-card teams-card">
+          <div className="chart-header">
+            <div className="chart-icon">
+              <Users size={24} />
+            </div>
+            <div className="chart-title">
+              <h3>Équipes</h3>
+              <span className="chart-subtitle">Répartition par services</span>
+            </div>
+          </div>
+          <SummaryCharts type="teams" />
+        </div>
+
+        {/* Section 4: Progression */}
+        <div className="chart-card progress-card">
+          <div className="chart-header">
+            <div className="chart-icon">
+              <Target size={24} />
+            </div>
+            <div className="chart-title">
+              <h3>Progression</h3>
+              <span className="chart-subtitle">Suivi par phase</span>
+            </div>
+          </div>
+          <ProjectProgress />
+        </div>
       </div>
 
       {/* Modal pour les détails des statistiques */}

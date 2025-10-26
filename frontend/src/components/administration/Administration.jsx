@@ -13,6 +13,10 @@ import {
   Bell
 } from 'lucide-react';
 import UserManagement from './UserManagement';
+import RoleManagement from './RoleManagement';
+import ServiceManagement from './ServiceManagement';
+import PermissionManagement from './PermissionManagement';
+import AnalyticsDashboard from '../analytics/AnalyticsDashboard';
 import './Administration.css';
 
 const Administration = () => {
@@ -57,7 +61,7 @@ const Administration = () => {
   }, [location]);
 
   // Composants placeholder pour les modules activés
-  const ServiceManagement = () => (
+  const ServiceManagementPlaceholder = () => (
     <div className="admin-module-placeholder">
       <div className="admin-placeholder-content">
         <Building2 size={64} />
@@ -70,7 +74,7 @@ const Administration = () => {
     </div>
   );
 
-  const RoleManagement = () => (
+  const RoleManagementPlaceholder = () => (
     <div className="admin-module-placeholder">
       <div className="admin-placeholder-content">
         <Shield size={64} />
@@ -83,18 +87,6 @@ const Administration = () => {
     </div>
   );
 
-  const PermissionManagement = () => (
-    <div className="admin-module-placeholder">
-      <div className="admin-placeholder-content">
-        <Key size={64} />
-        <h3>Gestion des Permissions</h3>
-        <p>Configurer les permissions système</p>
-        <div className="admin-placeholder-status">
-          <span className="admin-status-badge coming-soon">Module en développement</span>
-        </div>
-      </div>
-    </div>
-  );
 
   const modules = [
     {
@@ -134,7 +126,7 @@ const Administration = () => {
       title: 'Analytiques',
       description: 'Statistiques et rapports du système',
       icon: BarChart3,
-      component: null, // À implémenter
+      component: AnalyticsDashboard,
       color: 'indigo'
     },
     {
@@ -246,18 +238,7 @@ const Administration = () => {
            <Route path="/services" element={<ServiceManagement />} />
            <Route path="/roles" element={<RoleManagement />} />
            <Route path="/permissions" element={<PermissionManagement />} />
-           <Route path="/analytics" element={
-             <div className="admin-module-placeholder">
-               <div className="admin-placeholder-content">
-                 <BarChart3 size={64} />
-                 <h3>Analytiques</h3>
-                 <p>Statistiques et rapports du système</p>
-                 <div className="admin-placeholder-status">
-                   <span className="admin-status-badge coming-soon">Module en développement</span>
-                 </div>
-               </div>
-             </div>
-           } />
+           <Route path="/analytics" element={<AnalyticsDashboard />} />
            <Route path="/logs" element={
              <div className="admin-module-placeholder">
                <div className="admin-placeholder-content">

@@ -23,34 +23,55 @@ const NotificationBell = () => {
 
   const connectWebSocket = () => {
     const token = localStorage.getItem('access_token');
-    if (!token) return;
+    if (!token) {
+      console.log('Pas de token d\'authentification pour WebSocket');
+      return;
+    }
 
+    // Vérifier si le serveur est accessible
     const wsUrl = `ws://localhost:8000/ws/notifications/?token=${token}`;
-    wsRef.current = new WebSocket(wsUrl);
+    
+    try {
+      wsRef.current = new WebSocket(wsUrl);
 
-    wsRef.current.onopen = () => {
-      console.log('WebSocket connecté pour les notifications');
-      setIsConnected(true);
-    };
+      wsRef.current.onopen = () => {
+        console.log('WebSocket connecté pour les notifications');
+        setIsConnected(true);
+      };
 
-    wsRef.current.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      handleWebSocketMessage(data);
-    };
+      wsRef.current.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          handleWebSocketMessage(data);
+        } catch (error) {
+          console.error('Erreur parsing message WebSocket:', error);
+        }
+      };
 
-    wsRef.current.onclose = () => {
-      console.log('WebSocket déconnecté');
+      wsRef.current.onclose = (event) => {
+        console.log('WebSocket déconnecté:', event.code, event.reason);
+        setIsConnected(false);
+        
+        // Reconnexion automatique seulement si ce n'est pas une fermeture volontaire
+        if (event.code !== 1000) {
+          reconnectTimeoutRef.current = setTimeout(() => {
+            console.log('Tentative de reconnexion WebSocket...');
+            connectWebSocket();
+          }, 5000); // Augmenter le délai à 5 secondes
+        }
+      };
+
+      wsRef.current.onerror = (error) => {
+        console.error('Erreur WebSocket:', error);
+        setIsConnected(false);
+        
+        // Ne pas essayer de se reconnecter immédiatement en cas d'erreur
+        // Laisser le timeout de onclose gérer la reconnexion
+      };
+    } catch (error) {
+      console.error('Erreur lors de la création du WebSocket:', error);
       setIsConnected(false);
-      // Reconnexion automatique après 3 secondes
-      reconnectTimeoutRef.current = setTimeout(() => {
-        connectWebSocket();
-      }, 3000);
-    };
-
-    wsRef.current.onerror = (error) => {
-      console.error('Erreur WebSocket:', error);
-      setIsConnected(false);
-    };
+    }
   };
 
   const disconnectWebSocket = () => {
