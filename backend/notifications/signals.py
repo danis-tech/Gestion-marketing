@@ -9,6 +9,7 @@ from projects.models import (
     Projet, Tache, Etape, MembreProjet, ProjetPhaseEtat, 
     HistoriqueEtat, PermissionProjet
 )
+from projects.email_service import ProjectEmailService
 from documents.models import (
     DocumentProjet, DocumentTeleverse, CommentaireDocumentProjet,
     HistoriqueDocumentProjet
@@ -33,9 +34,36 @@ def notify_project_changes(sender, instance, created, **kwargs):
             projet=instance,
             priorite='elevee'
         )
+        # Notification générale pour tous les utilisateurs
+        NotificationService.create_general_notification(
+            type_code='projet_en_cours',
+            titre=f'Nouveau projet créé: {instance.nom}',
+            message=f'Un nouveau projet "{instance.nom}" a été créé par {instance.proprietaire.prenom} {instance.proprietaire.nom}',
+            projet=instance,
+            priorite='normale'
+        )
+        # Envoyer un email à tous les membres du projet
+        try:
+            ProjectEmailService.send_project_created_email(instance)
+        except Exception:
+            pass
     else:
+        # Projet modifié
+        # Notification générale pour informer de la modification
+        NotificationService.create_general_notification(
+            type_code='projet_en_cours',
+            titre=f'Projet modifié: {instance.nom}',
+            message=f'Le projet "{instance.nom}" a été modifié',
+            projet=instance,
+            priorite='normale'
+        )
+        # Envoyer un email à tous les membres du projet
+        try:
+            ProjectEmailService.send_project_updated_email(instance)
+        except Exception:
+            pass
         # Vérifier si le projet est en retard
-        if instance.fin and instance.fin < timezone.now().date():
+        if instance.fin and instance.fin.date() < timezone.now().date():
             NotificationService.notify_project_delay(instance)
 
 
@@ -44,10 +72,23 @@ def notify_task_changes(sender, instance, created, **kwargs):
     """
     Notifier les changements de tâche
     """
-    if created and instance.assigne_a:
-        # Nouvelle tâche assignée
-        NotificationService.notify_task_assigned(instance, instance.assigne_a)
-    elif not created:
+    if created:
+        # Nouvelle tâche créée
+        if instance.assigne_a.exists():
+            # Nouvelle tâche assignée
+            NotificationService.notify_task_assigned(instance, instance.assigne_a.first())
+        # Envoyer un email à tous les membres de la tâche
+        try:
+            ProjectEmailService.send_task_created_email(instance)
+        except Exception:
+            pass
+    else:
+        # Tâche modifiée
+        # Envoyer un email à tous les membres de la tâche
+        try:
+            ProjectEmailService.send_task_updated_email(instance)
+        except Exception:
+            pass
         # Vérifier si la tâche est terminée
         if instance.statut == 'termine':
             NotificationService.notify_task_completed(instance)
@@ -66,12 +107,27 @@ def notify_team_member_added(sender, instance, created, **kwargs):
 
 
 @receiver(post_save, sender=Etape)
-def notify_step_completed(sender, instance, created, **kwargs):
+def notify_step_changes(sender, instance, created, **kwargs):
     """
-    Notifier la fin d'une étape
+    Notifier les changements d'étape
     """
-    if not created and instance.statut == 'termine':
-        NotificationService.notify_step_completed(instance)
+    if created:
+        # Nouvelle étape créée
+        # Envoyer un email à tous les membres de l'étape
+        try:
+            ProjectEmailService.send_step_created_email(instance)
+        except Exception:
+            pass
+    else:
+        # Étape modifiée
+        # Envoyer un email à tous les membres de l'étape
+        try:
+            ProjectEmailService.send_step_updated_email(instance)
+        except Exception:
+            pass
+        # Vérifier si l'étape est terminée
+        if instance.statut == 'terminee':
+            NotificationService.notify_step_completed(instance)
 
 
 # ============================================================================
@@ -304,8 +360,23 @@ def notify_project_deletion(sender, instance, **kwargs):
     """
     Notifier la suppression d'un projet
     """
+    # Récupérer les membres avant la suppression (instance sera supprimée après)
+    try:
+        from projects.models import MembreProjet
+        membres = MembreProjet.objects.filter(projet_id=instance.id).select_related('utilisateur')
+        members_emails = [membre.utilisateur.email for membre in membres if membre.utilisateur.email]
+        
+        # Envoyer un email à tous les membres du projet
+        ProjectEmailService.send_project_deleted_email(
+            instance.nom,
+            instance.code,
+            members_emails
+        )
+    except Exception:
+        pass
+    
     NotificationService.create_general_notification(
-        type_code='projet_retard',
+        type_code='projet_supprime',
         titre=f'Projet supprimé: {instance.nom}',
         message=f'Le projet "{instance.nom}" a été supprimé',
         priorite='elevee'
@@ -316,11 +387,53 @@ def notify_task_deletion(sender, instance, **kwargs):
     """
     Notifier la suppression d'une tâche
     """
+    # Récupérer les membres avant la suppression
+    try:
+        members = ProjectEmailService._get_task_members(instance)
+        members_emails = [member.email for member in members if member.email]
+        
+        # Envoyer un email à tous les membres de la tâche
+        ProjectEmailService.send_task_deleted_email(
+            instance.titre,
+            instance.projet.nom,
+            members_emails
+        )
+    except Exception:
+        pass
+    
     NotificationService.create_general_notification(
         type_code='tache_retard',
         titre=f'Tâche supprimée: {instance.titre}',
         message=f'La tâche "{instance.titre}" du projet {instance.projet.nom} a été supprimée',
         projet=instance.projet,
+        priorite='normale'
+    )
+
+@receiver(post_delete, sender=Etape)
+def notify_step_deletion(sender, instance, **kwargs):
+    """
+    Notifier la suppression d'une étape
+    """
+    # Récupérer les membres avant la suppression
+    try:
+        members = ProjectEmailService._get_step_members(instance)
+        members_emails = [member.email for member in members if member.email]
+        project_nom = instance.phase_etat.projet.nom
+        
+        # Envoyer un email à tous les membres de l'étape
+        ProjectEmailService.send_step_deleted_email(
+            instance.nom,
+            project_nom,
+            members_emails
+        )
+    except Exception:
+        pass
+    
+    NotificationService.create_general_notification(
+        type_code='etape_terminee',
+        titre=f'Étape supprimée: {instance.nom}',
+        message=f'L\'étape "{instance.nom}" du projet {instance.phase_etat.projet.nom} a été supprimée',
+        projet=instance.phase_etat.projet,
         priorite='normale'
     )
 

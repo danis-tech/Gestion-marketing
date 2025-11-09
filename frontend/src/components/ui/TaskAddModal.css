@@ -597,6 +597,80 @@
   outline-offset: 2px;
 }
 
+/* ===== ASSIGNED USERS CONTAINER ===== */
+.assigned-users-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.assigned-user-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.assigned-user-row .form-select {
+  flex: 1;
+}
+
+.remove-assigned-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 2px solid #EF4444;
+  background: white;
+  color: #EF4444;
+  border-radius: 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.remove-assigned-btn:hover:not(:disabled) {
+  background: #EF4444;
+  color: white;
+  transform: scale(1.05);
+}
+
+.remove-assigned-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.add-assigned-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border: 2px dashed #00CC66;
+  background: white;
+  color: #00CC66;
+  border-radius: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.add-assigned-btn:hover:not(:disabled) {
+  background: #00CC66;
+  color: white;
+  border-style: solid;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 204, 102, 0.3);
+}
+
+.add-assigned-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* ===== HIGH CONTRAST MODE ===== */
 @media (prefers-contrast: high) {
   .task-add-modal-content {

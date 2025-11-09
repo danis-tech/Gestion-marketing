@@ -18,7 +18,9 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronsRight,
-  Hash
+  Hash,
+  TrendingUp,
+  Target
 } from 'lucide-react';
 import ProjectDetailsModal from './ProjectDetailsModal';
 import ProjectEditModal from './ProjectEditModal';
@@ -180,7 +182,6 @@ const ProjectsDataTable = ({
     try {
       // Vérifier si l'utilisateur est authentifié
       const accessToken = localStorage.getItem('access_token');
-      console.log('Token d\'accès trouvé:', accessToken ? 'Oui' : 'Non');
       
       if (!accessToken) {
         throw new Error('Vous devez être connecté pour modifier un projet. Veuillez vous reconnecter.');
@@ -188,7 +189,6 @@ const ProjectsDataTable = ({
 
       // Utiliser le service API qui gère l'authentification
       const updatedProject = await projectsService.updateProject(editingProject.id, updatedData);
-      console.log('Projet mis à jour avec succès:', updatedProject);
 
       // Le projet est mis à jour directement via l'API, pas besoin d'appeler une fonction externe
 
@@ -200,16 +200,9 @@ const ProjectsDataTable = ({
         await onRefresh();
       }
 
-      // Optionnel : Afficher un message de succès
-      console.log('Projet mis à jour avec succès');
     } catch (error) {
-      console.error('Erreur lors de la mise à jour:', error);
-      
       // Afficher plus de détails sur l'erreur
       if (error.response) {
-        console.error('Réponse de l\'API:', error.response.data);
-        console.error('Status:', error.response.status);
-        console.error('Headers:', error.response.headers);
         
         // Si l'API retourne des erreurs de validation, les afficher
         if (error.response.data && typeof error.response.data === 'object') {
@@ -233,18 +226,13 @@ const ProjectsDataTable = ({
     try {
       // Vérifier si l'utilisateur est authentifié
       const accessToken = localStorage.getItem('access_token');
-      console.log('Token d\'accès trouvé:', accessToken ? 'Oui' : 'Non');
       
       if (!accessToken) {
         throw new Error('Vous devez être connecté pour créer un projet. Veuillez vous reconnecter.');
       }
 
-      // Log des données envoyées pour debug
-      console.log('Données envoyées à l\'API:', newProjectData);
-
       // Utiliser le service API qui gère l'authentification
       const newProject = await projectsService.createProject(newProjectData);
-      console.log('Projet créé avec succès:', newProject);
 
       // Le projet est créé directement via l'API, pas besoin d'appeler une fonction externe
 
@@ -256,16 +244,9 @@ const ProjectsDataTable = ({
         await onRefresh();
       }
 
-      // Optionnel : Afficher un message de succès
-      console.log('Projet créé avec succès');
     } catch (error) {
-      console.error('Erreur lors de la création:', error);
-      
       // Afficher plus de détails sur l'erreur
       if (error.response) {
-        console.error('Réponse de l\'API:', error.response.data);
-        console.error('Status:', error.response.status);
-        console.error('Headers:', error.response.headers);
         
         // Si l'API retourne des erreurs de validation, les afficher
         if (error.response.data && typeof error.response.data === 'object') {
@@ -333,7 +314,7 @@ const ProjectsDataTable = ({
       if (isNaN(date.getTime())) return 'Date invalide';
     return date.toLocaleDateString('fr-FR');
     } catch (error) {
-      console.error('Erreur de formatage de date:', error, dateString);
+      // Erreur de formatage de date silencieuse
       return 'Date invalide';
     }
   };
@@ -389,7 +370,7 @@ const ProjectsDataTable = ({
           return `${formattedDefault} FCFA`;
       }
     } catch (error) {
-      console.error('Erreur de formatage du budget:', error, budget);
+      // Erreur de formatage du budget silencieuse
       return 'Erreur de formatage';
     }
   };
@@ -620,7 +601,7 @@ const ProjectsDataTable = ({
       // Message de confirmation
       alert(` Export réussi ! ${filteredAndSortedProjects.length} projet(s) exporté(s) vers ${fileName}`);
     } catch (error) {
-      console.error('Erreur lors de l\'export Excel:', error);
+      // Erreur lors de l'export Excel silencieuse
               alert('Erreur lors de l\'export Excel');
     }
   };
@@ -945,6 +926,12 @@ const ProjectsDataTable = ({
                   <SortIcon field="statut" />
                 </div>
               </th>
+              <th className="px-4 py-5 text-left text-base font-bold text-blue-900 uppercase tracking-wider">
+                <div className="flex items-center space-x-2">
+                  <TrendingUp className="w-5 h-5 text-indigo-600" />
+                  <span>Progression</span>
+                </div>
+              </th>
               <th 
                 className="px-4 py-5 text-left text-base font-bold text-blue-900 uppercase tracking-wider cursor-pointer hover:bg-blue-100 transition-all duration-200"
                 onClick={() => handleSort('date_debut')}
@@ -981,7 +968,7 @@ const ProjectsDataTable = ({
           <tbody className="bg-white divide-y divide-blue-100">
                          {loading ? (
                <tr>
-                 <td colSpan="9" className="px-6 py-16 text-center">
+                 <td colSpan="10" className="px-6 py-16 text-center">
                                      <div className="flex items-center justify-center space-x-3 text-blue-600">
                      <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 animate-spin"></div>
                      <span className="text-lg font-semibold">Chargement des projets...</span>
@@ -990,7 +977,7 @@ const ProjectsDataTable = ({
               </tr>
                          ) : filteredAndSortedProjects.length === 0 ? (
                <tr>
-                 <td colSpan="9" className="px-6 py-16 text-center">
+                 <td colSpan="10" className="px-6 py-16 text-center">
                   <div className="flex flex-col items-center space-y-4 text-gray-500">
                     <AlertCircle className="w-16 h-16 text-blue-300" />
                     <span className="text-xl font-bold text-gray-800">Aucun projet trouvé</span>
@@ -1048,6 +1035,46 @@ const ProjectsDataTable = ({
                      <span className={`inline-flex px-3 py-2 text-sm font-bold border-2 ${getStatusColor(getFieldValue(project, ['statut', 'etat']))}`} title={getStatusText(getFieldValue(project, ['statut', 'etat']))}>
                        {truncateText(getStatusText(getFieldValue(project, ['statut', 'etat'])), 120)}
                      </span>
+                   </td>
+                   {/* Colonne Progression */}
+                   <td className="px-4 py-5">
+                     <div className="flex flex-col space-y-2">
+                       {/* Barre de progression */}
+                       <div className="w-full bg-gray-200 rounded-full h-6 relative overflow-hidden">
+                         <div 
+                           className={`h-full rounded-full transition-all duration-300 ${
+                             (project.progression_globale || 0) >= 100 
+                               ? 'bg-green-500' 
+                               : (project.progression_globale || 0) >= 50 
+                                 ? 'bg-blue-500' 
+                                 : 'bg-yellow-500'
+                           }`}
+                           style={{ width: `${Math.min(project.progression_globale || 0, 100)}%` }}
+                         >
+                           <div className="absolute inset-0 flex items-center justify-center">
+                             <span className="text-xs font-bold text-white">
+                               {Math.round(project.progression_globale || 0)}%
+                             </span>
+                           </div>
+                         </div>
+                       </div>
+                       {/* Phase actuelle */}
+                       {project.phase_actuelle && (
+                         <div className="flex items-center space-x-2 bg-indigo-50 px-3 py-1 border border-indigo-200 rounded">
+                           <Target className="w-4 h-4 text-indigo-600" />
+                           <span className="text-sm font-medium text-gray-900">
+                             {truncateText(project.phase_actuelle.nom || 'N/A', 50)}
+                           </span>
+                         </div>
+                       )}
+                       {!project.phase_actuelle && (
+                         <div className="flex items-center space-x-2 bg-gray-50 px-3 py-1 border border-gray-200 rounded">
+                           <span className="text-sm font-medium text-gray-500">
+                             Aucune phase
+                           </span>
+                         </div>
+                       )}
+                     </div>
                    </td>
                                      <td className="px-4 py-5 text-base text-gray-900 font-semibold">
                      <span title={formatDate(getFieldValue(project, ['date_debut', 'debut', 'cree_le']))}>

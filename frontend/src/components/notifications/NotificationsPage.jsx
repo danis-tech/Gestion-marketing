@@ -524,6 +524,35 @@ const NotificationsPage = () => {
       // Créer un contexte audio
       const audioContext = new (window.AudioContext || window.webkitAudioContext)();
       
+      // Réveiller le contexte audio si nécessaire (pour les navigateurs qui bloquent l'audio automatique)
+      if (audioContext.state === 'suspended') {
+        audioContext.resume().then(() => {
+          playSound(audioContext);
+        }).catch(() => {
+          // Si on ne peut pas réveiller, essayer quand même
+          playSound(audioContext);
+        });
+      } else {
+        playSound(audioContext);
+      }
+    } catch (error) {
+      // Essayer une méthode alternative avec un élément audio HTML
+      try {
+        const audio = new Audio();
+        audio.src = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OSfTQ8OUKfk8LZjHAY4kdfyzHksBSR3x/DdkEAKFF606euoVRQKRp/g8r5sIQUrgc7y2Yk2CBtpvfDkn00PDlCn5PC2YxwGOJHX8sx5LAUkd8fw3ZBAC';
+        audio.volume = 0.3;
+        audio.play().catch(() => {
+          // Ignorer les erreurs d'autoplay
+        });
+      } catch (e) {
+        // Ignorer les erreurs
+      }
+    }
+  };
+
+  // Fonction helper pour jouer le son
+  const playSound = (audioContext) => {
+    try {
       // Créer un oscillateur pour générer un son
       const oscillator = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
@@ -545,7 +574,7 @@ const NotificationsPage = () => {
       oscillator.start(audioContext.currentTime);
       oscillator.stop(audioContext.currentTime + 0.3);
     } catch (error) {
-      console.log('Impossible de jouer le son de notification:', error);
+      // Ignorer les erreurs
     }
   };
 

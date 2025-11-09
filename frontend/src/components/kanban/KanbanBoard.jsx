@@ -23,6 +23,7 @@ const KanbanBoard = () => {
   const [projects, setProjects] = useState([]);
   const [selectedProject, setSelectedProject] = useState(null);
   const [projectPhases, setProjectPhases] = useState([]);
+  const [selectedPhase, setSelectedPhase] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [draggedPhase, setDraggedPhase] = useState(null);
@@ -69,6 +70,12 @@ const KanbanBoard = () => {
         phasesData = response.results;
       }
       
+      // Debug des données reçues (à supprimer en production)
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔍 Données des phases reçues:', phasesData);
+        console.log('🔍 Structure de la première phase:', phasesData[0]);
+      }
+      
       setProjectPhases(phasesData);
       setError(null);
     } catch (err) {
@@ -81,7 +88,13 @@ const KanbanBoard = () => {
 
   const handleProjectSelect = (project) => {
     setSelectedProject(project);
+    setSelectedPhase(null); // Réinitialiser la phase sélectionnée
     loadProjectPhases(project.id);
+  };
+
+  const handlePhaseSelect = (phase) => {
+    setSelectedPhase(phase);
+    console.log('🎯 Phase sélectionnée:', phase.nom);
   };
 
   const calculateProgress = (item) => {
@@ -89,20 +102,8 @@ const KanbanBoard = () => {
       // Pour les étapes, utiliser la progression réelle
       return item.progression_pourcentage || 0;
     } else {
-      // Pour les phases, calculer basé sur les étapes
-      if (item.terminee) return 100;
-      if (item.est_en_cours) {
-        // Calculer la progression moyenne des étapes
-        const etapes = item.etapes_en_attente_ou_en_cours || [];
-        if (etapes.length === 0) return 0;
-        
-        const totalProgress = etapes.reduce((sum, etape) => {
-          return sum + (etape.progression_pourcentage || 0);
-        }, 0);
-        
-        return Math.round(totalProgress / etapes.length);
-      }
-      return 0; // En attente
+      // Pour les phases, utiliser la progression calculée côté backend
+      return item.progression_pourcentage || 0;
     }
   };
 
@@ -170,42 +171,89 @@ const KanbanBoard = () => {
   // Organiser les phases par colonnes Kanban
   const organizePhasesIntoColumns = () => {
     const columns = {
-      'À faire': [], // Phases en attente
-      'En cours': [], // Étapes en cours
-      'Terminé': [] // Phases terminées
+      'À faire': [], // Toutes les phases du projet
+      'En cours': [], // Étapes en cours de la phase sélectionnée
+      'Terminé': [] // Étapes terminées de la phase sélectionnée
     };
 
-    // Organiser les phases
+    // Organiser les phases dans "À faire"
     projectPhases.forEach((phase, index) => {
       const uniquePhase = {
         ...phase,
-        uniqueKey: `${phase.id}-${index}-${phase.nom}`,
-        type: 'phase'
+        uniqueKey: `${phase.id}-${index}-${phase.nom || phase.phase?.nom || 'phase'}`,
+        type: 'phase',
+        // Utiliser les données directement disponibles depuis le sérialiseur
+        nom: phase.nom || phase.phase?.nom || 'Phase sans nom',
+        description: phase.description || phase.phase?.description || 'Aucune description',
+        ordre: phase.ordre || phase.phase?.ordre || 0,
+        priorite: phase.priorite || 'normale',
+        // Conserver les dates et commentaires de la phase
+        date_debut: phase.date_debut,
+        date_fin: phase.date_fin,
+        commentaire: phase.commentaire,
+        terminee: phase.terminee,
+        est_en_cours: phase.est_en_cours,
+        est_en_attente: phase.est_en_attente
       };
 
-      if (phase.terminee) {
-        columns['Terminé'].push(uniquePhase);
-      } else if (!phase.est_en_cours && !phase.terminee) {
-        columns['À faire'].push(uniquePhase);
+      // Debug de la phase organisée (à supprimer en production)
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔍 Phase organisée:', uniquePhase);
+        console.log(`  - ${uniquePhase.nom}: terminee=${uniquePhase.terminee}, est_en_cours=${uniquePhase.est_en_cours}, est_en_attente=${uniquePhase.est_en_attente}, ignoree=${phase.ignoree}`);
+        console.log(`  - Progression calculée: ${calculateProgress(uniquePhase)}%`);
+        if (uniquePhase.toutes_les_etapes) {
+          console.log(`  - Étapes: ${uniquePhase.toutes_les_etapes.length}`);
+        }
       }
+      
+      // Ne pas afficher les phases ignorées
+      if (phase.ignoree) {
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🚫 Phase ignorée:', phase.nom);
+        }
+        return; // Skip cette phase
+      }
+      
+      // Toutes les phases vont dans "À faire"
+      columns['À faire'].push(uniquePhase);
     });
 
-    // Organiser les étapes en cours
-    projectPhases.forEach((phase, phaseIndex) => {
-      if (phase.est_en_cours && phase.etapes_en_attente_ou_en_cours) {
-        phase.etapes_en_attente_ou_en_cours.forEach((etape, etapeIndex) => {
-          if (etape.statut === 'en_cours') {
-            const uniqueEtape = {
-              ...etape,
-              uniqueKey: `etape-${etape.id}-${phaseIndex}-${etapeIndex}`,
-              type: 'etape',
-              phaseParent: phase // Garder référence à la phase parent
-            };
-            columns['En cours'].push(uniqueEtape);
-          }
-        });
-      }
-    });
+    // Si une phase est sélectionnée, afficher ses étapes dans "En cours" et "Terminé"
+    if (selectedPhase) {
+      const etapes = selectedPhase.toutes_les_etapes || selectedPhase.etapes_en_attente_ou_en_cours || [];
+      
+      etapes.forEach((etape, etapeIndex) => {
+        const uniqueEtape = {
+          ...etape,
+          uniqueKey: `etape-${etape.id}-${etapeIndex}`,
+          type: 'etape',
+          phaseParent: selectedPhase
+        };
+
+        if (etape.statut === 'en_cours') {
+          columns['En cours'].push(uniqueEtape);
+        } else if (etape.statut === 'terminee') {
+          columns['Terminé'].push(uniqueEtape);
+        }
+      });
+    } else {
+      // Si aucune phase sélectionnée, afficher les phases terminées dans "Terminé"
+      projectPhases.forEach((phase, index) => {
+        if (phase.terminee && !phase.ignoree) {
+          const uniquePhase = {
+            ...phase,
+            uniqueKey: `phase-terminee-${phase.id}-${index}`,
+            type: 'phase',
+            nom: phase.nom || phase.phase?.nom || 'Phase sans nom',
+            description: phase.description || phase.phase?.description || 'Aucune description',
+            ordre: phase.ordre || phase.phase?.ordre || 0,
+            priorite: phase.priorite || 'normale',
+            progression_pourcentage: phase.progression_pourcentage || 0
+          };
+          columns['Terminé'].push(uniquePhase);
+        }
+      });
+    }
 
     return columns;
   };
@@ -449,18 +497,19 @@ const KanbanBoard = () => {
                 <div className="empty-column">
                   <Target size={32} />
                   <p>
-                    {columnName === 'À faire' ? 'Aucune phase en attente' :
-                     columnName === 'En cours' ? 'Aucune étape en cours' :
-                     'Aucune phase terminée'}
+                    {columnName === 'À faire' ? 'Toutes les phases du projet' :
+                     columnName === 'En cours' ? (selectedPhase ? 'Aucune étape en cours' : 'Sélectionnez une phase') :
+                     selectedPhase ? 'Aucune étape terminée' : 'Aucune phase terminée'}
                   </p>
                 </div>
               ) : (
                 phases.map(item => (
                   <div 
                     key={item.uniqueKey}
-                    className="phase-card"
+                    className={`phase-card ${item.type === 'phase' ? 'clickable-phase' : ''} ${selectedPhase && selectedPhase.id === item.id ? 'selected-phase' : ''}`}
                     draggable
                     onDragStart={(e) => handleDragStart(e, item)}
+                    onClick={() => item.type === 'phase' && handlePhaseSelect(item)}
                   >
                     {/* En-tête avec ID et statut */}
                     <div className="phase-header">
@@ -527,7 +576,7 @@ const KanbanBoard = () => {
                               <span>
                                 {item.date_debut && item.date_fin ? 
                                   Math.ceil((new Date(item.date_fin) - new Date(item.date_debut)) / (1000 * 60 * 60 * 24)) + ' jours' :
-                                  'Phase ' + item.phase?.ordre
+                                  'Phase ' + (item.ordre || 0)
                                 }
                               </span>
                             </div>

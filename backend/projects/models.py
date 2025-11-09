@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth import get_user_model
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.utils import timezone
 from accounts.models import Service, Role, Permission
 
 User = get_user_model()
@@ -136,6 +137,89 @@ class Projet(models.Model):
                     'active': True
                 }
             )
+    
+    def marquer_termine(self):
+        """Marque le projet comme terminé et termine automatiquement toutes les phases et étapes"""
+        self.statut = 'termine'
+        self.save(update_fields=['statut', 'mis_a_jour_le'])
+        
+        # Terminer automatiquement toutes les phases non terminées
+        phases_non_terminees = self.phases_etat.exclude(terminee=True).exclude(ignoree=True)
+        for phase_etat in phases_non_terminees:
+            phase_etat.terminee = True
+            phase_etat.save(update_fields=['terminee', 'mis_a_jour_le'])
+            
+            # Terminer automatiquement toutes les étapes de cette phase
+            etapes_non_terminees = phase_etat.etapes.exclude(statut='terminee')
+            for etape in etapes_non_terminees:
+                etape.statut = 'terminee'
+                etape.progression_pourcentage = 100
+                etape.save(update_fields=['statut', 'progression_pourcentage', 'mis_a_jour_le'])
+        
+        print(f"🎯 Projet '{self.nom}' marqué comme terminé - Toutes les phases et étapes terminées automatiquement")
+    
+    def marquer_non_termine(self):
+        """Marque le projet comme non terminé"""
+        self.statut = 'en_attente'
+        self.save(update_fields=['statut', 'mis_a_jour_le'])
+        print(f"🔄 Projet '{self.nom}' marqué comme non terminé")
+    
+    def peut_etre_termine(self):
+        """Vérifie si le projet peut être terminé (toutes les phases sont terminées ou ignorées)"""
+        # Si le projet n'a pas de phases, il peut toujours être terminé
+        if not self.phases_etat.exists():
+            return True
+        
+        # Si le projet a des phases, toutes doivent être terminées ou ignorées
+        phases_non_terminees = self.phases_etat.exclude(
+            terminee=True
+        ).exclude(
+            ignoree=True
+        ).exists()
+        return not phases_non_terminees
+    
+    @property
+    def progression_globale(self):
+        """Calcule la progression globale du projet basée sur les phases"""
+        phases_etat = self.phases_etat.all()
+        if not phases_etat.exists():
+            return 0
+        
+        total_phases = phases_etat.count()
+        phases_terminees = phases_etat.filter(terminee=True).count()
+        phases_ignorees = phases_etat.filter(ignoree=True).count()
+        
+        # Calculer la progression en tenant compte des phases terminées et ignorées
+        phases_completes = phases_terminees + phases_ignorees
+        progression = (phases_completes / total_phases * 100) if total_phases > 0 else 0
+        
+        return round(progression, 1)
+    
+    @property
+    def phase_actuelle(self):
+        """Retourne la phase actuelle du projet (la première phase non terminée et non ignorée)"""
+        phases_etat = self.phases_etat.filter(terminee=False, ignoree=False).order_by('phase__ordre')
+        if phases_etat.exists():
+            phase_actuelle = phases_etat.first()
+            return {
+                'nom': phase_actuelle.phase.nom,
+                'ordre': phase_actuelle.phase.ordre,
+                'progression': phase_actuelle.progression_pourcentage
+            }
+        # Si toutes les phases sont terminées ou ignorées, retourner la dernière phase
+        derniere_phase = self.phases_etat.order_by('-phase__ordre').first()
+        if derniere_phase:
+            return {
+                'nom': derniere_phase.phase.nom,
+                'ordre': derniere_phase.phase.ordre,
+                'progression': 100
+            }
+        return None
+    
+    @property
+    def est_termine(self):
+        """Vérifie si le projet est terminé"""
+        return self.statut == 'termine'
 
 
 class MembreProjet(models.Model):
@@ -293,12 +377,12 @@ class Tache(models.Model):
     ]
     
     PHASE_CHOICES = [
+        ('expression_besoin', 'Expression du besoin'),
+        ('etudes_faisabilite', 'Études de faisabilité'),
         ('conception', 'Conception'),
-        ('build', 'Build'),
-        ('uat', 'UAT'),
-        ('lancement', 'Lancement'),
-        ('suivi', 'Suivi'),
-        ('fin_de_vie', 'Fin de vie'),
+        ('developpement', 'Développement / Implémentation'),
+        ('lancement_commercial', 'Lancement commercial'),
+        ('suppression_offre', 'Suppression d\'une offre'),
     ]
     
     # Champs d'identification
@@ -349,13 +433,11 @@ class Tache(models.Model):
         related_name='taches_dependantes',
         verbose_name="Tâche dépendante"
     )
-    assigne_a = models.ForeignKey(
+    assigne_a = models.ManyToManyField(
         User, 
-        on_delete=models.SET_NULL, 
-        null=True, 
-        blank=True,
         related_name='taches_assignees',
-        verbose_name="Assigné à"
+        blank=True,
+        verbose_name="Assignés à"
     )
     
     # Métadonnées
@@ -371,7 +453,6 @@ class Tache(models.Model):
             models.Index(fields=['projet']),
             models.Index(fields=['statut']),
             models.Index(fields=['phase']),
-            models.Index(fields=['assigne_a']),
             models.Index(fields=['tache_dependante']),
             models.Index(fields=['debut']),
             models.Index(fields=['fin']),
@@ -492,13 +573,21 @@ class ProjetPhaseEtat(models.Model):
     
     @property
     def est_en_cours(self):
-        """Vérifie si la phase est en cours (débutée mais pas terminée)"""
-        return self.date_debut and not self.terminee and not self.ignoree
+        """Vérifie si la phase est en cours (a des étapes en cours)"""
+        if self.terminee or self.ignoree:
+            return False
+        
+        # Une phase est en cours si elle a des étapes en cours
+        return self.etapes.filter(statut='en_cours').exists()
     
     @property
     def est_en_attente(self):
-        """Vérifie si la phase est en attente (pas encore débutée)"""
-        return not self.date_debut and not self.terminee and not self.ignoree
+        """Vérifie si la phase est en attente (pas d'étapes en cours et pas terminée)"""
+        if self.terminee or self.ignoree:
+            return False
+        
+        # Une phase est en attente si elle n'a pas d'étapes en cours
+        return not self.etapes.filter(statut='en_cours').exists()
     
     @property
     def peut_etre_terminee(self):
@@ -517,6 +606,37 @@ class ProjetPhaseEtat(models.Model):
     def etapes_en_attente_ou_en_cours(self):
         """Retourne les étapes qui ne sont pas terminées ou annulées"""
         return self.etapes.exclude(statut__in=['terminee', 'annulee'])
+    
+    @property
+    def progression_pourcentage(self):
+        """Calcule la progression de la phase basée sur ses étapes"""
+        if self.terminee:
+            return 100
+        
+        etapes = self.etapes.all()
+        if not etapes.exists():
+            return 0
+        
+        total_progress = 0
+        etapes_terminees = 0
+        
+        for etape in etapes:
+            if etape.statut == 'terminee':
+                total_progress += 100
+                etapes_terminees += 1
+            elif etape.statut == 'en_cours':
+                total_progress += (etape.progression_pourcentage or 0)
+            # Les étapes en attente contribuent 0
+        
+        progression = round(total_progress / etapes.count())
+        
+        # Si toutes les étapes sont terminées, marquer la phase comme terminée
+        if etapes_terminees == etapes.count() and etapes.count() > 0 and not self.terminee:
+            self.terminee = True
+            self.save(update_fields=['terminee', 'mis_a_jour_le'])
+            return 100
+        
+        return progression
     
     def marquer_debut(self):
         """Marque le début de la phase"""

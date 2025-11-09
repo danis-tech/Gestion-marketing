@@ -476,7 +476,7 @@ def get_assigned_tasks(request):
     assigned_tasks = Tache.objects.filter(
         assigne_a=user,
         statut__in=['en_attente', 'en_cours', 'en_revision']
-    ).select_related('projet', 'assigne_a')
+    ).select_related('projet').prefetch_related('assigne_a')
     
     # Sérialiser les tâches
     tasks_data = []
@@ -494,11 +494,14 @@ def get_assigned_tasks(request):
                 'nom': task.projet.nom,
                 'code': task.projet.code
             },
-            'assigne_a': {
-                'id': task.assigne_a.id,
-                'prenom': task.assigne_a.prenom,
-                'nom': task.assigne_a.nom
-            } if task.assigne_a else None,
+            'assigne_a': [
+                {
+                    'id': assigne.id,
+                    'prenom': assigne.prenom,
+                    'nom': assigne.nom
+                }
+                for assigne in task.assigne_a.all()
+            ] if task.assigne_a.exists() else [],
             'cree_le': task.cree_le,
             'mise_a_jour_le': task.mise_a_jour_le
         })

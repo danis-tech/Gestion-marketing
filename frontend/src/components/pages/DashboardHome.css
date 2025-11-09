@@ -14,14 +14,15 @@
 .chart-card {
   background: #ffffff;
   border-radius: 0px;
-  padding: 24px;
+  padding: 16px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   border: 1px solid #e5e7eb;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
-  overflow: hidden;
-  height: 600px;
-  max-height: 600px;
+  overflow: visible;
+  min-height: 350px;
+  height: auto;
+  max-height: none;
   display: flex;
   flex-direction: column;
 }
@@ -59,6 +60,36 @@
 
 .teams-card::before {
   background: linear-gradient(90deg, #8b5cf6, #7c3aed);
+}
+
+.teams-card {
+  overflow: visible !important;
+  height: auto !important;
+  min-height: 350px;
+  max-height: none !important;
+}
+
+.tasks-card {
+  overflow: visible !important;
+  height: auto !important;
+  min-height: 350px;
+  max-height: none !important;
+}
+
+/* Permettre à la liste des membres de s'afficher en dehors */
+.teams-card .team-members-list {
+  position: relative;
+  z-index: 10;
+  margin-top: 20px;
+  width: 100%;
+}
+
+/* Permettre à la liste des tâches de s'afficher en dehors */
+.tasks-card .tasks-list {
+  position: relative;
+  z-index: 10;
+  margin-top: 20px;
+  width: 100%;
 }
 
 .progress-card::before {
@@ -160,8 +191,8 @@
   }
   
   .chart-card {
-    padding: 20px;
-    min-height: 450px;
+    padding: 16px;
+    min-height: 320px;
   }
   
   .chart-header {
@@ -186,9 +217,8 @@
   }
   
   .chart-card {
-    padding: 16px;
-    height: 500px;
-    max-height: 500px;
+    padding: 14px;
+    min-height: 300px;
   }
   
   .chart-header {
@@ -218,8 +248,7 @@
   
   .chart-card {
     padding: 12px;
-    height: 450px;
-    max-height: 450px;
+    min-height: 280px;
   }
   
   .chart-header {
@@ -301,4 +330,229 @@
 .chart-card .summary-charts-container::before,
 .chart-card .project-progress-container::before {
   display: none;
+}
+
+/* ============================================
+   STYLES DU SÉLECTEUR DE PROJET AMÉLIORÉ
+   ============================================ */
+
+.project-filter-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border-radius: 0;
+  padding: 24px 28px;
+  box-shadow: 
+    0 4px 6px -1px rgba(0, 0, 0, 0.05),
+    0 10px 15px -3px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e5e7eb;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.project-filter-card::before {
+  display: none;
+}
+
+.project-filter-card:hover {
+  box-shadow: 
+    0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+  border-color: #d1d5db;
+}
+
+.project-filter-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.project-filter-icon-wrapper {
+  width: 56px;
+  height: 56px;
+  border-radius: 0;
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 
+    0 4px 12px rgba(59, 130, 246, 0.3),
+    0 2px 4px rgba(59, 130, 246, 0.2);
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.project-filter-card:hover .project-filter-icon-wrapper {
+  transform: scale(1.05) rotate(5deg);
+  box-shadow: 
+    0 6px 16px rgba(59, 130, 246, 0.4),
+    0 4px 8px rgba(59, 130, 246, 0.3);
+}
+
+.project-filter-icon {
+  color: white;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+}
+
+.project-filter-content {
+  flex: 1;
+  min-width: 280px;
+}
+
+.project-filter-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #4b5563;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.project-select-wrapper {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+  max-width: 400px;
+}
+
+.project-select-input {
+  width: 100%;
+  padding: 12px 48px 12px 16px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #1f2937;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 0;
+  appearance: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.project-select-input:hover:not(:disabled) {
+  border-color: #d1d5db;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.project-select-input:focus {
+  outline: none;
+  border-color: #d1d5db;
+  box-shadow: 
+    0 0 0 2px rgba(0, 0, 0, 0.05),
+    0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.project-select-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: #f9fafb;
+}
+
+.project-select-arrow {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: #6b7280;
+  transition: transform 0.2s ease;
+}
+
+.project-select-wrapper:hover .project-select-arrow {
+  color: #4b5563;
+}
+
+.project-select-input:focus + .project-select-arrow,
+.project-select-wrapper:has(.project-select-input:focus) .project-select-arrow {
+  transform: translateY(-50%) rotate(180deg);
+  color: #4b5563;
+}
+
+.project-filter-badge {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+  animation: slideInRight 0.3s ease-out;
+}
+
+.project-filter-badge-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 18px;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 0;
+  backdrop-filter: blur(10px);
+}
+
+.project-filter-badge-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.6);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.project-filter-badge-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.1);
+  }
+}
+
+/* Responsive pour le sélecteur */
+@media (max-width: 768px) {
+  .project-filter-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+
+  .project-filter-icon-wrapper {
+    width: 48px;
+    height: 48px;
+  }
+
+  .project-filter-content {
+    min-width: 100%;
+  }
+
+  .project-select-wrapper {
+    max-width: 100%;
+  }
+
+  .project-filter-badge {
+    margin-left: 0;
+    justify-content: flex-start;
+  }
 }

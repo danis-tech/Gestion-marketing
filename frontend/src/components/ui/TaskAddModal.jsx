@@ -20,12 +20,13 @@ const TaskAddModal = ({ isOpen, onClose, onAdd, projects = [] }) => {
     description: '',
     statut: 'en_attente',
     priorite: 'haut',
-    phase: 'conception',
+    phase: 'expression_besoin',
     debut: '',
     fin: '',
-    assigne_a: '',
+    assigne_a: [],
     tache_dependante: ''
   });
+  const [assignedUsers, setAssignedUsers] = useState([{ id: '', user: null }]);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [availableUsers, setAvailableUsers] = useState([]);
@@ -148,13 +149,23 @@ const TaskAddModal = ({ isOpen, onClose, onAdd, projects = [] }) => {
     
     try {
       // Préparer les données pour l'API
+      // Filtrer les assignés vides et ne garder que les IDs (convertis en entiers)
+      const assignesIds = assignedUsers
+        .filter(item => item.id && item.id !== '')
+        .map(item => parseInt(item.id, 10))
+        .filter(id => !isNaN(id));
+      
       const dataToSave = {
         ...formData,
+        projet: formData.projet ? parseInt(formData.projet) : null,
+        description: formData.description || '',
         debut: formData.debut || null,
         fin: formData.fin || null,
-        assigne_a: formData.assigne_a || null,
-        tache_dependante: formData.tache_dependante || null
+        assigne_a: assignesIds.length > 0 ? assignesIds : [],
+        tache_dependante: formData.tache_dependante ? parseInt(formData.tache_dependante) : null
       };
+      
+      console.log('Données à envoyer:', dataToSave);
 
       await onAdd(dataToSave);
       
@@ -164,17 +175,37 @@ const TaskAddModal = ({ isOpen, onClose, onAdd, projects = [] }) => {
         titre: '',
         statut: 'en_attente',
         priorite: 'haut',
-        phase: 'conception',
+        phase: 'expression_besoin',
         debut: '',
         fin: '',
-        assigne_a: '',
+        assigne_a: [],
         tache_dependante: ''
       });
+      setAssignedUsers([{ id: '', user: null }]);
       setErrors({});
       
     } catch (error) {
       console.error('Erreur lors de la création de la tâche:', error);
-      setErrors({ submit: 'Erreur lors de la création de la tâche' });
+      // Afficher le message d'erreur du serveur si disponible
+      let errorMessage = 'Erreur lors de la création de la tâche';
+      if (error.response?.data) {
+        console.error('Détails de l\'erreur:', error.response.data);
+        // Extraire les messages d'erreur du serveur
+        if (typeof error.response.data === 'object') {
+          const errorDetails = Object.entries(error.response.data)
+            .map(([key, value]) => {
+              if (Array.isArray(value)) {
+                return `${key}: ${value.join(', ')}`;
+              }
+              return `${key}: ${value}`;
+            })
+            .join('; ');
+          errorMessage = errorDetails || errorMessage;
+        } else {
+          errorMessage = error.response.data || errorMessage;
+        }
+      }
+      setErrors({ submit: errorMessage });
     } finally {
       setIsSubmitting(false);
     }
@@ -189,12 +220,13 @@ const TaskAddModal = ({ isOpen, onClose, onAdd, projects = [] }) => {
         titre: '',
         statut: 'en_attente',
         priorite: 'haut',
-        phase: 'conception',
+        phase: 'expression_besoin',
         debut: '',
         fin: '',
-        assigne_a: '',
+        assigne_a: [],
         tache_dependante: ''
       });
+      setAssignedUsers([{ id: '', user: null }]);
       setErrors({});
       onClose();
     }
@@ -326,12 +358,12 @@ const TaskAddModal = ({ isOpen, onClose, onAdd, projects = [] }) => {
                     onChange={(e) => handleInputChange('phase', e.target.value)}
                     disabled={isSubmitting}
                   >
+                    <option value="expression_besoin">Expression du besoin</option>
+                    <option value="etudes_faisabilite">Études de faisabilité</option>
                     <option value="conception">Conception</option>
-                    <option value="build">Build</option>
-                    <option value="uat">UAT</option>
-                    <option value="lancement">Lancement</option>
-                    <option value="suivi">Suivi</option>
-                    <option value="fin_de_vie">Fin de vie</option>
+                    <option value="developpement">Développement / Implémentation</option>
+                    <option value="lancement_commercial">Lancement commercial</option>
+                    <option value="suppression_offre">Suppression d'une offre</option>
                   </select>
                   {errors.phase && <span className="form-error">{errors.phase}</span>}
                 </div>
@@ -381,19 +413,71 @@ const TaskAddModal = ({ isOpen, onClose, onAdd, projects = [] }) => {
               <div className="form-grid">
                 <div className="form-group">
                   <label className="form-label">Assigné à</label>
-                  <select
-                    className="form-select"
-                    value={formData.assigne_a}
-                    onChange={(e) => handleInputChange('assigne_a', e.target.value)}
-                    disabled={isSubmitting}
-                  >
-                    <option value="">Non assigné</option>
-                    {availableUsers.map(user => (
-                      <option key={user.id} value={user.id}>
-                        {user.prenom || user.username} {user.nom || ''}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="assigned-users-container">
+                    {assignedUsers.map((assigned, index) => {
+                      // Récupérer les IDs déjà sélectionnés (sauf celui en cours)
+                      const selectedIds = assignedUsers
+                        .map((a, i) => i !== index ? a.id : null)
+                        .filter(id => id && id !== '');
+                      
+                      // Filtrer les utilisateurs disponibles (exclure ceux déjà sélectionnés)
+                      const availableUsersForSelect = availableUsers.filter(
+                        user => !selectedIds.includes(String(user.id))
+                      );
+                      
+                      return (
+                        <div key={index} className="assigned-user-row">
+                          <select
+                            className="form-select"
+                            value={assigned.id}
+                            onChange={(e) => {
+                              const newAssigned = [...assignedUsers];
+                              const selectedUser = availableUsers.find(u => String(u.id) === e.target.value);
+                              newAssigned[index] = {
+                                id: e.target.value,
+                                user: selectedUser || null
+                              };
+                              setAssignedUsers(newAssigned);
+                            }}
+                            disabled={isSubmitting}
+                          >
+                            <option value="">Non assigné</option>
+                            {availableUsersForSelect.map(user => (
+                              <option key={user.id} value={user.id}>
+                                {user.prenom || user.username} {user.nom || ''}
+                              </option>
+                            ))}
+                          </select>
+                          {assignedUsers.length > 1 && (
+                            <button
+                              type="button"
+                              className="remove-assigned-btn"
+                              onClick={() => {
+                                const newAssigned = assignedUsers.filter((_, i) => i !== index);
+                                setAssignedUsers(newAssigned);
+                              }}
+                              disabled={isSubmitting}
+                              title="Supprimer cet assigné"
+                            >
+                              <X size={16} />
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                    <button
+                      type="button"
+                      className="add-assigned-btn"
+                      onClick={() => {
+                        setAssignedUsers([...assignedUsers, { id: '', user: null }]);
+                      }}
+                      disabled={isSubmitting}
+                      title="Ajouter un autre assigné"
+                    >
+                      <Plus size={16} />
+                      Ajouter un assigné
+                    </button>
+                  </div>
                 </div>
 
                 <div className="form-group">

@@ -32,9 +32,7 @@ const AddProject = () => {
         const user = JSON.parse(userData);
         const userName = user.prenom || user.username || user.name || user.nom || "Utilisateur";
         setCurrentUserName(userName);
-        console.log('Utilisateur connecté:', user);
       } catch (error) {
-        console.error('Erreur lors du parsing des données utilisateur:', error);
       }
     }
   }, []);
@@ -54,11 +52,9 @@ const AddProject = () => {
           // Si l'API retourne directement un tableau
           setProjects(response);
         } else {
-          console.error('Structure de réponse API inattendue:', response);
           setProjects([]);
         }
       } catch (error) {
-        console.error('Erreur lors du chargement des projets:', error);
         // En cas d'erreur, on peut garder quelques projets de démonstration
         setProjects([]);
       } finally {
@@ -80,15 +76,20 @@ const AddProject = () => {
   // via son modal intégré
 
   const handleDeleteProject = async (project) => {
-    if (window.confirm(`Êtes-vous sûr de vouloir supprimer le projet "${project.nom}" ?`)) {
+    if (window.confirm(`Êtes-vous sûr de vouloir supprimer le projet "${project.nom}" ?\n\nCette action est irréversible et supprimera :\n- Le projet et toutes ses données\n- Toutes les tâches associées\n- Tous les documents et fichiers\n- Tous les membres et permissions\n- Toutes les phases et étapes`)) {
       try {
+        setTableLoading(true);
         await projectsService.deleteProject(project.id);
-        // Mettre à jour la liste locale
-        setProjects(projects.filter(p => p.id !== project.id));
+        
+        // Rafraîchir la liste depuis le serveur pour s'assurer que tout est à jour
+        await refreshProjects();
+        
         alert('Projet supprimé avec succès !');
       } catch (error) {
-        console.error('Erreur lors de la suppression:', error);
-        alert('Erreur lors de la suppression du projet');
+        const errorMessage = error.response?.data?.message || error.message || 'Erreur lors de la suppression du projet';
+        alert(`Erreur lors de la suppression : ${errorMessage}`);
+      } finally {
+        setTableLoading(false);
       }
     }
   };
@@ -115,7 +116,6 @@ const AddProject = () => {
         setProjects([]);
       }
     } catch (error) {
-      console.error('Erreur lors du rafraîchissement:', error);
     } finally {
       setTableLoading(false);
     }
@@ -170,7 +170,6 @@ const AddProject = () => {
       
       return 0;
     } catch (error) {
-      console.error('Erreur lors du parsing du budget:', error, budgetString);
       return 0;
     }
   };

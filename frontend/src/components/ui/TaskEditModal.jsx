@@ -3,6 +3,7 @@ import {
   X, 
   Save,
   Edit,
+  Plus,
   Calendar, 
   User, 
   Target, 
@@ -20,12 +21,13 @@ const TaskEditModal = ({ isOpen, onClose, onEdit, task, projects = [] }) => {
     description: '',
     statut: 'en_attente',
     priorite: 'haut',
-    phase: 'conception',
+    phase: 'expression_besoin',
     debut: '',
     fin: '',
-    assigne_a: '',
+    assigne_a: [],
     tache_dependante: ''
   });
+  const [assignedUsers, setAssignedUsers] = useState([{ id: '', user: null }]);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [availableUsers, setAvailableUsers] = useState([]);
@@ -37,22 +39,56 @@ const TaskEditModal = ({ isOpen, onClose, onEdit, task, projects = [] }) => {
       // Extraire l'ID du projet (peut être un objet ou un ID)
       let projetId = '';
       if (task.projet) {
-        if (typeof task.projet === 'object' && task.projet.id) {
-          projetId = task.projet.id;
-        } else if (typeof task.projet === 'number' || typeof task.projet === 'string') {
+        // Si c'est un objet avec un id
+        if (typeof task.projet === 'object' && task.projet !== null) {
+          if (task.projet.id !== undefined && task.projet.id !== null) {
+            projetId = String(task.projet.id);
+          }
+        } 
+        // Si c'est directement un nombre
+        else if (typeof task.projet === 'number') {
+          projetId = String(task.projet);
+        } 
+        // Si c'est une chaîne
+        else if (typeof task.projet === 'string') {
           projetId = task.projet;
         }
       }
+      // Vérifier aussi si projet_id existe directement
+      if (!projetId && task.projet_id) {
+        projetId = String(task.projet_id);
+      }
       
-      // Extraire l'ID de l'assigné
-      let assigneId = '';
+      console.log('TaskEditModal - Projet extrait:', { 
+        taskProjet: task.projet,
+        projetId: task.projet_id,
+        projetIdExtrait: projetId, 
+        type: typeof task.projet,
+        taskKeys: Object.keys(task)
+      });
+      
+      // Extraire les IDs des assignés (peut être un tableau ou un objet unique)
+      let assignesIds = [];
       if (task.assigne_a) {
-        if (typeof task.assigne_a === 'object' && task.assigne_a.id) {
-          assigneId = task.assigne_a.id;
+        if (Array.isArray(task.assigne_a)) {
+          // Si c'est un tableau d'objets ou d'IDs
+          assignesIds = task.assigne_a.map(item => {
+            if (typeof item === 'object' && item.id) {
+              return String(item.id);
+            }
+            return String(item);
+          });
+        } else if (typeof task.assigne_a === 'object' && task.assigne_a.id) {
+          assignesIds = [String(task.assigne_a.id)];
         } else if (typeof task.assigne_a === 'number' || typeof task.assigne_a === 'string') {
-          assigneId = task.assigne_a;
+          assignesIds = [String(task.assigne_a)];
         }
       }
+      
+      // Créer les assignedUsers à partir des IDs
+      const assignedUsersList = assignesIds.length > 0 
+        ? assignesIds.map(id => ({ id, user: null }))
+        : [{ id: '', user: null }];
       
       // Extraire l'ID de la tâche dépendante
       let dependanceId = '';
@@ -70,12 +106,13 @@ const TaskEditModal = ({ isOpen, onClose, onEdit, task, projects = [] }) => {
         description: task.description || '',
         statut: task.statut || 'en_attente',
         priorite: task.priorite || 'haut',
-        phase: task.phase || 'conception',
+        phase: task.phase || 'expression_besoin',
         debut: task.debut || '',
         fin: task.fin || '',
-        assigne_a: assigneId,
+        assigne_a: assignesIds,
         tache_dependante: dependanceId
       });
+      setAssignedUsers(assignedUsersList);
     }
   }, [task, isOpen]);
 
@@ -196,14 +233,20 @@ const TaskEditModal = ({ isOpen, onClose, onEdit, task, projects = [] }) => {
     
     try {
       // Préparer les données pour l'API
+      // Filtrer les assignés vides et ne garder que les IDs (convertis en entiers)
+      const assignesIds = assignedUsers
+        .filter(item => item.id && item.id !== '')
+        .map(item => parseInt(item.id, 10))
+        .filter(id => !isNaN(id));
+      
       const dataToSave = {
         ...formData,
         // Envoyer les IDs pour les ForeignKey (Django attend des IDs, pas des objets)
         projet: parseInt(formData.projet) || null,
         debut: formData.debut || null,
         fin: formData.fin || null,
-        // Envoyer les IDs pour les ForeignKey
-        assigne_a: formData.assigne_a ? parseInt(formData.assigne_a) : null,
+        // Envoyer les IDs pour les assignés (ManyToMany)
+        assigne_a: assignesIds.length > 0 ? assignesIds : [],
         tache_dependante: formData.tache_dependante ? parseInt(formData.tache_dependante) : null
       };
 
@@ -356,12 +399,12 @@ const TaskEditModal = ({ isOpen, onClose, onEdit, task, projects = [] }) => {
                     onChange={(e) => handleInputChange('phase', e.target.value)}
                     disabled={isSubmitting}
                   >
+                    <option value="expression_besoin">Expression du besoin</option>
+                    <option value="etudes_faisabilite">Études de faisabilité</option>
                     <option value="conception">Conception</option>
-                    <option value="build">Build</option>
-                    <option value="uat">UAT</option>
-                    <option value="lancement">Lancement</option>
-                    <option value="suivi">Suivi</option>
-                    <option value="fin_de_vie">Fin de vie</option>
+                    <option value="developpement">Développement / Implémentation</option>
+                    <option value="lancement_commercial">Lancement commercial</option>
+                    <option value="suppression_offre">Suppression d'une offre</option>
                   </select>
                   {errors.phase && <span className="form-error">{errors.phase}</span>}
                 </div>
@@ -411,19 +454,71 @@ const TaskEditModal = ({ isOpen, onClose, onEdit, task, projects = [] }) => {
               <div className="form-grid">
                 <div className="form-group">
                   <label className="form-label">Assigné à</label>
-                  <select
-                    className="form-select"
-                    value={formData.assigne_a}
-                    onChange={(e) => handleInputChange('assigne_a', e.target.value)}
-                    disabled={isSubmitting}
-                  >
-                    <option value="">Non assigné</option>
-                    {availableUsers.map(user => (
-                      <option key={user.id} value={user.id}>
-                        {user.prenom || user.username} {user.nom || ''}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="assigned-users-container">
+                    {assignedUsers.map((assigned, index) => {
+                      // Récupérer les IDs déjà sélectionnés (sauf celui en cours)
+                      const selectedIds = assignedUsers
+                        .map((a, i) => i !== index ? a.id : null)
+                        .filter(id => id && id !== '');
+                      
+                      // Filtrer les utilisateurs disponibles (exclure ceux déjà sélectionnés)
+                      const availableUsersForSelect = availableUsers.filter(
+                        user => !selectedIds.includes(String(user.id))
+                      );
+                      
+                      return (
+                        <div key={index} className="assigned-user-row">
+                          <select
+                            className="form-select"
+                            value={assigned.id}
+                            onChange={(e) => {
+                              const newAssigned = [...assignedUsers];
+                              const selectedUser = availableUsers.find(u => String(u.id) === e.target.value);
+                              newAssigned[index] = {
+                                id: e.target.value,
+                                user: selectedUser || null
+                              };
+                              setAssignedUsers(newAssigned);
+                            }}
+                            disabled={isSubmitting}
+                          >
+                            <option value="">Non assigné</option>
+                            {availableUsersForSelect.map(user => (
+                              <option key={user.id} value={user.id}>
+                                {user.prenom || user.username} {user.nom || ''}
+                              </option>
+                            ))}
+                          </select>
+                          {assignedUsers.length > 1 && (
+                            <button
+                              type="button"
+                              className="remove-assigned-btn"
+                              onClick={() => {
+                                const newAssigned = assignedUsers.filter((_, i) => i !== index);
+                                setAssignedUsers(newAssigned);
+                              }}
+                              disabled={isSubmitting}
+                              title="Supprimer cet assigné"
+                            >
+                              <X size={16} />
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                    <button
+                      type="button"
+                      className="add-assigned-btn"
+                      onClick={() => {
+                        setAssignedUsers([...assignedUsers, { id: '', user: null }]);
+                      }}
+                      disabled={isSubmitting}
+                      title="Ajouter un autre assigné"
+                    >
+                      <Plus size={16} />
+                      Ajouter un assigné
+                    </button>
+                  </div>
                 </div>
 
                 <div className="form-group">

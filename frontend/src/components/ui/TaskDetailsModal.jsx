@@ -115,12 +115,12 @@ const TaskDetailsModal = ({ task, isOpen, onClose }) => {
   // Fonction pour obtenir le texte de la phase
   const getPhaseText = (phase) => {
     const phaseMap = {
+      'expression_besoin': 'Expression du besoin',
+      'etudes_faisabilite': 'Études de faisabilité',
       'conception': 'Conception',
-      'build': 'Build',
-      'uat': 'UAT',
-      'lancement': 'Lancement',
-      'suivi': 'Suivi',
-      'fin_de_vie': 'Fin de vie'
+      'developpement': 'Développement / Implémentation',
+      'lancement_commercial': 'Lancement commercial',
+      'suppression_offre': 'Suppression d\'une offre'
     };
     return phaseMap[phase] || phase;
   };
@@ -166,10 +166,17 @@ const TaskDetailsModal = ({ task, isOpen, onClose }) => {
                <div className="assigned-card">
                  <div className="assigned-label">Assigné à</div>
                  <div className="assigned-value">
-                   {getFieldValue(task, 'assigne_a.prenom') && getFieldValue(task, 'assigne_a.nom') 
-                     ? `${getFieldValue(task, 'assigne_a.prenom')} ${getFieldValue(task, 'assigne_a.nom')}`
-                     : getFieldValue(task, 'assigne_a.username', 'Non assigné')
-                   }
+                   {task.assigne_a && Array.isArray(task.assigne_a) && task.assigne_a.length > 0 ? (
+                     <div className="flex flex-col space-y-2">
+                       {task.assigne_a.map((assigne, idx) => (
+                         <span key={idx} className="font-bold text-gray-900">
+                           {`${assigne.prenom || ''} ${assigne.nom || ''}`.trim() || assigne.username || 'Non défini'}
+                         </span>
+                       ))}
+                     </div>
+                   ) : (
+                     <span className="font-bold text-gray-500">Non assigné</span>
+                   )}
               </div>
               </div>
             </div>

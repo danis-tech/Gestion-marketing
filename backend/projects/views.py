@@ -2,9 +2,12 @@ from django.shortcuts import render
 from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
 from django.db.models import Count, Q
+from django.db import transaction
 from django.utils import timezone
 from django.core.exceptions import ValidationError
+from django.http import Http404
 from datetime import datetime, timedelta
 
 # Import du service de notifications
@@ -44,7 +47,7 @@ class ProjetViewSet(viewsets.ModelViewSet):
     - GET /api/projects/stats/ - Statistiques des projets
     """
     permission_classes = [ProjetPermissions]
-    queryset = Projet.objects.all().select_related('proprietaire')
+    queryset = Projet.objects.all().select_related('proprietaire').prefetch_related('phases_etat__phase')
     
     def get_queryset(self):
         """Filtrer les projets selon les permissions de l'utilisateur."""
@@ -52,13 +55,13 @@ class ProjetViewSet(viewsets.ModelViewSet):
         
         # Les superusers voient tous les projets
         if user.is_superuser:
-            return super().get_queryset()
+            return super().get_queryset().prefetch_related('phases_etat__phase')
         
         # Les utilisateurs normaux voient leurs projets et ceux où ils ont des permissions
         return Projet.objects.filter(
             Q(proprietaire=user) |
             Q(permissions_utilisateurs__utilisateur=user, permissions_utilisateurs__active=True)
-        ).distinct().select_related('proprietaire')
+        ).distinct().select_related('proprietaire').prefetch_related('phases_etat__phase')
     
     def get_serializer_class(self):
         """Choisir le bon sérialiseur selon l'action."""
@@ -86,6 +89,159 @@ class ProjetViewSet(viewsets.ModelViewSet):
             'message': f'Statut mis à jour de {serializer.ancien_statut} vers {projet.statut}',
             'projet': ProjetDetailSerializer(projet).data
         })
+    
+    def destroy(self, request, *args, **kwargs):
+        """Supprimer un projet et tous ses éléments associés."""
+        instance = self.get_object()
+        projet_id = instance.id
+        projet_nom = instance.nom
+        
+        import os
+        
+        # Utiliser une transaction pour garantir la cohérence
+        with transaction.atomic():
+            # 0. DÉSACTIVER TEMPORAIREMENT LES SIGNALS qui créent des notifications
+            #    pour éviter qu'ils ne créent de nouvelles notifications pendant la suppression
+            from django.db.models.signals import post_delete, post_save
+            from notifications.signals import (
+                notify_project_deletion, notify_task_deletion, notify_document_deletion,
+                notify_project_changes, notify_task_changes, notify_document_changes,
+                notify_uploaded_document_changes
+            )
+            from projects.models import Projet, Tache
+            from documents.models import DocumentProjet, DocumentTeleverse
+            
+            # Désactiver les signaux
+            post_delete.disconnect(notify_project_deletion, sender=Projet)
+            post_delete.disconnect(notify_task_deletion, sender=Tache)
+            post_delete.disconnect(notify_document_deletion, sender=DocumentProjet)
+            post_save.disconnect(notify_project_changes, sender=Projet)
+            post_save.disconnect(notify_task_changes, sender=Tache)
+            post_save.disconnect(notify_document_changes, sender=DocumentProjet)
+            post_save.disconnect(notify_uploaded_document_changes, sender=DocumentTeleverse)
+            
+            try:
+                # 0.5. Créer la notification de suppression AVANT de supprimer le projet
+                #    (on doit le faire avant car après le projet n'existera plus)
+                from notifications.services import NotificationService
+                from notifications.models import NotificationType
+                
+                # Récupérer le type de notification
+                try:
+                    type_notif = NotificationType.objects.get(code='projet_supprime')
+                    # Créer la notification directement pour avoir son ID
+                    notification_suppression = NotificationService.create_general_notification(
+                        type_code='projet_supprime',
+                        titre=f'Projet supprimé: {projet_nom}',
+                        message=f'Le projet "{projet_nom}" a été supprimé par {request.user.prenom} {request.user.nom}',
+                        projet=instance,  # Lier au projet avant suppression
+                        priorite='elevee'
+                    )
+                    notification_suppression_id = notification_suppression.id if notification_suppression else None
+                except Exception:
+                    notification_suppression_id = None
+                
+                # 1. Supprimer TOUTES les notifications liées au projet via SQL brut
+                #    (cela évite les problèmes de contraintes et de signaux)
+                #    MAIS on garde la notification de suppression qu'on vient de créer
+                from django.db import connection
+                from projects.models import Tache, Etape
+                
+                # Récupérer toutes les tâches et étapes du projet
+                taches_ids = list(Tache.objects.filter(projet_id=projet_id).values_list('id', flat=True))
+                etapes_ids = list(Etape.objects.filter(phase_etat__projet_id=projet_id).values_list('id', flat=True))
+                
+                with connection.cursor() as cursor:
+                    # Supprimer les notifications liées directement au projet
+                    # SAUF la notification de suppression qu'on vient de créer
+                    if notification_suppression_id:
+                        cursor.execute(
+                            "DELETE FROM notifications WHERE projet_id = %s AND id != %s",
+                            [projet_id, notification_suppression_id]
+                        )
+                    else:
+                        cursor.execute("DELETE FROM notifications WHERE projet_id = %s", [projet_id])
+                    deleted_projet = cursor.rowcount
+                    
+                    # Supprimer les notifications liées aux tâches
+                    deleted_taches = 0
+                    if taches_ids:
+                        placeholders = ','.join(['%s'] * len(taches_ids))
+                        cursor.execute(f"DELETE FROM notifications WHERE tache_id IN ({placeholders})", taches_ids)
+                        deleted_taches = cursor.rowcount
+                    
+                    # Supprimer les notifications liées aux étapes
+                    deleted_etapes = 0
+                    if etapes_ids:
+                        placeholders = ','.join(['%s'] * len(etapes_ids))
+                        cursor.execute(f"DELETE FROM notifications WHERE etape_id IN ({placeholders})", etapes_ids)
+                        deleted_etapes = cursor.rowcount
+                
+                # 2. Supprimer les documents et leurs fichiers physiques
+                try:
+                    from documents.models import DocumentProjet, DocumentTeleverse
+                    
+                    # Supprimer les fichiers physiques des documents de projet
+                    documents = DocumentProjet.objects.filter(projet_id=projet_id)
+                    files_deleted = 0
+                    files_locked = 0
+                    for doc in documents:
+                        if doc.chemin_fichier and os.path.exists(doc.chemin_fichier):
+                            try:
+                                os.remove(doc.chemin_fichier)
+                                files_deleted += 1
+                            except PermissionError:
+                                # Fichier verrouillé (probablement ouvert dans un autre programme)
+                                files_locked += 1
+                            except Exception:
+                                pass
+                    
+                    # Supprimer les fichiers physiques des documents téléversés
+                    documents_televerses = DocumentTeleverse.objects.filter(projet_id=projet_id)
+                    for doc in documents_televerses:
+                        if doc.chemin_fichier and os.path.exists(doc.chemin_fichier):
+                            try:
+                                os.remove(doc.chemin_fichier)
+                                files_deleted += 1
+                            except PermissionError:
+                                # Fichier verrouillé (probablement ouvert dans un autre programme)
+                                files_locked += 1
+                            except Exception:
+                                pass
+                    
+                    # Les documents seront supprimés automatiquement par CASCADE
+                except Exception:
+                    pass
+                
+                # 3. Supprimer le projet (cascade supprimera automatiquement):
+                #    - MembreProjet (membres)
+                #    - HistoriqueEtat (historiques)
+                #    - PermissionProjet (permissions)
+                #    - Tache (tâches)
+                #    - ProjetPhaseEtat (phases) -> Etape (étapes)
+                #    - DocumentProjet (documents) -> CommentaireDocumentProjet (commentaires)
+                #    - DocumentTeleverse (documents téléversés)
+                instance.delete()
+                
+            except Exception:
+                raise
+            finally:
+                # TOUJOURS réactiver les signaux, même en cas d'erreur
+                try:
+                    post_delete.connect(notify_project_deletion, sender=Projet)
+                    post_delete.connect(notify_task_deletion, sender=Tache)
+                    post_delete.connect(notify_document_deletion, sender=DocumentProjet)
+                    post_save.connect(notify_project_changes, sender=Projet)
+                    post_save.connect(notify_task_changes, sender=Tache)
+                    post_save.connect(notify_document_changes, sender=DocumentProjet)
+                    post_save.connect(notify_uploaded_document_changes, sender=DocumentTeleverse)
+                except Exception:
+                    pass
+        
+        return Response({
+            'message': f'Projet "{projet_nom}" supprimé avec succès',
+            'id': projet_id
+        }, status=status.HTTP_200_OK)
     
     @action(detail=False, methods=['get'])
     def stats(self, request):
@@ -341,7 +497,7 @@ class TacheViewSet(viewsets.ModelViewSet):
     - GET /api/taches/mes_taches/ - Tâches assignées à l'utilisateur
     """
     permission_classes = [permissions.IsAuthenticated]
-    queryset = Tache.objects.all().select_related('projet', 'assigne_a', 'tache_dependante')
+    queryset = Tache.objects.all().select_related('projet', 'tache_dependante').prefetch_related('assigne_a')
     
     def get_queryset(self):
         """Filtrer les tâches selon les permissions de l'utilisateur."""
@@ -358,8 +514,8 @@ class TacheViewSet(viewsets.ModelViewSet):
         ).distinct()
         
         return Tache.objects.filter(projet__in=projets_accessibles).select_related(
-            'projet', 'assigne_a', 'tache_dependante'
-        )
+            'projet', 'tache_dependante'
+        ).prefetch_related('assigne_a')
     
     def get_serializer_class(self):
         """Choisir le bon sérialiseur selon l'action."""
@@ -375,7 +531,19 @@ class TacheViewSet(viewsets.ModelViewSet):
     
     def create(self, request, *args, **kwargs):
         """Créer une nouvelle tâche."""
-        response = super().create(request, *args, **kwargs)
+        # Log pour déboguer
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"Données reçues pour création de tâche: {request.data}")
+        logger.info(f"Type de phase reçu: {type(request.data.get('phase'))}, valeur: {request.data.get('phase')}")
+        try:
+            response = super().create(request, *args, **kwargs)
+        except Exception as e:
+            logger.error(f"Erreur lors de la création de la tâche: {str(e)}")
+            logger.error(f"Type d'erreur: {type(e).__name__}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            raise
         
         # Envoyer une notification si la tâche est assignée
         if response.status_code == 201 and NotificationService:
@@ -383,9 +551,11 @@ class TacheViewSet(viewsets.ModelViewSet):
             tache_id = response.data.get('id')
             if tache_id:
                 try:
-                    tache = Tache.objects.get(id=tache_id)
-                    if tache.assigne_a:
-                        NotificationService.notify_task_assigned(tache, tache.assigne_a)
+                    tache = Tache.objects.prefetch_related('assigne_a').get(id=tache_id)
+                    assignes = tache.assigne_a.all()
+                    # Envoyer une notification à chaque utilisateur assigné
+                    for assigne in assignes:
+                        NotificationService.notify_task_assigned(tache, assigne)
                 except Tache.DoesNotExist:
                     pass  # Ignorer si la tâche n'existe pas
         
@@ -528,9 +698,15 @@ class ProjetPhaseEtatViewSet(viewsets.ModelViewSet):
     serializer_class = ProjetPhaseEtatSerializer
     
     def get_queryset(self):
-        """Filtrer par projet."""
+        """Filtrer par projet avec toutes les relations nécessaires."""
         projet_id = self.kwargs.get('projet_pk')
-        return ProjetPhaseEtat.objects.filter(projet_id=projet_id).select_related('phase')
+        return ProjetPhaseEtat.objects.filter(
+            projet_id=projet_id
+        ).select_related(
+            'phase', 'projet'
+        ).prefetch_related(
+            'etapes__responsable', 'etapes__cree_par'
+        ).order_by('phase__ordre')
     
     def get_serializer_class(self):
         """Choisir le bon sérialiseur."""
@@ -732,4 +908,91 @@ class EtapeViewSet(viewsets.ModelViewSet):
             'etapes_en_retard': etapes_en_retard,
             'progression_pourcentage': round(progression_pourcentage, 2),
             'etapes_detail': EtapeSerializer(etapes, many=True).data
+        })
+
+
+class ProjetCompletionViewSet(viewsets.ViewSet):
+    """
+    ViewSet pour la gestion de la completion des projets.
+    
+    Endpoints disponibles :
+    - POST /api/projects/{projet_id}/marquer-termine/ - Marquer le projet comme terminé
+    - POST /api/projects/{projet_id}/marquer-non-termine/ - Marquer le projet comme non terminé
+    - GET /api/projects/{projet_id}/peut-etre-termine/ - Vérifier si le projet peut être terminé
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def get_projet(self, projet_pk):
+        """Récupérer le projet."""
+        try:
+            return Projet.objects.get(pk=projet_pk)
+        except Projet.DoesNotExist:
+            raise Http404("Projet non trouvé")
+    
+    @action(detail=False, methods=['post'], url_path='marquer-termine')
+    def marquer_termine(self, request, projet_pk=None):
+        """Marquer le projet comme terminé."""
+        projet = self.get_projet(projet_pk)
+        
+        if not projet.peut_etre_termine():
+            phases_non_terminees = projet.phases_etat.exclude(
+                terminee=True
+            ).exclude(
+                ignoree=True
+            )
+            phases_noms = [p.phase.nom for p in phases_non_terminees]
+            
+            return Response({
+                'error': 'Impossible de terminer le projet',
+                'message': f'Toutes les phases doivent être terminées ou ignorées avant de terminer le projet. Phases non terminées : {", ".join(phases_noms)}',
+                'phases_non_terminees': phases_noms
+            }, status=400)
+        
+        projet.marquer_termine()
+        
+        return Response({
+            'message': f'Projet "{projet.nom}" marqué comme terminé avec succès',
+            'projet': ProjetSerializer(projet).data
+        })
+    
+    @action(detail=False, methods=['post'], url_path='marquer-non-termine')
+    def marquer_non_termine(self, request, projet_pk=None):
+        """Marquer le projet comme non terminé."""
+        projet = self.get_projet(projet_pk)
+        
+        projet.marquer_non_termine()
+        
+        return Response({
+            'message': f'Projet "{projet.nom}" marqué comme non terminé avec succès',
+            'projet': ProjetSerializer(projet).data
+        })
+    
+    @action(detail=False, methods=['get'], url_path='peut-etre-termine')
+    def peut_etre_termine(self, request, projet_pk=None):
+        """Vérifier si le projet peut être terminé."""
+        projet = self.get_projet(projet_pk)
+        
+        peut_etre_termine = projet.peut_etre_termine()
+        
+        phases_non_terminees = []
+        if not peut_etre_termine:
+            phases_non_terminees = [
+                {
+                    'id': p.id,
+                    'nom': p.phase.nom,
+                    'terminee': p.terminee,
+                    'ignoree': p.ignoree
+                }
+                for p in projet.phases_etat.exclude(terminee=True).exclude(ignoree=True)
+            ]
+        
+        return Response({
+            'peut_etre_termine': peut_etre_termine,
+            'phases_non_terminees': phases_non_terminees,
+            'projet': {
+                'id': projet.id,
+                'nom': projet.nom,
+                'statut': projet.statut,
+                'est_termine': projet.est_termine
+            }
         })

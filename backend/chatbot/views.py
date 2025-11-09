@@ -2432,7 +2432,7 @@ Que souhaitez-vous savoir ? 😊"""
             User = get_user_model()
             
             # Récupérer toutes les tâches avec leurs utilisateurs assignés
-            all_tasks = Tache.objects.select_related('assigne_a', 'projet').all()
+            all_tasks = Tache.objects.select_related('projet').prefetch_related('assigne_a').all()
             
             if not all_tasks.exists():
                 return "Aucune tâche trouvée dans le système."
@@ -2442,11 +2442,13 @@ Que souhaitez-vous savoir ? 😊"""
             unassigned_tasks = []
             
             for task in all_tasks:
-                if task.assigne_a:
-                    user = task.assigne_a
-                    if user not in users_tasks:
-                        users_tasks[user] = []
-                    users_tasks[user].append(task)
+                assignes = task.assigne_a.all()
+                if assignes.exists():
+                    # Ajouter la tâche à chaque utilisateur assigné
+                    for user in assignes:
+                        if user not in users_tasks:
+                            users_tasks[user] = []
+                        users_tasks[user].append(task)
                 else:
                     unassigned_tasks.append(task)
             
@@ -2559,7 +2561,7 @@ Que souhaitez-vous savoir ? 😊"""
                     teams_info.append("*Note: Aucune équipe formelle n'est définie dans les projets. Voici les équipes basées sur les tâches assignées :*\n")
                     
                     for user in users_with_tasks:
-                        user_tasks = Tache.objects.filter(assigne_a=user).select_related('projet')
+                        user_tasks = Tache.objects.filter(assigne_a=user).select_related('projet').prefetch_related('assigne_a')
                         
                         user_info = f"**👤 Équipe de {user.get_full_name() or user.username}**\n"
                         user_info += f"📧 Email: {user.email}\n"
@@ -2620,7 +2622,7 @@ Que souhaitez-vous savoir ? 😊"""
                 return f"Statut '{status}' non reconnu."
             
             # Récupérer les tâches avec ce statut
-            tasks = Tache.objects.filter(statut=status_mapping[status]).select_related('projet', 'assigne_a')
+            tasks = Tache.objects.filter(statut=status_mapping[status]).select_related('projet').prefetch_related('assigne_a')
             
             if not tasks.exists():
                 status_display = {
@@ -2639,8 +2641,10 @@ Que souhaitez-vous savoir ? 😊"""
                 task_info += f"  - Statut: {task.get_statut_display()}\n"
                 task_info += f"  - Priorité: {task.get_priorite_display()}\n"
                 task_info += f"  - Phase: {task.get_phase_display()}\n"
-                if task.assigne_a:
-                    task_info += f"  - Assigné à: {task.assigne_a.get_full_name() or task.assigne_a.username}\n"
+                assignes = task.assigne_a.all()
+                if assignes.exists():
+                    assignes_noms = ', '.join([assigne.get_full_name() or assigne.username for assigne in assignes])
+                    task_info += f"  - Assigné à: {assignes_noms}\n"
                 else:
                     task_info += f"  - Assigné à: Non assigné\n"
                 if task.debut and task.fin:
@@ -2680,7 +2684,7 @@ Que souhaitez-vous savoir ? 😊"""
                 return f"Priorité '{priority}' non reconnue."
             
             # Récupérer les tâches avec cette priorité
-            tasks = Tache.objects.filter(priorite=priority_mapping[priority]).select_related('projet', 'assigne_a')
+            tasks = Tache.objects.filter(priorite=priority_mapping[priority]).select_related('projet').prefetch_related('assigne_a')
             
             if not tasks.exists():
                 priority_display = {
@@ -2702,8 +2706,10 @@ Que souhaitez-vous savoir ? 😊"""
                 task_info += f"  - Statut: {task.get_statut_display()}\n"
                 task_info += f"  - Priorité: {task.get_priorite_display()}\n"
                 task_info += f"  - Phase: {task.get_phase_display()}\n"
-                if task.assigne_a:
-                    task_info += f"  - Assigné à: {task.assigne_a.get_full_name() or task.assigne_a.username}\n"
+                assignes = task.assigne_a.all()
+                if assignes.exists():
+                    assignes_noms = ', '.join([assigne.get_full_name() or assigne.username for assigne in assignes])
+                    task_info += f"  - Assigné à: {assignes_noms}\n"
                 else:
                     task_info += f"  - Assigné à: Non assigné\n"
                 if task.debut and task.fin:
@@ -2731,7 +2737,7 @@ Que souhaitez-vous savoir ? 😊"""
         """Récupérer la liste complète des tâches"""
         try:
             # Récupérer toutes les tâches
-            tasks = Tache.objects.select_related('projet', 'assigne_a').all()
+            tasks = Tache.objects.select_related('projet').prefetch_related('assigne_a').all()
             
             if not tasks.exists():
                 return "Aucune tâche trouvée dans le système."
@@ -2743,8 +2749,10 @@ Que souhaitez-vous savoir ? 😊"""
                 task_info += f"  - Statut: {task.get_statut_display()}\n"
                 task_info += f"  - Priorité: {task.get_priorite_display()}\n"
                 task_info += f"  - Phase: {task.get_phase_display()}\n"
-                if task.assigne_a:
-                    task_info += f"  - Assigné à: {task.assigne_a.get_full_name() or task.assigne_a.username}\n"
+                assignes = task.assigne_a.all()
+                if assignes.exists():
+                    assignes_noms = ', '.join([assigne.get_full_name() or assigne.username for assigne in assignes])
+                    task_info += f"  - Assigné à: {assignes_noms}\n"
                 else:
                     task_info += f"  - Assigné à: Non assigné\n"
                 if task.debut and task.fin:

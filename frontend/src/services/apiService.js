@@ -779,9 +779,23 @@ export const etapesService = {
 
 const analyticsService = {
   // Récupérer les données du tableau de bord
-  getDashboard: async (periodDays = 30) => {
+  getDashboard: async (periodDays = 30, projectId = null) => {
     try {
-      const response = await apiClient.get(`/api/analytics/metrics/dashboard/?period_days=${periodDays}`);
+      let url = `/api/analytics/metrics/dashboard/?period_days=${periodDays}`;
+      if (projectId) {
+        url += `&project_id=${projectId}`;
+      }
+      const response = await apiClient.get(url);
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  },
+  
+  // Récupérer les données détaillées d'un projet
+  getProjectDetails: async (projectId) => {
+    try {
+      const response = await apiClient.get(`/api/analytics/metrics/project_details/?project_id=${projectId}`);
       return response.data;
     } catch (error) {
       throw handleApiError(error);
@@ -938,6 +952,39 @@ const analyticsService = {
   }
 };
 
+// Service pour la gestion de la completion des projets
+export const projectCompletionService = {
+  // Marquer un projet comme terminé
+  marquerTermine: async (projectId) => {
+    try {
+      const response = await apiClient.post(`/api/projects/${projectId}/marquer-termine/`);
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  },
+
+  // Marquer un projet comme non terminé
+  marquerNonTermine: async (projectId) => {
+    try {
+      const response = await apiClient.post(`/api/projects/${projectId}/marquer-non-termine/`);
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  },
+
+  // Vérifier si un projet peut être terminé
+  peutEtreTermine: async (projectId) => {
+    try {
+      const response = await apiClient.get(`/api/projects/${projectId}/peut-etre-termine/`);
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  },
+};
+
 // Export de l'instance Axios pour les cas spéciaux
 export { apiClient, analyticsService };
 
@@ -953,4 +1000,5 @@ export default {
   phases: phasesService,
   etapes: etapesService,
   analytics: analyticsService,
+  projectCompletion: projectCompletionService,
 };

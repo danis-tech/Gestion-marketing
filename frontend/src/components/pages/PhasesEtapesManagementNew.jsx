@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Target } from 'lucide-react';
+import { Target, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { useProjectPhases, useProjectEtapes } from '../../hooks';
-import { phasesService } from '../../services/apiService';
+import { phasesService, projectCompletionService } from '../../services/apiService';
 import useNotification from '../../hooks/useNotification';
 import { 
   ProjectSidebar, 
@@ -48,11 +48,64 @@ const PhasesEtapesManagementNew = () => {
   const [viewMode, setViewMode] = useState('list');
   const [expandedPhases, setExpandedPhases] = useState(new Set());
   const [forceRefresh, setForceRefresh] = useState(0);
+  const [projectCompletionStatus, setProjectCompletionStatus] = useState(null);
+  const [isCheckingCompletion, setIsCheckingCompletion] = useState(false);
 
   // Charger les projets au démarrage (une seule fois)
   useEffect(() => {
     loadProjects();
   }, []); // Dependencies vides pour éviter les re-renders
+
+  // Vérifier le statut de completion quand un projet est sélectionné
+  useEffect(() => {
+    if (selectedProject) {
+      checkProjectCompletionStatus();
+    }
+  }, [selectedProject]);
+
+  // Fonctions pour la gestion de la completion du projet
+  const checkProjectCompletionStatus = async () => {
+    if (!selectedProject) return;
+    
+    try {
+      setIsCheckingCompletion(true);
+      const status = await projectCompletionService.peutEtreTermine(selectedProject.id);
+      setProjectCompletionStatus(status);
+    } catch (error) {
+      console.error('Erreur lors de la vérification du statut de completion:', error);
+      showError('Erreur', 'Impossible de vérifier le statut de completion du projet');
+    } finally {
+      setIsCheckingCompletion(false);
+    }
+  };
+
+  const handleProjectCompletionToggle = async () => {
+    if (!selectedProject) return;
+    
+    try {
+         if (projectCompletionStatus?.peut_etre_termine && !projectCompletionStatus?.projet?.est_termine) {
+        // Marquer comme terminé
+        await projectCompletionService.marquerTermine(selectedProject.id);
+        showSuccess('Succès', 'Projet marqué comme terminé avec succès');
+      } else {
+        // Marquer comme non terminé
+        await projectCompletionService.marquerNonTermine(selectedProject.id);
+        showSuccess('Succès', 'Projet marqué comme non terminé avec succès');
+      }
+      
+      // Recharger les données
+      await checkProjectCompletionStatus();
+      await loadProjectPhases(selectedProject.id);
+      setForceRefresh(prev => prev + 1);
+    } catch (error) {
+      console.error('Erreur lors du changement de statut:', error);
+      if (error.response?.data?.error) {
+        showError('Erreur', error.response.data.error);
+      } else {
+        showError('Erreur', 'Impossible de modifier le statut du projet');
+      }
+    }
+  };
 
   
   // États des modaux
@@ -265,6 +318,64 @@ const PhasesEtapesManagementNew = () => {
                   selectedProject={selectedProject}
                   progression={progression}
                 />
+
+                {/* Bouton de completion du projet */}
+                {(projectCompletionStatus || isCheckingCompletion) && (
+                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                    {/* Interface de completion du projet */}
+                    <div className="space-y-4">
+                      <div className="flex items-center space-x-3">
+                         {projectCompletionStatus?.projet?.est_termine ? (
+                           <CheckCircle className="w-6 h-6 text-green-500" />
+                         ) : (
+                           <XCircle className="w-6 h-6 text-gray-400" />
+                         )}
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900">
+                            Statut du projet
+                          </h3>
+                           <p className="text-sm text-gray-600">
+                             {projectCompletionStatus?.projet?.est_termine 
+                               ? 'Projet terminé' 
+                               : 'Projet en cours'
+                             }
+                           </p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        {projectCompletionStatus?.phases_non_terminees?.length > 0 && (
+                          <div className="text-sm text-gray-500">
+                            <AlertCircle className="w-4 h-4 inline mr-1" />
+                            {projectCompletionStatus.phases_non_terminees.length} phase(s) non terminée(s)
+                          </div>
+                        )}
+                        
+                        <button
+                          onClick={handleProjectCompletionToggle}
+                          disabled={isCheckingCompletion || !projectCompletionStatus}
+                           className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                             projectCompletionStatus?.projet?.est_termine
+                               ? 'bg-orange-100 text-orange-800 hover:bg-orange-200 border border-orange-300'
+                               : projectCompletionStatus?.peut_etre_termine
+                               ? 'bg-green-100 text-green-800 hover:bg-green-200 border border-green-300'
+                               : 'bg-gray-100 text-gray-500 cursor-not-allowed border border-gray-300'
+                           }`}
+                        >
+                          {isCheckingCompletion ? (
+                            'Vérification...'
+                          ) : projectCompletionStatus?.projet?.est_termine ? (
+                            'Marquer comme non terminé'
+                          ) : projectCompletionStatus?.peut_etre_termine ? (
+                            'Marquer comme terminé'
+                          ) : (
+                            'Impossible de terminer'
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Filtres et contrôles */}
                 <PhasesFilters

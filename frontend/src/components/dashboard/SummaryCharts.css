@@ -6,6 +6,37 @@
   margin: 0;
 }
 
+/* Styles pour les conteneurs de membres et tâches avec scrollbar personnalisée */
+.members-grid,
+.tasks-container {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+.members-grid::-webkit-scrollbar,
+.tasks-container::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.members-grid::-webkit-scrollbar-track,
+.tasks-container::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 5px;
+}
+
+.members-grid::-webkit-scrollbar-thumb,
+.tasks-container::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 5px;
+  border: 2px solid #f1f5f9;
+}
+
+.members-grid::-webkit-scrollbar-thumb:hover,
+.tasks-container::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
 /* Placeholder for loading/error states when SummaryCharts is used as a child */
 .chart-content-placeholder {
   display: flex;
@@ -195,13 +226,16 @@
 /* Contenu des graphiques */
 .chart-content {
   flex: 1;
-  height: 280px;
+  height: 160px;
+  min-height: 160px;
   min-width: 300px;
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
-  margin-bottom: 16px;
+  margin-bottom: 8px;
+  overflow: hidden;
 }
 
 /* Footer des graphiques */
@@ -260,9 +294,11 @@
 }
 
 .no-data p {
-  margin: 0;
+  margin: 0 auto;
   font-size: 13px;
   font-weight: 500;
+  text-align: center;
+  width: 100%;
 }
 
 /* États de chargement */

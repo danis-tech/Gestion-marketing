@@ -9,7 +9,7 @@ class TacheAdmin(admin.ModelAdmin):
     """Configuration admin pour le modèle Tache."""
     list_display = [
         'titre', 'projet', 'statut', 'priorite', 'phase', 
-        'assigne_a', 'debut', 'fin', 'est_en_retard', 'progression'
+        'assigned_users_display', 'debut', 'fin', 'est_en_retard', 'progression'
     ]
     list_filter = [
         'statut', 'priorite', 'phase', 'projet', 'assigne_a', 
@@ -19,6 +19,7 @@ class TacheAdmin(admin.ModelAdmin):
     list_editable = ['phase']
     readonly_fields = ['cree_le', 'mise_a_jour_le', 'nbr_jour_estimation', 'progression']
     date_hierarchy = 'cree_le'
+    filter_horizontal = ['assigne_a']
     
     fieldsets = (
         ('Informations générales', {
@@ -46,9 +47,17 @@ class TacheAdmin(admin.ModelAdmin):
         return "À jour"
     est_en_retard.short_description = 'État'
     
+    def assigned_users_display(self, obj):
+        """Afficher les utilisateurs assignés."""
+        assignes = obj.assigne_a.all()
+        if assignes:
+            return ", ".join([f"{u.prenom} {u.nom}" for u in assignes[:3]])
+        return "Non assigné"
+    assigned_users_display.short_description = 'Assignés à'
+    
     def get_queryset(self, request):
         """Optimiser les requêtes."""
-        return super().get_queryset(request).select_related('projet', 'assigne_a', 'tache_dependante')
+        return super().get_queryset(request).select_related('projet', 'tache_dependante').prefetch_related('assigne_a')
 
 
 @admin.register(PhaseProjet)

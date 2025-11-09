@@ -146,12 +146,12 @@ const AddTask = () => {
     enAttente: tasks.filter(t => t.statut === 'en_attente').length,
     horsDelai: tasks.filter(t => t.statut === 'hors_delai').length,
     rejete: tasks.filter(t => t.statut === 'rejete').length,
+    expression_besoin: tasks.filter(t => t.phase === 'expression_besoin').length,
+    etudes_faisabilite: tasks.filter(t => t.phase === 'etudes_faisabilite').length,
     conception: tasks.filter(t => t.phase === 'conception').length,
-    build: tasks.filter(t => t.phase === 'build').length,
-    uat: tasks.filter(t => t.phase === 'uat').length,
-    lancement: tasks.filter(t => t.phase === 'lancement').length,
-    suivi: tasks.filter(t => t.phase === 'suivi').length,
-    finDeVie: tasks.filter(t => t.phase === 'fin_de_vie').length
+    developpement: tasks.filter(t => t.phase === 'developpement').length,
+    lancement_commercial: tasks.filter(t => t.phase === 'lancement_commercial').length,
+    suppression_offre: tasks.filter(t => t.phase === 'suppression_offre').length
   };
 
   const statsCards = [
@@ -196,12 +196,52 @@ const AddTask = () => {
       textColor: "text-red-600"
     },
     {
-      title: "Conception",
-      value: stats.conception,
+      title: "Expression du besoin",
+      value: stats.expression_besoin,
       icon: Target,
       color: "from-indigo-500 to-indigo-600",
       bgColor: "bg-indigo-50",
       textColor: "text-indigo-600"
+    },
+    {
+      title: "Études de faisabilité",
+      value: stats.etudes_faisabilite,
+      icon: Target,
+      color: "from-purple-500 to-purple-600",
+      bgColor: "bg-purple-50",
+      textColor: "text-purple-600"
+    },
+    {
+      title: "Conception",
+      value: stats.conception,
+      icon: Target,
+      color: "from-blue-500 to-blue-600",
+      bgColor: "bg-blue-50",
+      textColor: "text-blue-600"
+    },
+    {
+      title: "Développement",
+      value: stats.developpement,
+      icon: Target,
+      color: "from-green-500 to-green-600",
+      bgColor: "bg-green-50",
+      textColor: "text-green-600"
+    },
+    {
+      title: "Lancement commercial",
+      value: stats.lancement_commercial,
+      icon: Target,
+      color: "from-yellow-500 to-yellow-600",
+      bgColor: "bg-yellow-50",
+      textColor: "text-yellow-600"
+    },
+    {
+      title: "Suppression d'offre",
+      value: stats.suppression_offre,
+      icon: Target,
+      color: "from-red-500 to-red-600",
+      bgColor: "bg-red-50",
+      textColor: "text-red-600"
     }
   ];
 

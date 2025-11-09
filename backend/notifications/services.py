@@ -133,7 +133,7 @@ class NotificationService:
         """
         Notifier qu'un projet est en retard
         """
-        if projet.fin and projet.fin < timezone.now().date():
+        if projet.fin and projet.fin.date() < timezone.now().date():
             # Notification générale
             NotificationService.create_general_notification(
                 type_code='projet_retard',
@@ -145,7 +145,7 @@ class NotificationService:
                 donnees_supplementaires={
                     'projet_id': projet.id,
                     'date_fin_prevue': projet.fin.isoformat(),
-                    'jours_retard': (timezone.now().date() - projet.fin).days
+                    'jours_retard': (timezone.now().date() - projet.fin.date()).days
                 }
             )
             
@@ -153,7 +153,7 @@ class NotificationService:
             NotificationService.create_personal_notification(
                 type_code='projet_retard_perso',
                 titre=f'Votre projet est en retard: {projet.nom}',
-                message=f'Votre projet "{projet.nom}" est en retard de {(timezone.now().date() - projet.fin).days} jour(s)',
+                message=f'Votre projet "{projet.nom}" est en retard de {(timezone.now().date() - projet.fin.date()).days} jour(s)',
                 destinataire=projet.proprietaire,
                 projet=projet,
                 priorite='elevee'
@@ -175,13 +175,14 @@ class NotificationService:
                 priorite='normale'
             )
             
-            # Notification personnelle à la personne assignée
-            if tache.assigne_a:
+            # Notification personnelle à chaque personne assignée
+            assignes = tache.assigne_a.all()
+            for assigne in assignes:
                 NotificationService.create_personal_notification(
                     type_code='tache_retard',
                     titre=f'Votre tâche est en retard: {tache.titre}',
                     message=f'Votre tâche "{tache.titre}" est en retard de {(timezone.now().date() - tache.fin).days} jour(s)',
-                    destinataire=tache.assigne_a,
+                    destinataire=assigne,
                     projet=tache.projet,
                     tache=tache,
                     priorite='elevee'

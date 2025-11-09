@@ -26,7 +26,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # --- Sécurité / Debug ---
 SECRET_KEY = os.getenv("SECRET_KEY", "")
-DEBUG = os.getenv("DEBUG", "True") == "True"
+# DEBUG sera défini plus bas après la configuration de base
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "*").split(",")
 # ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "127.0.0.1,localhost,7658ab23c8a9.ngrok-free.app").split(",")
 
@@ -211,30 +211,6 @@ SIMPLE_JWT = {
 }
 
 
-# --- CORS Configuration ---
-if DEBUG:
-    CORS_ALLOW_ALL_ORIGINS = True  # Pour le développement
-else:
-    # En production, utilise des origines spécifiques
-    CORS_ALLOWED_ORIGINS = [
-        "http://localhost:3000",
-        "http://localhost:5173",
-        "https://ton-domaine.com"  # Remplacer par votre domaine de production
-    ]
-
-CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOWED_HEADERS = [
-    'accept',
-    'accept-encoding',
-    'authorization',
-    'content-type',
-    'dnt',
-    'origin',
-    'user-agent',
-    'x-csrftoken',
-    'x-requested-with',
-]
-
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
@@ -246,6 +222,42 @@ else:
     allowed_hosts_str = os.getenv('ALLOWED_HOSTS', '')
     ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_str.split(',') if host.strip()]
 
+# --- CORS Configuration ---
+# Configuration CORS après la définition finale de DEBUG
+if DEBUG:
+    CORS_ALLOW_ALL_ORIGINS = True  # Pour le développement
+    CORS_ALLOW_CREDENTIALS = True
+else:
+    # En production, utilise des origines spécifiques
+    CORS_ALLOWED_ORIGINS = [
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "https://ton-domaine.com"  # Remplacer par votre domaine de production
+    ]
+    CORS_ALLOW_CREDENTIALS = True
+
+# Méthodes HTTP autorisées
+CORS_ALLOWED_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
+
+# En-têtes autorisés
+CORS_ALLOWED_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
 
 # En prod: mets plutôt CORS_ALLOWED_ORIGINS = ["https://ton-domaine"]
 
@@ -285,16 +297,36 @@ USE_TZ = True
 STATIC_URL = 'static/'
 
 # --- Configuration Email ---
-# Pour le développement local avec MailDev
-# Configuration Email
-# Configuration SMTP pour l'envoi d'emails réels
+# Configuration Email SMTP (identique en développement et production)
+# Utilisation d'un mot de passe d'application Google (16 caractères)
+
+# OPTION 1: Backend SMTP réel (pour production)
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+
+# OPTION 2: Backend console (pour développement/test si SMTP ne fonctionne pas)
+# Décommentez la ligne suivante et commentez la ligne EMAIL_BACKEND ci-dessus si besoin
+# EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+# Configuration SMTP pour Gmail
+# Port 587 avec TLS (STARTTLS) - Plus fiable que le port 465
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'jacquesboussengui@gmail.com'
-EMAIL_HOST_PASSWORD = ''
-DEFAULT_FROM_EMAIL = 'noreply@gestion-marketing.com'
+EMAIL_USE_TLS = True   # Utiliser STARTTLS sur le port 587
+EMAIL_USE_SSL = False  # Ne pas utiliser SSL direct
+
+# Récupérer les identifiants depuis les variables d'environnement ou utiliser les valeurs par défaut
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
+# Le mot de passe d'application Google (16 caractères sans espaces)
+# Format Google: "xxxx xxxx xxxx xxxx" -> convertir en "xxxxxxxxxxxxxxxx"
+email_password_raw = os.getenv('EMAIL_HOST_PASSWORD', 'swtd cire yqyy opiq')
+EMAIL_HOST_PASSWORD = email_password_raw.replace(' ', '').replace('-', '') if email_password_raw else ''
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', '')
+
+# Timeout pour la connexion SMTP (en secondes) - augmenté pour les connexions lentes
+EMAIL_TIMEOUT = 30
+
+# URL du frontend pour les liens dans les emails
+FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

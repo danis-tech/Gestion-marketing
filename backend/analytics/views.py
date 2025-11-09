@@ -72,11 +72,89 @@ class MetricViewSet(viewsets.ReadOnlyModelViewSet):
     def dashboard(self, request):
         """Récupère les données pour le tableau de bord"""
         period_days = int(request.query_params.get('period_days', 30))
+        project_id = request.query_params.get('project_id')
+        
+        # Convertir project_id en int si fourni
+        project_id = int(project_id) if project_id else None
         
         analytics_service = AnalyticsService()
-        dashboard_data = analytics_service.get_dashboard_data(period_days)
+        dashboard_data = analytics_service.get_dashboard_data(period_days, project_id=project_id)
         
         return Response(dashboard_data)
+    
+    @action(detail=False, methods=['get'], url_path='project_details', url_name='project_details')
+    def project_details(self, request):
+        """Récupère les données détaillées d'un projet spécifique"""
+        logger.info(f'[project_details] Endpoint appelé - User: {request.user}, Query params: {dict(request.query_params)}')
+        project_id = request.query_params.get('project_id')
+        
+        if not project_id:
+            logger.warning('[project_details] project_id manquant dans la requête')
+            return Response(
+                {'error': 'Le paramètre project_id est requis'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            project_id = int(project_id)
+            logger.info(f'[project_details] Traitement du projet ID: {project_id}')
+        except ValueError:
+            logger.error(f'[project_details] project_id invalide: {project_id}')
+            return Response(
+                {'error': 'project_id doit être un nombre entier'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            # Vérifier d'abord si le projet existe
+            from projects.models import Projet
+            try:
+                projet = Projet.objects.get(id=project_id)
+                logger.info(f'[project_details] Projet trouvé: {projet.nom}')
+            except Projet.DoesNotExist:
+                logger.warning(f'[project_details] Projet {project_id} n\'existe pas dans la base de données')
+                return Response(
+                    {'error': f'Projet avec ID {project_id} non trouvé'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            
+            analytics_service = AnalyticsService()
+            project_data = analytics_service.get_project_dashboard_data(project_id)
+            logger.info(f'[project_details] Données récupérées pour le projet {project_id}: {bool(project_data)}, Clés: {list(project_data.keys()) if project_data else "Aucune"}')
+            
+            # Vérifier spécifiquement les données de l'équipe
+            if project_data and 'equipe' in project_data:
+                equipe = project_data['equipe']
+                logger.info(f'[project_details] Données équipe - total_membres: {equipe.get("total_membres")}, membres présents: {"membres" in equipe}, membres count: {len(equipe.get("membres", []))}')
+            
+            if not project_data:
+                logger.warning(f'[project_details] project_data est vide pour le projet {project_id}')
+                return Response(
+                    {'error': f'Impossible de récupérer les données pour le projet {project_id}'},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+            
+            if not project_data.get('project'):
+                logger.warning(f'[project_details] Clé "project" manquante dans project_data pour le projet {project_id}')
+                return Response(
+                    {'error': f'Données incomplètes pour le projet {project_id}'},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+            
+            logger.info(f'[project_details] Succès - Retour des données pour le projet {project_id}')
+            return Response(project_data)
+        except Projet.DoesNotExist:
+            logger.error(f'[project_details] Projet {project_id} n\'existe pas')
+            return Response(
+                {'error': f'Projet avec ID {project_id} non trouvé'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            logger.error(f'[project_details] Erreur lors de la récupération des données du projet {project_id}: {str(e)}', exc_info=True)
+            return Response(
+                {'error': f'Erreur lors de la récupération des données: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
     
     @action(detail=False, methods=['get'])
     def trends(self, request):

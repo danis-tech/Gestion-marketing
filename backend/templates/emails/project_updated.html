@@ -3,7 +3,7 @@
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>Nouveau Projet Créé - Gabon Telecom</title>
+		<title>Projet Modifié - Gabon Telecom</title>
 		<style>
 			* {
 				margin: 0;
@@ -244,8 +244,8 @@
 				<div class="company-tagline">
 					Connecter le Gabon, Rapprocher les Cœurs
 				</div>
-				<h1>Nouveau Projet Infrastructure</h1>
-				<p>Affectation de responsabilité projet</p>
+				<h1>Projet Modifié</h1>
+				<p>Mise à jour des informations du projet</p>
 			</div>
 
 			<!-- Contenu principal -->
@@ -253,11 +253,8 @@
 				<!-- Message d'accueil -->
 				<div class="welcome-message">
 					<p>
-						Bonjour{% if responsable %},
-						<strong>{{ responsable.prenom }} {{ responsable.nom }}</strong>{%
-						endif %},<br />
-						Un nouveau projet a été créé{% if responsable %} et vous avez été
-						désigné(e) comme responsable technique{% endif %}.
+						Bonjour,<br />
+						Le projet <strong>{{ project.nom }}</strong> a été modifié.
 					</p>
 				</div>
 
@@ -285,13 +282,6 @@
 						</span>
 					</div>
 
-					<div class="info-row">
-						<span class="info-label">Type d'infrastructure</span>
-						<span class="info-value"
-							>{{ project.type_infra|default:"Réseau Mobile" }}</span
-						>
-					</div>
-
 					{% if project.debut %}
 					<div class="info-row">
 						<span class="info-label">Démarrage prévu</span>
@@ -303,13 +293,6 @@
 						<span class="info-value">{{ project.fin|date:"d/m/Y" }}</span>
 					</div>
 					{% endif %}
-
-					<div class="info-row">
-						<span class="info-label">Zone de couverture</span>
-						<span class="info-value"
-							>{{ project.zone|default:"Libreville - Port-Gentil" }}</span
-						>
-					</div>
 				</div>
 
 				<!-- Call to Action -->

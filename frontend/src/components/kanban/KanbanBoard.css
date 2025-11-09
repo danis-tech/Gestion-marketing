@@ -819,6 +819,38 @@
   }
 }
 
+/* Styles pour les phases cliquables */
+.clickable-phase {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.clickable-phase:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  border-color: #3b82f6;
+}
+
+.selected-phase {
+  border: 2px solid #3b82f6 !important;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+}
+
+.selected-phase .phase-header {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  color: white;
+}
+
+.selected-phase .phase-number {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.selected-phase .phase-status span {
+  color: white !important;
+}
+
 .phase-card {
   animation: fadeInUp 0.3s ease-out;
 }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   BarChart3, 
   ClipboardList, 
@@ -16,11 +16,15 @@ import StatsModal from '../ui/StatsModal';
 import SummaryCharts from '../dashboard/SummaryCharts';
 import ProjectProgress from '../dashboard/ProjectProgress';
 import { useStats } from '../../hooks/useStats';
+import { projectService } from '../../services/apiService';
 import './DashboardHome.css';
 
 const DashboardHome = ({ user }) => {
   const [selectedStat, setSelectedStat] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [projects, setProjects] = useState([]);
+  const [selectedProjectId, setSelectedProjectId] = useState(null);
+  const [loadingProjects, setLoadingProjects] = useState(true);
   
   // Utiliser le hook personnalisé pour les statistiques
   const { 
@@ -32,6 +36,46 @@ const DashboardHome = ({ user }) => {
     getChangeData, 
     getGraphData 
   } = useStats();
+
+  // Charger les projets et sélectionner le plus récent par défaut
+  useEffect(() => {
+    const loadProjects = async () => {
+      try {
+        setLoadingProjects(true);
+        console.log('[DashboardHome] Chargement des projets...');
+        const response = await projectService.getProjects({ ordering: '-cree_le' });
+        
+        let projectsData = [];
+        if (response && Array.isArray(response)) {
+          projectsData = response;
+        } else if (response && response.data && Array.isArray(response.data)) {
+          projectsData = response.data;
+        } else if (response && response.results && Array.isArray(response.results)) {
+          projectsData = response.results;
+        }
+        
+        console.log('[DashboardHome] Projets chargés:', projectsData.length, projectsData);
+        setProjects(projectsData);
+        
+        // Sélectionner le projet le plus récent par défaut
+        if (projectsData.length > 0) {
+          const mostRecentProject = projectsData[0];
+          console.log('[DashboardHome] Sélection du projet le plus récent:', mostRecentProject.id, mostRecentProject.nom);
+          setSelectedProjectId(mostRecentProject.id);
+        } else {
+          console.log('[DashboardHome] Aucun projet trouvé');
+          setSelectedProjectId(null);
+        }
+      } catch (err) {
+        console.error('[DashboardHome] Erreur lors du chargement des projets:', err);
+        setSelectedProjectId(null);
+      } finally {
+        setLoadingProjects(false);
+      }
+    };
+    
+    loadProjects();
+  }, []);
 
   const handleCardClick = (stat) => {
     setSelectedStat(stat);
@@ -177,6 +221,61 @@ const DashboardHome = ({ user }) => {
        <div className="w-3 h-full bg-transparent flex-shrink-0"></div>
       </div>
 
+      {/* Sélecteur de projet amélioré */}
+      <div className="flex">
+        <div className="w-3 h-full bg-transparent flex-shrink-0"></div>
+        <div className="flex-1 px-6 pb-6">
+          <div className="project-filter-card">
+            <div className="project-filter-header">
+              <div className="project-filter-icon-wrapper">
+                <FolderOpen size={22} className="project-filter-icon" />
+              </div>
+              <div className="project-filter-content">
+                <label htmlFor="project-select" className="project-filter-label">
+                  Filtrer par projet
+                </label>
+                <div className="project-select-wrapper">
+                  <select
+                    id="project-select"
+                    value={selectedProjectId || ''}
+                    onChange={(e) => setSelectedProjectId(e.target.value ? parseInt(e.target.value) : null)}
+                    disabled={loadingProjects}
+                    className="project-select-input"
+                  >
+                    {loadingProjects ? (
+                      <option>Chargement des projets...</option>
+                    ) : (
+                      <>
+                        <option value="">📊 Tous les projets</option>
+                        {projects.map(project => (
+                          <option key={project.id} value={project.id}>
+                            {project.code} - {project.nom}
+                          </option>
+                        ))}
+                      </>
+                    )}
+                  </select>
+                  <div className="project-select-arrow">
+                    <ChevronDown size={18} />
+                  </div>
+                </div>
+              </div>
+              {selectedProjectId && (
+                <div className="project-filter-badge">
+                  <div className="project-filter-badge-content">
+                    <div className="project-filter-badge-dot"></div>
+                    <span className="project-filter-badge-text">
+                      {projects.find(p => p.id === selectedProjectId)?.nom}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+        <div className="w-3 h-full bg-transparent flex-shrink-0"></div>
+      </div>
+
       {/* Nouvelles sections - Grille 2x2 professionnelle */}
       <div className="dashboard-sections">
         {/* Section 1: Projets */}
@@ -190,7 +289,7 @@ const DashboardHome = ({ user }) => {
               <span className="chart-subtitle">Gestion et suivi des projets</span>
             </div>
           </div>
-          <SummaryCharts type="projects" />
+          <SummaryCharts type="projects" projectId={selectedProjectId} />
         </div>
 
         {/* Section 2: Tâches */}
@@ -204,7 +303,7 @@ const DashboardHome = ({ user }) => {
               <span className="chart-subtitle">Performance et productivité</span>
             </div>
           </div>
-          <SummaryCharts type="tasks" />
+          <SummaryCharts type="tasks" projectId={selectedProjectId} />
         </div>
 
         {/* Section 3: Équipes */}
@@ -218,7 +317,7 @@ const DashboardHome = ({ user }) => {
               <span className="chart-subtitle">Répartition par services</span>
             </div>
           </div>
-          <SummaryCharts type="teams" />
+          <SummaryCharts type="teams" projectId={selectedProjectId} />
         </div>
 
         {/* Section 4: Progression */}
@@ -232,7 +331,7 @@ const DashboardHome = ({ user }) => {
               <span className="chart-subtitle">Suivi par phase</span>
             </div>
           </div>
-          <ProjectProgress />
+          <ProjectProgress projectId={selectedProjectId} />
         </div>
       </div>
 

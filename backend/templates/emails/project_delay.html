@@ -3,7 +3,7 @@
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>Nouveau Projet Créé - Gabon Telecom</title>
+		<title>Projet en Retard - Gabon Telecom</title>
 		<style>
 			* {
 				margin: 0;
@@ -29,7 +29,7 @@
 
 			/* Header simple et professionnel */
 			.header {
-				background: #2563eb;
+				background: #f59e0b;
 				color: #ffffff;
 				padding: 30px;
 				text-align: center;
@@ -66,10 +66,10 @@
 
 			/* Message d'accueil */
 			.welcome-message {
-				background: #f8f9fa;
+				background: #fef3c7;
 				padding: 20px;
 				margin-bottom: 25px;
-				border-left: 4px solid #ff6b35;
+				border-left: 4px solid #f59e0b;
 			}
 
 			.welcome-message p {
@@ -82,7 +82,7 @@
 			/* Carte du projet */
 			.project-card {
 				background: #ffffff;
-				border: 2px solid #2563eb;
+				border: 2px solid #f59e0b;
 				padding: 25px;
 				margin: 25px 0;
 				text-align: center;
@@ -92,7 +92,7 @@
 				font-size: 1.4rem;
 				font-weight: 700;
 				margin: 0 0 10px 0;
-				color: #2563eb;
+				color: #f59e0b;
 			}
 
 			.project-code {
@@ -145,13 +145,8 @@
 				letter-spacing: 0.5px;
 			}
 
-			.badge.status {
-				background: #2563eb;
-				color: #ffffff;
-			}
-
-			.badge.priority {
-				background: #ff6b35;
+			.badge.delay {
+				background: #f59e0b;
 				color: #ffffff;
 			}
 
@@ -244,8 +239,8 @@
 				<div class="company-tagline">
 					Connecter le Gabon, Rapprocher les Cœurs
 				</div>
-				<h1>Nouveau Projet Infrastructure</h1>
-				<p>Affectation de responsabilité projet</p>
+				<h1>Projet en Retard</h1>
+				<p>Action requise</p>
 			</div>
 
 			<!-- Contenu principal -->
@@ -253,11 +248,9 @@
 				<!-- Message d'accueil -->
 				<div class="welcome-message">
 					<p>
-						Bonjour{% if responsable %},
-						<strong>{{ responsable.prenom }} {{ responsable.nom }}</strong>{%
-						endif %},<br />
-						Un nouveau projet a été créé{% if responsable %} et vous avez été
-						désigné(e) comme responsable technique{% endif %}.
+						Bonjour,<br />
+						Le projet <strong>{{ project.nom }}</strong> est en retard par
+						rapport à la date de fin prévue.
 					</p>
 				</div>
 
@@ -272,44 +265,16 @@
 					<div class="info-row">
 						<span class="info-label">Statut</span>
 						<span class="info-value">
-							<span class="badge status">{{ project.get_statut_display }}</span>
+							<span class="badge delay">En Retard</span>
 						</span>
 					</div>
 
+					{% if project.fin %}
 					<div class="info-row">
-						<span class="info-label">Priorité</span>
-						<span class="info-value">
-							<span class="badge priority"
-								>{{ project.get_priorite_display }}</span
-							>
-						</span>
-					</div>
-
-					<div class="info-row">
-						<span class="info-label">Type d'infrastructure</span>
-						<span class="info-value"
-							>{{ project.type_infra|default:"Réseau Mobile" }}</span
-						>
-					</div>
-
-					{% if project.debut %}
-					<div class="info-row">
-						<span class="info-label">Démarrage prévu</span>
-						<span class="info-value">{{ project.debut|date:"d/m/Y" }}</span>
-					</div>
-					{% endif %} {% if project.fin %}
-					<div class="info-row">
-						<span class="info-label">Livraison prévue</span>
+						<span class="info-label">Date de fin prévue</span>
 						<span class="info-value">{{ project.fin|date:"d/m/Y" }}</span>
 					</div>
 					{% endif %}
-
-					<div class="info-row">
-						<span class="info-label">Zone de couverture</span>
-						<span class="info-value"
-							>{{ project.zone|default:"Libreville - Port-Gentil" }}</span
-						>
-					</div>
 				</div>
 
 				<!-- Call to Action -->

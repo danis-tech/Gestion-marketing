@@ -2,7 +2,8 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
     ProjetViewSet, MembreProjetViewSet, HistoriqueEtatViewSet,
-    PermissionProjetViewSet, TacheViewSet, PhaseProjetViewSet, ProjetPhaseEtatViewSet, EtapeViewSet
+    PermissionProjetViewSet, TacheViewSet, PhaseProjetViewSet, ProjetPhaseEtatViewSet, EtapeViewSet,
+    ProjetCompletionViewSet
 )
 
 # Router principal pour les projets
@@ -43,4 +44,9 @@ urlpatterns = [
     path('projects/<int:projet_pk>/phases/<int:phase_pk>/etapes/<int:pk>/terminer/', EtapeViewSet.as_view({'post': 'terminer'}), name='projet-phase-etape-terminer'),
     path('projects/<int:projet_pk>/phases/<int:phase_pk>/etapes/<int:pk>/annuler/', EtapeViewSet.as_view({'post': 'annuler'}), name='projet-phase-etape-annuler'),
     path('projects/<int:projet_pk>/phases/<int:phase_pk>/etapes/progression/', EtapeViewSet.as_view({'get': 'progression'}), name='projet-phase-etapes-progression'),
+    
+    # URLs pour la gestion de la completion des projets
+    path('projects/<int:projet_pk>/marquer-termine/', ProjetCompletionViewSet.as_view({'post': 'marquer_termine'}), name='projet-marquer-termine'),
+    path('projects/<int:projet_pk>/marquer-non-termine/', ProjetCompletionViewSet.as_view({'post': 'marquer_non_termine'}), name='projet-marquer-non-termine'),
+    path('projects/<int:projet_pk>/peut-etre-termine/', ProjetCompletionViewSet.as_view({'get': 'peut_etre_termine'}), name='projet-peut-etre-termine'),
 ]

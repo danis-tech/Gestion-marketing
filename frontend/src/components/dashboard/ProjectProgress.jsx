@@ -24,10 +24,11 @@ import {
 import { projectsService, phasesService } from '../../services/apiService';
 import './ProjectProgress.css';
 
-const ProjectProgress = () => {
+const ProjectProgress = ({ projectId = null }) => {
   const [projects, setProjects] = useState([]);
   const [selectedProject, setSelectedProject] = useState(null);
   const [projectPhases, setProjectPhases] = useState([]);
+  const [projectData, setProjectData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [viewMode, setViewMode] = useState('detailed'); // detailed, compact, timeline
@@ -36,8 +37,58 @@ const ProjectProgress = () => {
   const [showInsights, setShowInsights] = useState(false);
 
   useEffect(() => {
-    loadProjects();
-  }, []);
+    if (projectId) {
+      loadProjectData(projectId);
+    } else {
+      loadProjects();
+    }
+  }, [projectId]);
+
+  const loadProjectData = async (id) => {
+    try {
+      setLoading(true);
+      setIsAnimating(true);
+      
+      // Charger les informations du projet d'abord
+      const project = await projectsService.getProject(id);
+      setSelectedProject(project);
+      
+      // Charger les données détaillées du projet
+      try {
+        const { analyticsService } = await import('../../services/apiService');
+        const data = await analyticsService.getProjectDetails(id);
+        
+        if (data && data.project) {
+          setProjectData(data);
+          // Utiliser les phases depuis projectData
+          if (data.phases && data.phases.length > 0) {
+            setProjectPhases(data.phases);
+          } else {
+            await loadProjectPhases(id);
+          }
+        } else {
+          // Si pas de données détaillées, charger les phases normalement
+          await loadProjectPhases(id);
+        }
+      } catch (err) {
+        console.error('Erreur lors du chargement des données détaillées:', err);
+        // Charger les phases normalement en cas d'erreur
+        await loadProjectPhases(id);
+      }
+      
+      setError(null);
+      
+      setTimeout(() => {
+        setIsAnimating(false);
+      }, 600);
+    } catch (err) {
+      console.error('Erreur lors du chargement du projet:', err);
+      setError('Impossible de charger le projet');
+      setIsAnimating(false);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const loadProjects = async () => {
     try {
@@ -139,6 +190,9 @@ const ProjectProgress = () => {
   };
 
   const calculateProgress = () => {
+    if (projectData?.progression) {
+      return projectData.progression.globale || 0;
+    }
     if (!projectPhases.length) {
       return 0;
     }
@@ -169,37 +223,47 @@ const ProjectProgress = () => {
 
   return (
     <div className="project-progress-container">
-      {/* Sélecteur de projet simplifié */}
-      <div className="project-selector-section">
-        <div style={{ marginBottom: '8px', fontSize: '12px', color: '#6b7280' }}>
-          {loading ? 'Chargement...' : `${projects.length} projet(s) disponible(s)`}
+      {/* Sélecteur de projet simplifié - masqué si projectId est fourni */}
+      {!projectId && (
+        <div className="project-selector-section">
+          <div style={{ marginBottom: '8px', fontSize: '12px', color: '#6b7280' }}>
+            {loading ? 'Chargement...' : `${projects.length} projet(s) disponible(s)`}
+          </div>
+          <select 
+            value={selectedProject?.id || ''} 
+            onChange={(e) => {
+              const project = projects.find(p => p.id === parseInt(e.target.value));
+              if (project) handleProjectSelect(project);
+            }}
+            className="project-select"
+            disabled={loading}
+          >
+            <option value="">Choisir un projet...</option>
+            {projects.map(project => (
+              <option key={project.id} value={project.id}>
+                {project.nom} - {getProjectStatusText(project)}
+              </option>
+            ))}
+          </select>
         </div>
-        <select 
-          value={selectedProject?.id || ''} 
-          onChange={(e) => {
-            const project = projects.find(p => p.id === parseInt(e.target.value));
-            if (project) handleProjectSelect(project);
-          }}
-          className="project-select"
-          disabled={loading}
-        >
-          <option value="">Choisir un projet...</option>
-          {projects.map(project => (
-            <option key={project.id} value={project.id}>
-              {project.nom} - {getProjectStatusText(project)}
-            </option>
-          ))}
-        </select>
-      </div>
+      )}
 
       {/* Contenu principal du projet */}
-      {selectedProject && (
+      {(selectedProject || projectData) && (
         <div className="project-details">
           {/* Informations du projet */}
           <div className="project-info-card">
             <div className="project-main-info">
               <div className="project-header">
-                <h4 className="project-name">{selectedProject.nom}</h4>
+                <h4 className="project-name">
+                  {projectData?.project?.nom || selectedProject?.nom || 'Projet'}
+                </h4>
+                {projectData?.progression && (
+                  <div className="project-progression-global">
+                    <div className="progression-label">Progression Globale</div>
+                    <div className="progression-value">{projectData.progression.globale}%</div>
+                  </div>
+                )}
                 <span className={`project-status ${getProjectStatusColor(selectedProject)}`}>
                   {getProjectStatusText(selectedProject)}
                 </span>
@@ -207,15 +271,31 @@ const ProjectProgress = () => {
               <div className="project-meta">
                 <div className="meta-item">
                   <Calendar size={14} />
-                  <span>Début: {selectedProject.debut ? new Date(selectedProject.debut).toLocaleDateString('fr-FR') : 'Non définie'}</span>
+                  <span>Début: {
+                    projectData?.project?.debut 
+                      ? new Date(projectData.project.debut).toLocaleDateString('fr-FR')
+                      : selectedProject?.debut 
+                        ? new Date(selectedProject.debut).toLocaleDateString('fr-FR')
+                        : 'Non définie'
+                  }</span>
                 </div>
                 <div className="meta-item">
                   <Calendar size={14} />
-                  <span>Fin: {selectedProject.fin ? new Date(selectedProject.fin).toLocaleDateString('fr-FR') : 'Non définie'}</span>
+                  <span>Fin: {
+                    projectData?.project?.fin 
+                      ? new Date(projectData.project.fin).toLocaleDateString('fr-FR')
+                      : selectedProject?.fin 
+                        ? new Date(selectedProject.fin).toLocaleDateString('fr-FR')
+                        : 'Non définie'
+                  }</span>
                 </div>
                 <div className="meta-item">
                   <User size={14} />
-                  <span>Responsable: {selectedProject.chef_projet || 'Non assigné'}</span>
+                  <span>Responsable: {
+                    projectData?.project?.proprietaire?.nom 
+                      || selectedProject?.chef_projet 
+                      || 'Non assigné'
+                  }</span>
                 </div>
               </div>
             </div>
@@ -255,7 +335,9 @@ const ProjectProgress = () => {
                   <Target size={16} />
                 </div>
                 <div className="stat-content">
-                  <span className="stat-number">{projectPhases.length}</span>
+                  <span className="stat-number">
+                    {projectData?.progression?.total_phases || projectPhases.length}
+                  </span>
                   <span className="stat-label">Phases</span>
                 </div>
               </div>
@@ -264,7 +346,9 @@ const ProjectProgress = () => {
                   <CheckCircle2 size={16} />
                 </div>
                 <div className="stat-content">
-                  <span className="stat-number">{projectPhases.filter(p => p.terminee).length}</span>
+                  <span className="stat-number">
+                    {projectData?.progression?.phases_terminees || projectPhases.filter(p => p.terminee).length}
+                  </span>
                   <span className="stat-label">Terminées</span>
                 </div>
               </div>
@@ -273,7 +357,9 @@ const ProjectProgress = () => {
                   <Play size={16} />
                 </div>
                 <div className="stat-content">
-                  <span className="stat-number">{projectPhases.filter(p => p.est_en_cours).length}</span>
+                  <span className="stat-number">
+                    {projectData?.progression?.phases_en_cours || projectPhases.filter(p => p.est_en_cours).length}
+                  </span>
                   <span className="stat-label">En cours</span>
                 </div>
               </div>
@@ -286,14 +372,26 @@ const ProjectProgress = () => {
               <h5>Phases du Projet</h5>
             </div>
             
-            {projectPhases.length > 0 ? (
+            {(projectPhases.length > 0 || (projectData?.phases && projectData.phases.length > 0)) ? (
               <div className="phases-grid">
-                {projectPhases.map((phase, index) => (
-                  <div key={phase.id} className="phase-card">
+                {(projectData?.phases || projectPhases).map((phase, index) => {
+                  const phaseData = projectData?.phases ? phase : null;
+                  const phaseNom = phaseData?.nom || phase.phase?.nom || phase.nom || `Phase ${index + 1}`;
+                  const phaseTerminee = phaseData?.terminee !== undefined ? phaseData.terminee : phase.terminee;
+                  const phaseProgression = phaseData?.progression || 0;
+                  const phaseEtapes = phaseData ? {
+                    total: phaseData.total_etapes || 0,
+                    terminees: phaseData.etapes_terminees || 0,
+                    en_cours: phaseData.etapes_en_cours || 0,
+                    en_attente: phaseData.etapes_en_attente || 0
+                  } : null;
+                  
+                  return (
+                  <div key={phase.id || phase.phase_id || index} className="phase-card">
                     <div className="phase-header">
                       <div className="phase-number">{index + 1}</div>
                       <div className="phase-info">
-                        <h6 className="phase-name">{phase.nom}</h6>
+                        <h6 className="phase-name">{phaseNom}</h6>
                         <span className={`phase-status ${getPhaseStatusColor(phase)}`}>
                           {getPhaseStatusIcon(phase)}
                           {getPhaseStatusText(phase)}
@@ -305,16 +403,22 @@ const ProjectProgress = () => {
                         <div 
                           className="phase-progress-fill"
                           style={{ 
-                            width: phase.terminee ? '100%' : phase.est_en_cours ? '60%' : '0%' 
+                            width: `${phaseProgression}%`
                           }}
                         ></div>
                       </div>
                       <span className="phase-progress-text">
-                        {phase.terminee ? '100%' : phase.est_en_cours ? '60%' : '0%'}
+                        {phaseProgression}%
                       </span>
+                      {phaseEtapes && phaseEtapes.total > 0 && (
+                        <div className="phase-etapes-info" style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px' }}>
+                          {phaseEtapes.terminees}/{phaseEtapes.total} étapes terminées
+                        </div>
+                      )}
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="no-phases">

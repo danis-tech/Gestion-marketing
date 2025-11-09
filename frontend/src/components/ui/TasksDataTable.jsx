@@ -21,7 +21,9 @@ import {
   Hash,
   Target,
   Clock,
-  CheckCircle
+  CheckCircle,
+  ChevronDown,
+  Users
 } from 'lucide-react';
 import TaskDetailsModal from './TaskDetailsModal';
 import TaskEditModal from './TaskEditModal';
@@ -59,6 +61,20 @@ const TasksDataTable = ({
   
   // Modal d'ajout
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  
+  // État pour les dropdowns d'assignés
+  const [openAssigneesDropdown, setOpenAssigneesDropdown] = useState({});
+
+  // Fermer les dropdowns quand on clique ailleurs
+  React.useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!event.target.closest('.assignees-dropdown-container')) {
+        setOpenAssigneesDropdown({});
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Filtrage et tri des tâches
   const filteredAndSortedTasks = useMemo(() => {
@@ -338,7 +354,9 @@ const TasksDataTable = ({
           task.phase || '',
           formatDate(task.debut) || '',
           formatDate(task.fin) || '',
-          task.assigne_a?.prenom || task.assigne_a?.username || '',
+          task.assigne_a && Array.isArray(task.assigne_a) && task.assigne_a.length > 0
+            ? task.assigne_a.map(a => `${a.prenom || ''} ${a.nom || ''}`.trim() || a.username || '').join(', ')
+            : '',
           task.projet?.nom || ''
         ])
       ];
@@ -839,11 +857,50 @@ const TasksDataTable = ({
                  </td>
                  
                  <td className="px-4 py-5">
-                   <div className="flex items-center space-x-2">
-                     <User className="w-5 h-5 text-green-600" />
-                     <span className="text-base font-bold text-gray-900" title={task.assigne_a?.prenom || task.assigne_a?.username || 'Non assignée'}>
-                       {truncateText(task.assigne_a?.prenom || task.assigne_a?.username || 'Non assignée', 120)}
-                     </span>
+                   <div className="relative assignees-dropdown-container">
+                     {task.assigne_a && Array.isArray(task.assigne_a) && task.assigne_a.length > 0 ? (
+                       <div className="relative">
+                             <button
+                               onClick={(e) => {
+                                 e.stopPropagation();
+                                 setOpenAssigneesDropdown(prev => ({
+                                   ...prev,
+                                   [task.id]: !prev[task.id]
+                                 }));
+                               }}
+                               className="flex items-center space-x-2 px-3 py-2 bg-green-50 border border-green-200 rounded hover:bg-green-100 transition-colors"
+                             >
+                               <Users className="w-4 h-4 text-green-600" />
+                               <span className="text-sm font-semibold text-gray-900">
+                                 {task.assigne_a.length} {task.assigne_a.length === 1 ? 'personne' : 'personnes'}
+                               </span>
+                               <ChevronDown className={`w-4 h-4 text-gray-600 transition-transform ${openAssigneesDropdown[task.id] ? 'rotate-180' : ''}`} />
+                             </button>
+                             
+                             {openAssigneesDropdown[task.id] && (
+                               <div className="absolute z-50 mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                                 <div className="py-2">
+                                   {task.assigne_a.map((assigne, idx) => (
+                                     <div
+                                       key={idx}
+                                       className="px-4 py-2 hover:bg-gray-50 flex items-center space-x-2"
+                                     >
+                                       <User className="w-4 h-4 text-green-600" />
+                                       <span className="text-sm font-medium text-gray-900">
+                                         {`${assigne.prenom || ''} ${assigne.nom || ''}`.trim() || assigne.username || 'Non défini'}
+                                       </span>
+                                     </div>
+                                   ))}
+                                 </div>
+                               </div>
+                             )}
+                           </div>
+                     ) : (
+                       <div className="flex items-center space-x-2">
+                         <User className="w-5 h-5 text-gray-400" />
+                         <span className="text-base font-bold text-gray-500">Non assignée</span>
+                       </div>
+                     )}
                    </div>
                  </td>
                  

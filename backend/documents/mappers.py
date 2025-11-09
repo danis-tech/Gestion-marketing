@@ -96,7 +96,7 @@ class DocumentDataMapper:
                 'tache_statut': tache.get_statut_display(),
                 'tache_priorite': tache.get_priorite_display(),
                 'tache_phase': tache.get_phase_display(),
-                'tache_responsable': tache.assigne_a.get_full_name() if tache.assigne_a else 'Non assigné',
+                'tache_responsable': ', '.join([assigne.get_full_name() for assigne in tache.assigne_a.all()]) if tache.assigne_a.exists() else 'Non assigné',
                 'tache_date_creation': tache.cree_le.strftime('%d/%m/%Y') if tache.cree_le else '',
                 'tache_date_debut': tache.debut.strftime('%d/%m/%Y') if tache.debut else '',
                 'tache_date_fin': tache.fin.strftime('%d/%m/%Y') if tache.fin else '',
