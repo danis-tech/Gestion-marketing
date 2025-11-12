@@ -32,6 +32,8 @@ const TaskEditModal = ({ isOpen, onClose, onEdit, task, projects = [] }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [availableUsers, setAvailableUsers] = useState([]);
   const [availableTasks, setAvailableTasks] = useState([]);
+  const [projectPhases, setProjectPhases] = useState([]);
+  const [currentPhaseEtatId, setCurrentPhaseEtatId] = useState(null);
 
   // Charger les données de la tâche à modifier
   useEffect(() => {
@@ -100,6 +102,21 @@ const TaskEditModal = ({ isOpen, onClose, onEdit, task, projects = [] }) => {
         }
       }
       
+      // Extraire le phase_etat_id de la tâche
+      let phaseEtatId = null;
+      if (task.phase_etat) {
+        if (typeof task.phase_etat === 'object' && task.phase_etat.id) {
+          phaseEtatId = task.phase_etat.id;
+        } else if (typeof task.phase_etat === 'number') {
+          phaseEtatId = task.phase_etat;
+        }
+      }
+      // Vérifier aussi phase_etat_id directement
+      if (!phaseEtatId && task.phase_etat_id) {
+        phaseEtatId = task.phase_etat_id;
+      }
+      setCurrentPhaseEtatId(phaseEtatId);
+      
       setFormData({
         projet: projetId,
         titre: task.titre || '',
@@ -141,36 +158,58 @@ const TaskEditModal = ({ isOpen, onClose, onEdit, task, projects = [] }) => {
     }
   }, [isOpen]);
 
-  // Charger les tâches disponibles quand un projet est sélectionné
+  // Charger les phases d'état du projet et les tâches disponibles
   useEffect(() => {
-    const loadTasks = async () => {
+    const loadProjectData = async () => {
       if (!formData.projet) {
         setAvailableTasks([]);
+        setProjectPhases([]);
         return;
       }
 
       try {
-        const response = await fetch(`http://localhost:8000/api/taches/projet_taches/?projet_id=${formData.projet}`, {
+        // Charger les phases d'état du projet
+        const phasesResponse = await fetch(`http://localhost:8000/api/projects/${formData.projet}/phases/`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
             'Content-Type': 'application/json'
           }
         });
         
-        if (response.ok) {
-          const tasks = await response.json();
+        if (phasesResponse.ok) {
+          const phasesData = await phasesResponse.json();
+          // Gérer différents formats de réponse (liste directe ou paginée)
+          const phases = Array.isArray(phasesData) ? phasesData : (phasesData.results || phasesData.data || []);
+          console.log('Phases chargées pour le projet:', phases);
+          setProjectPhases(phases);
+        } else {
+          console.error('Erreur API phases:', phasesResponse.status, phasesResponse.statusText);
+          const errorText = await phasesResponse.text();
+          console.error('Détails de l\'erreur:', errorText);
+        }
+
+        // Charger les tâches du projet
+        const tasksResponse = await fetch(`http://localhost:8000/api/taches/projet_taches/?projet_id=${formData.projet}`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (tasksResponse.ok) {
+          const tasks = await tasksResponse.json();
           // Exclure la tâche actuelle de la liste des dépendances
           const filteredTasks = tasks.filter(t => t.id !== task?.id);
           setAvailableTasks(filteredTasks);
         } else {
-          console.error('Erreur API:', response.status, response.statusText);
+          console.error('Erreur API tâches:', tasksResponse.status, tasksResponse.statusText);
         }
       } catch (error) {
-        console.error('Erreur lors du chargement des tâches:', error);
+        console.error('Erreur lors du chargement des données du projet:', error);
       }
     };
 
-    loadTasks();
+    loadProjectData();
   }, [formData.projet, task?.id]);
 
   // Gestion des changements de champs
@@ -239,18 +278,71 @@ const TaskEditModal = ({ isOpen, onClose, onEdit, task, projects = [] }) => {
         .map(item => parseInt(item.id, 10))
         .filter(id => !isNaN(id));
       
+      // Trouver le phase_etat_id correspondant à la phase métier sélectionnée
+      let phaseEtatId = currentPhaseEtatId;
+      
+      // Mapping des phases métier vers les noms de phases
+      const phaseMapping = {
+        'expression_besoin': 'Expression du besoin',
+        'etudes_faisabilite': 'Études de faisabilité',
+        'conception': 'Conception',
+        'developpement': 'Développement / Implémentation',
+        'lancement_commercial': 'Lancement commercial',
+        'suppression_offre': "Suppression d'une offre"
+      };
+      
+      const phaseNom = phaseMapping[formData.phase];
+      console.log('Recherche de phase_etat_id:', { phaseNom, projectPhases, formDataPhase: formData.phase, currentPhaseEtatId });
+      
+      if (phaseNom && projectPhases.length > 0) {
+        // Les phases peuvent être dans un format de liste ou directement
+        const phasesList = Array.isArray(projectPhases) ? projectPhases : (projectPhases.results || []);
+        console.log('Liste des phases à rechercher:', phasesList);
+        
+        const matchingPhase = phasesList.find(p => {
+          const nom = p.nom || p.phase?.nom;
+          console.log('Comparaison:', { nom, phaseNom, match: nom === phaseNom });
+          return nom === phaseNom;
+        });
+        
+        if (matchingPhase) {
+          phaseEtatId = matchingPhase.id;
+          console.log('Phase_etat_id trouvé:', phaseEtatId);
+        } else {
+          console.warn('Aucune phase correspondante trouvée. Phases disponibles:', phasesList.map(p => p.nom || p.phase?.nom));
+        }
+      } else {
+        console.warn('Phases non disponibles ou phaseNom manquant:', { phaseNom, projectPhasesLength: projectPhases.length });
+      }
+      
+      // Si on n'a toujours pas de phase_etat_id, utiliser celui de la tâche actuelle
+      if (!phaseEtatId && currentPhaseEtatId) {
+        phaseEtatId = currentPhaseEtatId;
+        console.log('Utilisation du phase_etat_id de la tâche actuelle:', phaseEtatId);
+      }
+      
+      // Si toujours pas de phase_etat_id, c'est une erreur
+      if (!phaseEtatId) {
+        const errorMsg = projectPhases.length === 0 
+          ? 'Les phases du projet ne sont pas encore chargées. Veuillez attendre un instant et réessayer.'
+          : `Impossible de trouver la phase d'état pour "${phaseNom}". Veuillez sélectionner un projet et une phase valides.`;
+        throw new Error(errorMsg);
+      }
+      
       const dataToSave = {
         ...formData,
         // Envoyer les IDs pour les ForeignKey (Django attend des IDs, pas des objets)
         projet: parseInt(formData.projet) || null,
         debut: formData.debut || null,
         fin: formData.fin || null,
+        // Envoyer le phase_etat_id requis par le backend
+        phase_etat_id: phaseEtatId,
         // Envoyer les IDs pour les assignés (ManyToMany)
         assigne_a: assignesIds.length > 0 ? assignesIds : [],
         tache_dependante: formData.tache_dependante ? parseInt(formData.tache_dependante) : null
       };
 
-
+      console.log('Données envoyées à l\'API:', dataToSave);
 
       await onEdit(task.id, dataToSave);
       
@@ -259,7 +351,28 @@ const TaskEditModal = ({ isOpen, onClose, onEdit, task, projects = [] }) => {
       
     } catch (error) {
       console.error('❌ Erreur lors de la modification de la tâche:', error);
-      setErrors({ submit: 'Erreur lors de la modification de la tâche' });
+      // Afficher le message d'erreur du serveur si disponible
+      let errorMessage = 'Erreur lors de la modification de la tâche';
+      if (error.response?.data) {
+        console.error('Détails de l\'erreur:', error.response.data);
+        // Extraire les messages d'erreur du serveur
+        if (typeof error.response.data === 'object') {
+          const errorDetails = Object.entries(error.response.data)
+            .map(([key, value]) => {
+              if (Array.isArray(value)) {
+                return `${key}: ${value.join(', ')}`;
+              }
+              return `${key}: ${value}`;
+            })
+            .join('; ');
+          errorMessage = errorDetails || errorMessage;
+        } else {
+          errorMessage = error.response.data || errorMessage;
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      setErrors({ submit: errorMessage });
     } finally {
       setIsSubmitting(false);
     }

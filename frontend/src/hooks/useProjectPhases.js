@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { projectsService, phasesService, etapesService } from '../services/apiService';
+import { projectsService, phasesService } from '../services/apiService';
 
 export const useProjectPhases = () => {
   const [projects, setProjects] = useState([]);
@@ -47,39 +47,32 @@ export const useProjectPhases = () => {
     try {
       setLoading(true);
       
-      // Charger les phases du projet
+      // Charger les phases du projet (inclut désormais les tâches)
       const phasesResponse = await phasesService.getProjectPhases(projectId);
       const phases = phasesResponse || [];
       
       // Charger la progression
       const progressionResponse = await phasesService.getProjectPhasesProgression(projectId);
       
-      // Charger les étapes pour chaque phase
-      const phasesWithEtapes = await Promise.all(
+      // S'assurer que chaque phase possède la collection de tâches
+      const phasesWithTasks = await Promise.all(
         phases.map(async (phase) => {
+          if (Array.isArray(phase.taches)) {
+            return phase;
+          }
+          
           try {
-            const etapesResponse = await etapesService.getPhaseEtapes(projectId, phase.id);
-            const etapes = etapesResponse || [];
-            // S'assurer que chaque étape a l'ID de la phase
-            const etapesWithPhaseId = etapes.map(etape => ({
-              ...etape,
-              phase_etat_id: phase.id
-            }));
-            return { ...phase, etapes: etapesWithPhaseId };
+            const tasksResponse = await phasesService.getPhaseTasks(projectId, phase.id);
+            const tasks = tasksResponse?.taches || tasksResponse || [];
+            return { ...phase, taches: tasks };
           } catch (error) {
-            console.error(`Erreur lors du chargement des étapes pour la phase ${phase.id}:`, error);
-            return { ...phase, etapes: [] };
+            console.error(`Erreur lors du chargement des tâches pour la phase ${phase.id}:`, error);
+            return { ...phase, taches: [] };
           }
         })
       );
       
-      console.log('Données des phases mises à jour:', phasesWithEtapes);
-      
-      // Log des phases terminées pour debug
-      const phasesTerminees = phasesWithEtapes.filter(p => p.terminee);
-      console.log('Phases terminées:', phasesTerminees.map(p => ({id: p.id, nom: p.phase.nom, terminee: p.terminee})));
-      
-      setProjectPhases(phasesWithEtapes);
+      setProjectPhases(phasesWithTasks);
       setProgression(progressionResponse);
     } catch (error) {
       console.error('Erreur lors du chargement des phases:', error);

@@ -7,7 +7,7 @@ from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 
 from .models import Notification, NotificationType, ChatMessage, NotificationPreference
-from projects.models import Projet, Tache, Etape, MembreProjet
+from projects.models import Projet, Tache, MembreProjet
 from accounts.models import Service
 
 User = get_user_model()
@@ -27,7 +27,6 @@ class NotificationService:
         destinataire=None,
         projet=None,
         tache=None,
-        etape=None,
         service=None,
         priorite='normale',
         description_detaillee='',
@@ -52,7 +51,6 @@ class NotificationService:
                 priorite=priorite,
                 projet=projet,
                 tache=tache,
-                etape=etape,
                 service=service,
                 donnees_supplementaires=donnees_supplementaires or {},
                 expire_le=expire_le,
@@ -107,7 +105,6 @@ class NotificationService:
         destinataire,
         projet=None,
         tache=None,
-        etape=None,
         priorite='normale',
         description_detaillee='',
         donnees_supplementaires=None
@@ -122,7 +119,6 @@ class NotificationService:
             destinataire=destinataire,
             projet=projet,
             tache=tache,
-            etape=etape,
             priorite=priorite,
             description_detaillee=description_detaillee,
             donnees_supplementaires=donnees_supplementaires
@@ -278,28 +274,12 @@ class NotificationService:
         )
     
     @staticmethod
-    def notify_step_completed(etape):
-        """
-        Notifier qu'une étape a été terminée
-        """
-        # Notification au chef de projet
-        NotificationService.create_personal_notification(
-            type_code='etape_terminee',
-            titre=f'Étape terminée: {etape.nom}',
-            message=f'L\'étape "{etape.nom}" de la phase "{etape.phase_etat.phase.nom}" a été terminée',
-            destinataire=etape.phase_etat.projet.proprietaire,
-            projet=etape.phase_etat.projet,
-            etape=etape,
-            priorite='normale'
-        )
-    
-    @staticmethod
     def get_user_notifications(user, notification_type='all', limit=50):
         """
         Récupérer les notifications d'un utilisateur
         """
         queryset = Notification.objects.select_related(
-            'type_notification', 'projet', 'tache', 'etape', 'service'
+            'type_notification', 'projet', 'tache', 'service'
         )
         
         if notification_type == 'general':

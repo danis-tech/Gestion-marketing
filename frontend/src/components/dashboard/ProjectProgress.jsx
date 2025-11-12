@@ -164,9 +164,20 @@ const ProjectProgress = ({ projectId = null }) => {
 
   const refreshProjectData = () => {
     if (selectedProject) {
-      loadProjectPhases(selectedProject.id);
+      loadProjectData(selectedProject.id);
     }
   };
+
+  // Rafraîchir automatiquement les données toutes les 30 secondes
+  useEffect(() => {
+    if (selectedProject) {
+      const interval = setInterval(() => {
+        refreshProjectData();
+      }, 30000); // 30 secondes
+      
+      return () => clearInterval(interval);
+    }
+  }, [selectedProject]);
 
   const getPhaseStatusIcon = (phase) => {
     if (phase.terminee) return <CheckCircle2 size={16} className="text-green-600" />;
@@ -190,9 +201,11 @@ const ProjectProgress = ({ projectId = null }) => {
   };
 
   const calculateProgress = () => {
-    if (projectData?.progression) {
-      return projectData.progression.globale || 0;
+    // Utiliser la progression du backend si disponible (basée sur les tâches)
+    if (projectData?.progression?.globale !== undefined && projectData.progression.globale !== null) {
+      return Math.round(projectData.progression.globale);
     }
+    // Sinon, calculer basé sur les phases
     if (!projectPhases.length) {
       return 0;
     }
@@ -205,6 +218,7 @@ const ProjectProgress = ({ projectId = null }) => {
     switch (project.statut) {
       case 'termine': return 'text-green-600 bg-green-100';
       case 'en_attente': return 'text-yellow-600 bg-yellow-100';
+      case 'en_cours': return 'text-blue-600 bg-blue-100';
       case 'hors_delai': return 'text-red-600 bg-red-100';
       case 'rejete': return 'text-red-600 bg-red-100';
       default: return 'text-gray-600 bg-gray-100';
@@ -215,6 +229,7 @@ const ProjectProgress = ({ projectId = null }) => {
     switch (project.statut) {
       case 'termine': return 'Terminé';
       case 'en_attente': return 'En attente';
+      case 'en_cours': return 'En cours';
       case 'hors_delai': return 'Hors délai';
       case 'rejete': return 'Rejeté';
       default: return 'Inconnu';
@@ -258,12 +273,10 @@ const ProjectProgress = ({ projectId = null }) => {
                 <h4 className="project-name">
                   {projectData?.project?.nom || selectedProject?.nom || 'Projet'}
                 </h4>
-                {projectData?.progression && (
-                  <div className="project-progression-global">
-                    <div className="progression-label">Progression Globale</div>
-                    <div className="progression-value">{projectData.progression.globale}%</div>
-                  </div>
-                )}
+                <div className="project-progression-global">
+                  <div className="progression-label">Progression Globale</div>
+                  <div className="progression-value">{calculateProgress()}%</div>
+                </div>
                 <span className={`project-status ${getProjectStatusColor(selectedProject)}`}>
                   {getProjectStatusText(selectedProject)}
                 </span>
@@ -293,10 +306,30 @@ const ProjectProgress = ({ projectId = null }) => {
                   <User size={14} />
                   <span>Responsable: {
                     projectData?.project?.proprietaire?.nom 
+                      || projectData?.project?.proprietaire?.username
                       || selectedProject?.chef_projet 
+                      || selectedProject?.proprietaire?.nom
                       || 'Non assigné'
                   }</span>
                 </div>
+                {projectData?.project?.code && (
+                  <div className="meta-item">
+                    <Target size={14} />
+                    <span>Code: {projectData.project.code}</span>
+                  </div>
+                )}
+                {projectData?.project?.priorite_display && (
+                  <div className="meta-item">
+                    <Zap size={14} />
+                    <span>Priorité: {projectData.project.priorite_display}</span>
+                  </div>
+                )}
+                {projectData?.taches && projectData.taches.total > 0 && (
+                  <div className="meta-item">
+                    <BarChart3 size={14} />
+                    <span>{projectData.taches.total} tâche(s) • {projectData.taches.terminees || 0} terminée(s)</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -363,6 +396,45 @@ const ProjectProgress = ({ projectId = null }) => {
                   <span className="stat-label">En cours</span>
                 </div>
               </div>
+              {projectData?.taches && (
+                <>
+                  <div className="stat-item">
+                    <div className="stat-icon">
+                      <BarChart3 size={16} />
+                    </div>
+                    <div className="stat-content">
+                      <span className="stat-number">
+                        {projectData.taches.total || 0}
+                      </span>
+                      <span className="stat-label">Tâches</span>
+                    </div>
+                  </div>
+                  <div className="stat-item">
+                    <div className="stat-icon">
+                      <CheckCircle2 size={16} />
+                    </div>
+                    <div className="stat-content">
+                      <span className="stat-number">
+                        {projectData.taches.terminees || 0}
+                      </span>
+                      <span className="stat-label">Tâches terminées</span>
+                    </div>
+                  </div>
+                  {projectData.taches.hors_delai > 0 && (
+                    <div className="stat-item">
+                      <div className="stat-icon">
+                        <AlertCircle size={16} />
+                      </div>
+                      <div className="stat-content">
+                        <span className="stat-number" style={{ color: '#ef4444' }}>
+                          {projectData.taches.hors_delai}
+                        </span>
+                        <span className="stat-label">En retard</span>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </div>
 
@@ -378,13 +450,18 @@ const ProjectProgress = ({ projectId = null }) => {
                   const phaseData = projectData?.phases ? phase : null;
                   const phaseNom = phaseData?.nom || phase.phase?.nom || phase.nom || `Phase ${index + 1}`;
                   const phaseTerminee = phaseData?.terminee !== undefined ? phaseData.terminee : phase.terminee;
-                  const phaseProgression = phaseData?.progression || 0;
-                  const phaseEtapes = phaseData ? {
-                    total: phaseData.total_etapes || 0,
-                    terminees: phaseData.etapes_terminees || 0,
-                    en_cours: phaseData.etapes_en_cours || 0,
-                    en_attente: phaseData.etapes_en_attente || 0
-                  } : null;
+                  const phaseProgression = phaseData?.progression || phase.progression_pourcentage || 0;
+                  const phaseTasksRaw = phaseData?.taches || phase.taches || [];
+                  let phaseTasksTotal = 0;
+                  let phaseTasksDone = 0;
+
+                  if (Array.isArray(phaseTasksRaw)) {
+                    phaseTasksTotal = phaseTasksRaw.length;
+                    phaseTasksDone = phaseTasksRaw.filter((tache) => tache.statut === 'termine').length;
+                  } else if (phaseTasksRaw && typeof phaseTasksRaw === 'object') {
+                    phaseTasksTotal = phaseTasksRaw.total || phaseTasksRaw.nombre || 0;
+                    phaseTasksDone = phaseTasksRaw.terminees || phaseTasksRaw.nombre_terminees || 0;
+                  }
                   
                   return (
                   <div key={phase.id || phase.phase_id || index} className="phase-card">
@@ -410,9 +487,32 @@ const ProjectProgress = ({ projectId = null }) => {
                       <span className="phase-progress-text">
                         {phaseProgression}%
                       </span>
-                      {phaseEtapes && phaseEtapes.total > 0 && (
+                      {phaseTasksTotal > 0 && (
                         <div className="phase-etapes-info" style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px' }}>
-                          {phaseEtapes.terminees}/{phaseEtapes.total} étapes terminées
+                          {phaseTasksDone}/{phaseTasksTotal} tâches terminées
+                          {phaseData && (
+                            <>
+                              {phaseData.taches_en_cours > 0 && (
+                                <span style={{ marginLeft: '8px', color: '#3b82f6' }}>
+                                  • {phaseData.taches_en_cours} en cours
+                                </span>
+                              )}
+                              {phaseData.taches_en_attente > 0 && (
+                                <span style={{ marginLeft: '8px', color: '#f59e0b' }}>
+                                  • {phaseData.taches_en_attente} en attente
+                                </span>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      )}
+                      {phaseData?.date_debut && (
+                        <div className="phase-etapes-info" style={{ fontSize: '10px', color: '#9ca3af', marginTop: '2px' }}>
+                          <Clock size={10} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />
+                          Début: {new Date(phaseData.date_debut).toLocaleDateString('fr-FR')}
+                          {phaseData.date_fin && (
+                            <> • Fin: {new Date(phaseData.date_fin).toLocaleDateString('fr-FR')}</>
+                          )}
                         </div>
                       )}
                     </div>

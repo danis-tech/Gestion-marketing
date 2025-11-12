@@ -37,7 +37,7 @@ class NotificationSerializer(serializers.ModelSerializer):
             'destinataire', 'destinataire_id',
             'titre', 'message', 'description_detaillee',
             'priorite', 'statut',
-            'projet', 'projet_id', 'tache', 'tache_id', 'etape', 'service',
+            'projet', 'projet_id', 'tache', 'tache_id', 'service',
             'donnees_supplementaires',
             'cree_le', 'lue_le', 'expire_le',
             'cree_par', 'cree_par_id',
@@ -70,7 +70,7 @@ class NotificationCreateSerializer(serializers.ModelSerializer):
         fields = [
             'type_notification_id', 'destinataire_id',
             'titre', 'message', 'description_detaillee',
-            'priorite', 'projet_id', 'tache_id', 'etape_id', 'service_id',
+            'priorite', 'projet_id', 'tache_id', 'service_id',
             'donnees_supplementaires', 'expire_le', 'cree_par_id'
         ]
     

@@ -13,7 +13,7 @@ import platform
 from .models import DocumentProjet, HistoriqueDocumentProjet, DocumentTeleverse
 from .services import PDFGenerationService
 from .utils import TemplateManager
-from projects.models import Projet, ProjetPhaseEtat, Etape
+from projects.models import Projet, ProjetPhaseEtat
 
 
 class DocumentDashboardViewSet(viewsets.ViewSet):
@@ -234,7 +234,7 @@ class DocumentDashboardViewSet(viewsets.ViewSet):
                     'statut': 'Terminée' if phase_etat.terminee else 'En cours' if phase_etat.est_en_cours else 'En attente',
                     'date_debut': phase_etat.date_debut.strftime('%d/%m/%Y') if phase_etat.date_debut else '',
                     'date_fin': phase_etat.date_fin.strftime('%d/%m/%Y') if phase_etat.date_fin else '',
-                    'etapes_count': phase_etat.etapes.count(),
+                    'taches_count': phase_etat.taches.count(),
                     'documents_count': DocumentProjet.objects.filter(phase=phase_etat).count()
                 })
             
@@ -254,8 +254,8 @@ class DocumentDashboardViewSet(viewsets.ViewSet):
             }, status=status.HTTP_404_NOT_FOUND)
     
     @action(detail=False, methods=['get'])
-    def etapes_phase(self, request):
-        """Retourne les étapes d'une phase spécifique."""
+    def taches_phase(self, request):
+        """Retourne les tâches d'une phase spécifique."""
         phase_id = request.query_params.get('phase_id')
         
         if not phase_id:
@@ -265,21 +265,20 @@ class DocumentDashboardViewSet(viewsets.ViewSet):
         
         try:
             phase_etat = ProjetPhaseEtat.objects.get(id=phase_id)
-            etapes = phase_etat.etapes.all().order_by('ordre')
+            taches = phase_etat.taches.all().order_by('cree_le')
             
-            etapes_data = []
-            for etape in etapes:
-                etapes_data.append({
-                    'id': etape.id,
-                    'nom': etape.nom,
-                    'ordre': etape.ordre,
-                    'statut': etape.get_statut_display(),
-                    'priorite': etape.get_priorite_display(),
-                    'responsable': etape.responsable.get_full_name() if etape.responsable else 'Non assigné',
-                    'date_debut_prevue': etape.date_debut_prevue.strftime('%d/%m/%Y') if etape.date_debut_prevue else '',
-                    'date_fin_prevue': etape.date_fin_prevue.strftime('%d/%m/%Y') if etape.date_fin_prevue else '',
-                    'progression': etape.progression_pourcentage,
-                    'documents_count': DocumentProjet.objects.filter(etape=etape).count()
+            taches_data = []
+            for tache in taches:
+                taches_data.append({
+                    'id': tache.id,
+                    'titre': tache.titre,
+                    'description': tache.description or '',
+                    'statut': tache.get_statut_display(),
+                    'priorite': tache.get_priorite_display(),
+                    'responsable': ', '.join([assigne.get_full_name() for assigne in tache.assigne_a.all()]) if tache.assigne_a.exists() else 'Non assigné',
+                    'date_debut': tache.debut.strftime('%d/%m/%Y') if tache.debut else '',
+                    'date_fin': tache.fin.strftime('%d/%m/%Y') if tache.fin else '',
+                    'progression': tache.progression or 0,
                 })
             
             return Response({
@@ -288,8 +287,8 @@ class DocumentDashboardViewSet(viewsets.ViewSet):
                     'nom': phase_etat.phase.nom,
                     'projet': phase_etat.projet.nom
                 },
-                'etapes': etapes_data,
-                'total': len(etapes_data)
+                'taches': taches_data,
+                'total': len(taches_data)
             })
             
         except ProjetPhaseEtat.DoesNotExist:
@@ -298,8 +297,8 @@ class DocumentDashboardViewSet(viewsets.ViewSet):
             }, status=status.HTTP_404_NOT_FOUND)
     
     @action(detail=False, methods=['get'])
-    def etapes_projet(self, request):
-        """Retourne toutes les étapes d'un projet."""
+    def taches_projet(self, request):
+        """Retourne toutes les tâches d'un projet."""
         projet_id = request.query_params.get('projet_id')
         
         if not projet_id:
@@ -310,21 +309,20 @@ class DocumentDashboardViewSet(viewsets.ViewSet):
         try:
             projet = Projet.objects.get(id=projet_id)
             
-            # Récupérer toutes les étapes de toutes les phases du projet
-            etapes_data = []
+            # Récupérer toutes les tâches de toutes les phases du projet
+            taches_data = []
             for phase_etat in projet.phases_etat.all().order_by('phase__ordre'):
-                for etape in phase_etat.etapes.all().order_by('ordre'):
-                    etapes_data.append({
-                        'id': etape.id,
-                        'nom': etape.nom,
-                        'ordre': etape.ordre,
-                        'statut': etape.get_statut_display(),
-                        'priorite': etape.get_priorite_display(),
-                        'responsable': etape.responsable.get_full_name() if etape.responsable else 'Non assigné',
-                        'date_debut_prevue': etape.date_debut_prevue.strftime('%d/%m/%Y') if etape.date_debut_prevue else '',
-                        'date_fin_prevue': etape.date_fin_prevue.strftime('%d/%m/%Y') if etape.date_fin_prevue else '',
-                        'progression': etape.progression_pourcentage,
-                        'documents_count': DocumentProjet.objects.filter(etape=etape).count(),
+                for tache in phase_etat.taches.all().order_by('cree_le'):
+                    taches_data.append({
+                        'id': tache.id,
+                        'titre': tache.titre,
+                        'description': tache.description or '',
+                        'statut': tache.get_statut_display(),
+                        'priorite': tache.get_priorite_display(),
+                        'responsable': ', '.join([assigne.get_full_name() for assigne in tache.assigne_a.all()]) if tache.assigne_a.exists() else 'Non assigné',
+                        'date_debut': tache.debut.strftime('%d/%m/%Y') if tache.debut else '',
+                        'date_fin': tache.fin.strftime('%d/%m/%Y') if tache.fin else '',
+                        'progression': tache.progression or 0,
                         'phase': {
                             'id': phase_etat.id,
                             'nom': phase_etat.phase.nom,
@@ -338,8 +336,8 @@ class DocumentDashboardViewSet(viewsets.ViewSet):
                     'nom': projet.nom,
                     'code': projet.code
                 },
-                'etapes': etapes_data,
-                'total': len(etapes_data)
+                'taches': taches_data,
+                'total': len(taches_data)
             })
             
         except Projet.DoesNotExist:
@@ -353,7 +351,6 @@ class DocumentDashboardViewSet(viewsets.ViewSet):
         projet_id = request.data.get('projet_id')
         type_document = request.data.get('type_document')
         phase_id = request.data.get('phase_id')
-        etape_id = request.data.get('etape_id')
         custom_data = request.data.get('custom_data', {})
         
         if not projet_id or not type_document:
@@ -460,7 +457,6 @@ class DocumentDashboardViewSet(viewsets.ViewSet):
                     taille_fichier=result['file_size'],
                     description=f"Document {type_document} généré pour personnalisation",
                     phase_id=phase_id,
-                    etape_id=etape_id,
                     date_modification_fichier=timezone.now()  # Initialiser la date de modification
                 )
                 
@@ -602,7 +598,6 @@ class DocumentDashboardViewSet(viewsets.ViewSet):
                     'date_creation': doc.cree_le.strftime('%d/%m/%Y à %H:%M'),
                     'cree_par': doc.cree_par.get_full_name() if doc.cree_par else 'Système',
                     'phase': doc.phase.phase.nom if doc.phase else '',
-                    'etape': doc.etape.nom if doc.etape else '',
                     'download_url': f'/api/documents/dashboard/download/{doc.id}/'
                 })
             
@@ -938,7 +933,6 @@ class DocumentDashboardViewSet(viewsets.ViewSet):
             fichier = request.FILES['fichier']
             projet_id = request.data.get('projet_id')
             phase_id = request.data.get('phase_id')
-            etape_id = request.data.get('etape_id')
             titre = request.data.get('titre', fichier.name)
             description = request.data.get('description', '')
             mots_cles = request.data.get('mots_cles', '')
@@ -969,16 +963,6 @@ class DocumentDashboardViewSet(viewsets.ViewSet):
                         'error': 'Phase non trouvée'
                     }, status=status.HTTP_404_NOT_FOUND)
             
-            # Vérifier l'étape si fournie
-            etape = None
-            if etape_id:
-                try:
-                    etape = Etape.objects.get(id=etape_id)
-                except Etape.DoesNotExist:
-                    return Response({
-                        'error': 'Étape non trouvée'
-                    }, status=status.HTTP_404_NOT_FOUND)
-            
             # Créer le dossier de stockage
             upload_dir = os.path.join(settings.MEDIA_ROOT, 'documents_televerses', str(projet.id))
             os.makedirs(upload_dir, exist_ok=True)
@@ -1006,7 +990,6 @@ class DocumentDashboardViewSet(viewsets.ViewSet):
             document = DocumentTeleverse.objects.create(
                 projet=projet,
                 phase=phase,
-                etape=etape,
                 nom_fichier_original=fichier.name,
                 nom_fichier_stocke=nom_fichier_stocke,
                 chemin_fichier=chemin_fichier,

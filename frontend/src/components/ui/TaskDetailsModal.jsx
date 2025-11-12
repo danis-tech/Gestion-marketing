@@ -86,8 +86,8 @@ const TaskDetailsModal = ({ task, isOpen, onClose }) => {
     }
   };
 
-  // Progression fixée à 0% - à configurer selon tes besoins
-  const progress = 0;
+  // Récupérer la progression réelle de la tâche
+  const progress = task.progression || 0;
 
   // Fonction pour obtenir le texte du statut
   const getStatusText = (status) => {
@@ -146,11 +146,18 @@ const TaskDetailsModal = ({ task, isOpen, onClose }) => {
             <div className="task-main-info">
                              <div className="task-header">
                  <div className="task-code-badge">
-                   {getNestedValue(task.projet, 'code') || 'N/A'}
+                   {task.projet && typeof task.projet === 'object' 
+                     ? (task.projet.code || task.projet.nom || 'N/A')
+                     : (getNestedValue(task, 'projet.code') || getNestedValue(task, 'projet.nom') || 'N/A')
+                   }
                  </div>
               <h2 className="task-title">{getFieldValue(task, 'titre', 'Tâche sans titre')}</h2>
             </div>
-               <p className="task-project">Projet: {getNestedValue(task.projet, 'nom') || 'N/A'}</p>
+               <p className="task-project">Projet: {
+                 task.projet && typeof task.projet === 'object' 
+                   ? (task.projet.nom || task.projet.code || 'N/A')
+                   : (getNestedValue(task, 'projet.nom') || getNestedValue(task, 'projet.code') || 'N/A')
+               }</p>
               
               {/* Description */}
               <div className="task-description">
@@ -174,6 +181,10 @@ const TaskDetailsModal = ({ task, isOpen, onClose }) => {
                          </span>
                        ))}
                      </div>
+                   ) : task.responsable ? (
+                     <span className="font-bold text-gray-900">
+                       {task.responsable.nom_complet || `${task.responsable.prenom || ''} ${task.responsable.nom || ''}`.trim() || task.responsable.username || 'Non défini'}
+                     </span>
                    ) : (
                      <span className="font-bold text-gray-500">Non assigné</span>
                    )}

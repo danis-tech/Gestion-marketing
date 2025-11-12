@@ -5,6 +5,5 @@ export { default as TasksManagement } from './TasksManagement';
 export { default as PasswordResetPage } from './PasswordResetPage';
 export { default as TeamManagement } from './TeamManagement';
 export { default as PhasesManagement } from './PhasesManagement';
-export { default as PhasesEtapesManagement } from './PhasesEtapesManagement';
 export { default as PhasesEtapesManagementNew } from './PhasesEtapesManagementNew';
 export { DocumentsManagement } from './documents';

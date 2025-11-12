@@ -25,6 +25,22 @@ class Command(BaseCommand):
                 'est_generale': True
             },
             {
+                'code': 'projet_debut',
+                'nom': 'Projet qui commence',
+                'description': 'Notification quand un projet commence ou va commencer',
+                'icone': 'calendar',
+                'couleur': 'blue',
+                'est_generale': False
+            },
+            {
+                'code': 'tache_debut',
+                'nom': 'Tâche qui commence',
+                'description': 'Notification quand une tâche commence ou va commencer',
+                'icone': 'calendar',
+                'couleur': 'blue',
+                'est_generale': False
+            },
+            {
                 'code': 'session_connexion',
                 'nom': 'Session de connexion',
                 'description': 'Notification de connexion/déconnexion utilisateur',

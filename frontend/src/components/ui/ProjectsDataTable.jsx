@@ -274,6 +274,8 @@ const ProjectsDataTable = ({
        case 'en_cours': return 'bg-blue-100 text-blue-900 border-2 border-blue-300 shadow-sm';
        case 'termine': return 'bg-emerald-100 text-emerald-900 border-2 border-emerald-300 shadow-sm';
        case 'en_attente': return 'bg-amber-100 text-amber-900 border-2 border-amber-300 shadow-sm';
+       case 'hors_delai': return 'bg-red-100 text-red-900 border-2 border-red-300 shadow-sm';
+       case 'rejete': return 'bg-red-100 text-red-900 border-2 border-red-300 shadow-sm';
        case 'annule': return 'bg-red-100 text-red-900 border-2 border-red-300 shadow-sm';
        default: return 'bg-gray-100 text-gray-900 border-2 border-gray-300 shadow-sm';
      }
@@ -287,6 +289,8 @@ const ProjectsDataTable = ({
       case 'en_cours': return 'En cours';
       case 'termine': return 'Terminé';
       case 'en_attente': return 'En attente';
+      case 'hors_delai': return 'Hors délai';
+      case 'rejete': return 'Rejeté';
       case 'annule': return 'Annulé';
       default: return status;
     }

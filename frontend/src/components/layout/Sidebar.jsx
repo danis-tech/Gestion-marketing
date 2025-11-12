@@ -76,7 +76,7 @@ const Sidebar = ({ isCollapsed, onToggleCollapse, onLogout }) => {
         {
           id: 'kanban',
           label: 'Kanban',
-          path: '/dashboard/etapes/kanban'
+          path: '/etapes/kanban'
         },
         {
           id: 'gantt',

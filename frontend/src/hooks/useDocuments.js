@@ -6,7 +6,6 @@ export const useDocuments = () => {
   const [projects, setProjects] = useState([]);
   const [selectedProject, setSelectedProject] = useState(null);
   const [phases, setPhases] = useState([]);
-  const [etapes, setEtapes] = useState([]);
   const [documentTypes, setDocumentTypes] = useState([]);
   const [documents, setDocuments] = useState([]);
   const [documentsTeleverses, setDocumentsTeleverses] = useState([]);
@@ -51,26 +50,6 @@ export const useDocuments = () => {
     }
   }, []);
 
-  // Charger les étapes d'une phase
-  const loadEtapes = useCallback(async (phaseId) => {
-    try {
-      const response = await apiClient.get(`/api/documents/dashboard/etapes_phase/?phase_id=${phaseId}`);
-      setEtapes(response.data.etapes);
-    } catch (error) {
-      console.error('Erreur loadEtapes:', error);
-    }
-  }, []);
-
-  // Charger toutes les étapes d'un projet
-  const loadEtapesProjet = useCallback(async (projectId) => {
-    try {
-      const response = await apiClient.get(`/api/documents/dashboard/etapes_projet/?projet_id=${projectId}`);
-      setEtapes(response.data.etapes);
-    } catch (error) {
-      console.error('Erreur loadEtapesProjet:', error);
-    }
-  }, []);
-
   // Charger les documents d'un projet
   const loadDocuments = useCallback(async (projectId) => {
     try {
@@ -103,7 +82,6 @@ export const useDocuments = () => {
   const selectProject = useCallback((project) => {
     setSelectedProject(project);
     setPhases([]);
-    setEtapes([]);
     if (project) {
       loadPhases(project.id);
       loadDocuments(project.id);
@@ -462,7 +440,6 @@ export const useDocuments = () => {
     projects: filteredProjects,
     selectedProject,
     phases,
-    etapes,
     documentTypes,
     documents: filteredDocuments,
     documentsTeleverses,
@@ -482,8 +459,6 @@ export const useDocuments = () => {
     // Actions - Documents générés
     selectProject,
     loadPhases,
-    loadEtapes,
-    loadEtapesProjet,
     loadDocuments,
     generateDocument,
     saveDocument,

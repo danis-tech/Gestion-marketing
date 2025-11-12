@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth import get_user_model
 from django.utils import timezone
-from projects.models import Projet, Tache, Etape
+from projects.models import Projet, Tache
 from accounts.models import Service
 
 User = get_user_model()
@@ -15,13 +15,14 @@ class NotificationType(models.Model):
         # Notifications générales
         ('projet_retard', 'Projet en retard'),
         ('tache_retard', 'Tâche en retard'),
+        ('projet_debut', 'Projet qui commence'),
+        ('tache_debut', 'Tâche qui commence'),
         ('session_connexion', 'Session de connexion'),
         ('message_chat', 'Message de chat'),
         ('systeme_maintenance', 'Maintenance système'),
         ('annonce_generale', 'Annonce générale'),
         ('projet_valide', 'Projet validé'),
         ('projet_en_cours', 'Projet en cours'),
-        ('etape_terminee', 'Étape terminée'),
         ('document_valide', 'Document validé'),
         ('document_rejete', 'Document rejeté'),
         ('phase_terminee', 'Phase terminée'),
@@ -96,7 +97,6 @@ class Notification(models.Model):
     # Relations optionnelles avec les objets métier
     projet = models.ForeignKey(Projet, on_delete=models.CASCADE, null=True, blank=True)
     tache = models.ForeignKey(Tache, on_delete=models.CASCADE, null=True, blank=True)
-    etape = models.ForeignKey(Etape, on_delete=models.CASCADE, null=True, blank=True)
     service = models.ForeignKey(Service, on_delete=models.CASCADE, null=True, blank=True)
     
     # Données supplémentaires (JSON)

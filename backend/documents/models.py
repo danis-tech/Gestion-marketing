@@ -3,7 +3,7 @@ from django.core.validators import FileExtensionValidator
 from django.utils import timezone
 from django.contrib.auth import get_user_model
 from django.conf import settings
-from projects.models import Projet, ProjetPhaseEtat, Etape
+from projects.models import Projet, ProjetPhaseEtat
 import os
 
 User = get_user_model()
@@ -125,14 +125,7 @@ class DocumentProjet(models.Model):
         verbose_name="Phase"
     )
     
-    etape = models.ForeignKey(
-        Etape, 
-        on_delete=models.SET_NULL, 
-        null=True, 
-        blank=True,
-        related_name='documents',
-        verbose_name="Étape"
-    )
+    # Le champ 'etape' a été supprimé - utiliser 'phase' à la place
     
     # Métadonnées
     cree_le = models.DateTimeField(
@@ -177,7 +170,6 @@ class DocumentProjet(models.Model):
             models.Index(fields=['statut']),
             models.Index(fields=['origine']),
             models.Index(fields=['phase']),
-            models.Index(fields=['etape']),
         ]
     
     def __str__(self):
@@ -480,14 +472,7 @@ class DocumentTeleverse(models.Model):
         verbose_name="Phase associée"
     )
     
-    etape = models.ForeignKey(
-        Etape,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='documents_televerses',
-        verbose_name="Étape associée"
-    )
+    # Le champ 'etape' a été supprimé - utiliser 'phase' à la place
     
     # Informations du fichier
     nom_fichier_original = models.CharField(
@@ -629,7 +614,6 @@ class DocumentTeleverse(models.Model):
         indexes = [
             models.Index(fields=['projet', 'date_televersement']),
             models.Index(fields=['phase', 'date_televersement']),
-            models.Index(fields=['etape', 'date_televersement']),
             models.Index(fields=['televerse_par', 'date_televersement']),
             models.Index(fields=['statut', 'date_televersement']),
             models.Index(fields=['type_fichier', 'date_televersement']),

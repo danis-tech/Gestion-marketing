@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import Projet, MembreProjet, HistoriqueEtat, PermissionProjet, Tache, PhaseProjet, ProjetPhaseEtat, Etape
+from .models import Projet, MembreProjet, HistoriqueEtat, PermissionProjet, Tache, PhaseProjet, ProjetPhaseEtat
 
 # Register your models here.
 
@@ -138,65 +138,4 @@ class ProjetPhaseEtatAdmin(admin.ModelAdmin):
         """Optimiser les requêtes."""
         return super().get_queryset(request).select_related('projet', 'phase')
 
-
-@admin.register(Etape)
-class EtapeAdmin(admin.ModelAdmin):
-    """Configuration admin pour le modèle Etape."""
-    list_display = [
-        'nom', 'phase_etat', 'ordre', 'statut', 'priorite', 
-        'responsable', 'progression_pourcentage', 'est_en_retard',
-        'date_debut_prevue', 'date_fin_prevue', 'duree_prevue'
-    ]
-    list_filter = [
-        'statut', 'priorite', 'phase_etat__phase', 'phase_etat__projet',
-        'responsable', 'date_debut_prevue', 'date_fin_prevue', 'cree_le'
-    ]
-    search_fields = [
-        'nom', 'description', 'phase_etat__phase__nom', 
-        'phase_etat__projet__nom', 'phase_etat__projet__code',
-        'responsable__prenom', 'responsable__nom'
-    ]
-    list_editable = ['ordre', 'statut', 'priorite', 'progression_pourcentage']
-    readonly_fields = ['cree_le', 'mis_a_jour_le', 'est_en_retard', 'duree_prevue', 'duree_reelle']
-    date_hierarchy = 'date_debut_prevue'
-    
-    fieldsets = (
-        ('Informations générales', {
-            'fields': ('phase_etat', 'nom', 'description', 'ordre')
-        }),
-        ('Statut et priorité', {
-            'fields': ('statut', 'priorite', 'progression_pourcentage')
-        }),
-        ('Responsable', {
-            'fields': ('responsable',)
-        }),
-        ('Planning prévu', {
-            'fields': ('date_debut_prevue', 'date_fin_prevue')
-        }),
-        ('Planning réel', {
-            'fields': ('date_debut_reelle', 'date_fin_reelle'),
-            'classes': ('collapse',)
-        }),
-        ('Commentaires', {
-            'fields': ('commentaire', 'notes_internes'),
-            'classes': ('collapse',)
-        }),
-        ('Métadonnées', {
-            'fields': ('cree_par', 'cree_le', 'mis_a_jour_le'),
-            'classes': ('collapse',)
-        }),
-    )
-    
-    def duree_prevue(self, obj):
-        """Calculer la durée prévue."""
-        if obj.duree_prevue:
-            return f"{obj.duree_prevue} jours"
-        return "-"
-    duree_prevue.short_description = 'Durée prévue'
-    
-    def get_queryset(self, request):
-        """Optimiser les requêtes."""
-        return super().get_queryset(request).select_related(
-            'phase_etat__phase', 'phase_etat__projet', 'responsable', 'cree_par'
-        )
 

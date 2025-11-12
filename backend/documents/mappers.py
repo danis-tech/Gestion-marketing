@@ -1,6 +1,6 @@
 from datetime import datetime
 from django.utils import timezone
-from projects.models import Projet, ProjetPhaseEtat, Etape
+from projects.models import Projet, ProjetPhaseEtat
 from accounts.models import User
 
 
@@ -60,24 +60,22 @@ class DocumentDataMapper:
                 'phase_commentaire': phase_etat.commentaire or '',
             }
             
-            # Données des étapes de cette phase
-            etapes_data = []
-            for etape in phase_etat.etapes.all():
-                etape_info = {
-                    'etape_nom': etape.nom,
-                    'etape_description': etape.description or '',
-                    'etape_statut': etape.get_statut_display(),
-                    'etape_priorite': etape.get_priorite_display(),
-                    'etape_responsable': etape.responsable.get_full_name() if etape.responsable else 'Non assigné',
-                    'etape_date_debut_prevue': etape.date_debut_prevue.strftime('%d/%m/%Y') if etape.date_debut_prevue else '',
-                    'etape_date_fin_prevue': etape.date_fin_prevue.strftime('%d/%m/%Y') if etape.date_fin_prevue else '',
-                    'etape_date_debut_reelle': etape.date_debut_reelle.strftime('%d/%m/%Y') if etape.date_debut_reelle else '',
-                    'etape_date_fin_reelle': etape.date_fin_reelle.strftime('%d/%m/%Y') if etape.date_fin_reelle else '',
-                    'etape_progression': etape.progression_pourcentage or 0,
+            # Données des tâches de cette phase
+            taches_data = []
+            for tache in phase_etat.taches.all():
+                tache_info = {
+                    'tache_titre': tache.titre,
+                    'tache_description': tache.description or '',
+                    'tache_statut': tache.get_statut_display(),
+                    'tache_priorite': tache.get_priorite_display(),
+                    'tache_responsable': ', '.join([assigne.get_full_name() for assigne in tache.assigne_a.all()]) if tache.assigne_a.exists() else 'Non assigné',
+                    'tache_date_debut': tache.debut.strftime('%d/%m/%Y') if tache.debut else '',
+                    'tache_date_fin': tache.fin.strftime('%d/%m/%Y') if tache.fin else '',
+                    'tache_progression': tache.progression or 0,
                 }
-                etapes_data.append(etape_info)
+                taches_data.append(tache_info)
             
-            phase_info['etapes'] = etapes_data
+            phase_info['taches'] = taches_data
             phases_data.append(phase_info)
         
         data.update({
@@ -126,29 +124,10 @@ class DocumentDataMapper:
             'phase_date_debut': phase_etat.date_debut.strftime('%d/%m/%Y à %H:%M') if phase_etat.date_debut else '',
             'phase_date_fin': phase_etat.date_fin.strftime('%d/%m/%Y à %H:%M') if phase_etat.date_fin else '',
             'phase_commentaire': phase_etat.commentaire or '',
-            'phase_etapes_count': phase_etat.etapes.count(),
-            'phase_etapes_terminees': phase_etat.etapes.filter(statut='terminee').count(),
-            'phase_etapes_en_cours': phase_etat.etapes.filter(statut='en_cours').count(),
-            'phase_etapes_en_attente': phase_etat.etapes.filter(statut='en_attente').count(),
-        }
-    
-    @staticmethod
-    def map_etape_data(etape):
-        """
-        Mappe les données d'une étape pour les templates.
-        """
-        return {
-            'etape_nom': etape.nom,
-            'etape_description': etape.description or '',
-            'etape_statut': etape.get_statut_display(),
-            'etape_priorite': etape.get_priorite_display(),
-            'etape_date_debut': etape.date_debut.strftime('%d/%m/%Y à %H:%M') if etape.date_debut else '',
-            'etape_date_fin': etape.date_fin.strftime('%d/%m/%Y à %H:%M') if etape.date_fin else '',
-            'etape_date_echeance': etape.date_echeance.strftime('%d/%m/%Y') if etape.date_echeance else '',
-            'etape_responsable': etape.responsable.get_full_name() if etape.responsable else '',
-            'etape_responsable_email': etape.responsable.email if etape.responsable else '',
-            'etape_commentaire': etape.commentaire or '',
-            'etape_est_en_retard': etape.est_en_retard,
+            'phase_taches_count': phase_etat.taches.count(),
+            'phase_taches_terminees': phase_etat.taches.filter(statut='termine').count(),
+            'phase_taches_en_cours': phase_etat.taches.filter(statut='en_cours').count(),
+            'phase_taches_en_attente': phase_etat.taches.filter(statut='en_attente').count(),
         }
     
     @staticmethod
@@ -304,17 +283,27 @@ class FicheDataMapper:
         """
         base_data = DocumentDataMapper.map_projet_data(projet)
         
-        # Récupérer les phases avec leurs étapes
+        # Récupérer les phases avec leurs tâches
         phases_data = []
         for phase_etat in projet.phases_etat.all().order_by('phase__ordre'):
             phase_data = DocumentDataMapper.map_phase_data(phase_etat)
             
-            # Ajouter les étapes de cette phase
-            etapes_data = []
-            for etape in phase_etat.etapes.all():
-                etapes_data.append(DocumentDataMapper.map_etape_data(etape))
+            # Ajouter les tâches de cette phase
+            taches_data = []
+            for tache in phase_etat.taches.all():
+                tache_info = {
+                    'tache_titre': tache.titre,
+                    'tache_description': tache.description or '',
+                    'tache_statut': tache.get_statut_display(),
+                    'tache_priorite': tache.get_priorite_display(),
+                    'tache_responsable': ', '.join([assigne.get_full_name() for assigne in tache.assigne_a.all()]) if tache.assigne_a.exists() else 'Non assigné',
+                    'tache_date_debut': tache.debut.strftime('%d/%m/%Y') if tache.debut else '',
+                    'tache_date_fin': tache.fin.strftime('%d/%m/%Y') if tache.fin else '',
+                    'tache_progression': tache.progression or 0,
+                }
+                taches_data.append(tache_info)
             
-            phase_data['etapes'] = etapes_data
+            phase_data['taches'] = taches_data
             phases_data.append(phase_data)
         
         fiche_data = {

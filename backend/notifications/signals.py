@@ -6,7 +6,7 @@ from django.contrib.auth.signals import user_logged_in, user_logged_out
 
 from .services import NotificationService
 from projects.models import (
-    Projet, Tache, Etape, MembreProjet, ProjetPhaseEtat, 
+    Projet, Tache, MembreProjet, ProjetPhaseEtat, 
     HistoriqueEtat, PermissionProjet
 )
 from projects.email_service import ProjectEmailService
@@ -106,30 +106,6 @@ def notify_team_member_added(sender, instance, created, **kwargs):
         NotificationService.notify_team_member_added(instance.projet, instance.membre)
 
 
-@receiver(post_save, sender=Etape)
-def notify_step_changes(sender, instance, created, **kwargs):
-    """
-    Notifier les changements d'étape
-    """
-    if created:
-        # Nouvelle étape créée
-        # Envoyer un email à tous les membres de l'étape
-        try:
-            ProjectEmailService.send_step_created_email(instance)
-        except Exception:
-            pass
-    else:
-        # Étape modifiée
-        # Envoyer un email à tous les membres de l'étape
-        try:
-            ProjectEmailService.send_step_updated_email(instance)
-        except Exception:
-            pass
-        # Vérifier si l'étape est terminée
-        if instance.statut == 'terminee':
-            NotificationService.notify_step_completed(instance)
-
-
 # ============================================================================
 # SIGNALS POUR LES PROJETS
 # ============================================================================
@@ -152,7 +128,7 @@ def notify_phase_changes(sender, instance, created, **kwargs):
         # Vérifier si la phase a été terminée
         if instance.terminee:
             NotificationService.create_general_notification(
-                type_code='etape_terminee',
+                type_code='phase_terminee',
                 titre=f'Phase "{instance.phase.nom}" terminée',
                 message=f'La phase "{instance.phase.nom}" du projet {instance.projet.nom} a été terminée',
                 projet=instance.projet,
@@ -406,34 +382,6 @@ def notify_task_deletion(sender, instance, **kwargs):
         titre=f'Tâche supprimée: {instance.titre}',
         message=f'La tâche "{instance.titre}" du projet {instance.projet.nom} a été supprimée',
         projet=instance.projet,
-        priorite='normale'
-    )
-
-@receiver(post_delete, sender=Etape)
-def notify_step_deletion(sender, instance, **kwargs):
-    """
-    Notifier la suppression d'une étape
-    """
-    # Récupérer les membres avant la suppression
-    try:
-        members = ProjectEmailService._get_step_members(instance)
-        members_emails = [member.email for member in members if member.email]
-        project_nom = instance.phase_etat.projet.nom
-        
-        # Envoyer un email à tous les membres de l'étape
-        ProjectEmailService.send_step_deleted_email(
-            instance.nom,
-            project_nom,
-            members_emails
-        )
-    except Exception:
-        pass
-    
-    NotificationService.create_general_notification(
-        type_code='etape_terminee',
-        titre=f'Étape supprimée: {instance.nom}',
-        message=f'L\'étape "{instance.nom}" du projet {instance.phase_etat.projet.nom} a été supprimée',
-        projet=instance.phase_etat.projet,
         priorite='normale'
     )
 

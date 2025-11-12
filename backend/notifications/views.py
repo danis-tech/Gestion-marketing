@@ -40,7 +40,7 @@ class NotificationListView(generics.ListAPIView):
         notification_type = self.request.query_params.get('type', 'all')
         
         queryset = Notification.objects.select_related(
-            'type_notification', 'projet', 'tache', 'etape', 'service'
+            'type_notification', 'projet', 'tache', 'service'
         )
         
         # Si l'utilisateur est super admin, il peut voir toutes les notifications
@@ -99,7 +99,7 @@ class NotificationDetailView(generics.RetrieveUpdateDestroyAPIView):
         user = self.request.user
         return Notification.objects.filter(
             Q(destinataire=user) | Q(destinataire__isnull=True)
-        ).select_related('type_notification', 'projet', 'tache', 'etape', 'service')
+        ).select_related('type_notification', 'projet', 'tache', 'service')
     
     def retrieve(self, request, *args, **kwargs):
         """Récupérer une notification et la marquer comme lue"""
@@ -475,7 +475,7 @@ def get_assigned_tasks(request):
     # Récupérer les tâches assignées à l'utilisateur
     assigned_tasks = Tache.objects.filter(
         assigne_a=user,
-        statut__in=['en_attente', 'en_cours', 'en_revision']
+        statut__in=['en_attente', 'en_cours']
     ).select_related('projet').prefetch_related('assigne_a')
     
     # Sérialiser les tâches

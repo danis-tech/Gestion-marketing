@@ -29,6 +29,11 @@ const PhaseProgressCard = ({ phase, onAction, onEdit, onDelete }) => {
   };
 
   const getProgressPercentage = (phase) => {
+    // Utiliser la progression calculée par le backend si disponible
+    if (phase.progression_pourcentage !== undefined && phase.progression_pourcentage !== null) {
+      return phase.progression_pourcentage;
+    }
+    // Fallback basé sur le statut
     if (phase.terminee) return 100;
     if (phase.ignoree) return 0;
     if (phase.est_en_cours) return 50;

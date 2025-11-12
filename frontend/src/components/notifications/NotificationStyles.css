@@ -74,11 +74,6 @@
 }
 
 /* Autres générales */
-.notification-item.type-etape-terminee {
-  border-left: 4px solid #059669;
-  background: linear-gradient(90deg, #f0fdf4 0%, #ffffff 100%);
-}
-
 .notification-item.type-phase-terminee {
   border-left: 4px solid #059669;
   background: linear-gradient(90deg, #f0fdf4 0%, #ffffff 100%);
@@ -244,11 +239,6 @@
 }
 
 /* Autres */
-.notification-type-icon.etape-terminee {
-  background: #059669;
-  color: white;
-}
-
 .notification-type-icon.phase-terminee {
   background: #059669;
   color: white;

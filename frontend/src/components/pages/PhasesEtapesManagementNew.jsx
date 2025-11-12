@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Target, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
-import { useProjectPhases, useProjectEtapes } from '../../hooks';
+import { useProjectPhases } from '../../hooks';
 import { phasesService, projectCompletionService } from '../../services/apiService';
 import useNotification from '../../hooks/useNotification';
 import { 
@@ -11,8 +11,6 @@ import {
   PhasesHeader 
 } from './phases-etapes';
 import PhaseEditModal from '../modals/PhaseEditModal';
-import EtapeEditModal from '../modals/EtapeEditModal';
-import EtapeAddModal from '../modals/EtapeAddModal';
 
 const PhasesEtapesManagementNew = () => {
   const { showSuccess, showError } = useNotification();
@@ -32,20 +30,7 @@ const PhasesEtapesManagementNew = () => {
     loadProjects
   } = useProjectPhases();
 
-  // Hook pour la gestion des étapes
-  const {
-    expandedEtapes,
-    toggleEtapeExpansion,
-    handleEtapeAction: handleEtapeActionHook,
-    handleDeleteEtape: handleDeleteEtapeHook,
-    getEtapeStatusIcon,
-    getEtapeStatusColor,
-    getEtapeStatusText,
-    getPriorityColor
-  } = useProjectEtapes();
-
   // États locaux
-  const [viewMode, setViewMode] = useState('list');
   const [expandedPhases, setExpandedPhases] = useState(new Set());
   const [forceRefresh, setForceRefresh] = useState(0);
   const [projectCompletionStatus, setProjectCompletionStatus] = useState(null);
@@ -110,10 +95,7 @@ const PhasesEtapesManagementNew = () => {
   
   // États des modaux
   const [isPhaseEditModalOpen, setIsPhaseEditModalOpen] = useState(false);
-  const [isEtapeEditModalOpen, setIsEtapeEditModalOpen] = useState(false);
-  const [isEtapeAddModalOpen, setIsEtapeAddModalOpen] = useState(false);
   const [selectedPhase, setSelectedPhase] = useState(null);
-  const [selectedEtape, setSelectedEtape] = useState(null);
 
   // Fonctions utilitaires pour les statuts des phases
   const getPhaseStatusIcon = (phase) => {
@@ -171,12 +153,18 @@ const PhasesEtapesManagementNew = () => {
           break;
         case 'end':
           // Vérifier côté frontend si la phase peut être terminée (si la propriété est disponible)
-          if (phase.peut_etre_terminee === false) {
-            const etapesNonTerminees = phase.etapes_en_attente_ou_en_cours || [];
-            const nomsEtapes = etapesNonTerminees.map(etape => etape.nom).join(', ');
+          const hasPendingTasks = Array.isArray(phase.taches)
+            ? phase.taches.some(tache => tache.statut !== 'termine')
+            : false;
+            
+          if (phase.peut_etre_terminee === false || hasPendingTasks) {
+            const pendingTasks = (phase.taches || []).filter(tache => tache.statut !== 'termine');
+            const taskTitles = pendingTasks.map(tache => tache.titre).join(', ');
             showError(
               'Impossible de terminer la phase', 
-              `Toutes les étapes doivent être terminées ou annulées avant de terminer la phase. Étapes en attente/en cours : ${nomsEtapes}`
+              pendingTasks.length > 0
+                ? `Toutes les tâches doivent être terminées avant de terminer la phase. Tâches en attente : ${taskTitles}`
+                : `Toutes les tâches doivent être terminées avant de terminer la phase.`
             );
             return;
           }
@@ -239,12 +227,14 @@ const PhasesEtapesManagementNew = () => {
         
         if (errorMessage.includes("déjà terminée")) {
           showError('Phase déjà terminée', 'Cette phase est déjà terminée.');
-        } else if (errorMessage.includes("étapes ne sont pas terminées")) {
-          const etapesEnAttente = error.response.data.etapes_en_attente || [];
-          const nomsEtapes = etapesEnAttente.map(etape => etape.nom).join(', ');
+        } else if (errorMessage.includes("tâches ne sont pas terminées") || errorMessage.includes("taches ne sont pas terminées")) {
+          const tachesEnAttente = error.response.data.taches_non_terminees || [];
+          const nomsTaches = tachesEnAttente.map(tache => tache.titre).join(', ');
           showError(
             'Impossible de terminer la phase', 
-            `Toutes les étapes doivent être terminées ou annulées avant de terminer la phase. Étapes en attente/en cours : ${nomsEtapes}`
+            nomsTaches
+              ? `Toutes les tâches doivent être terminées avant de terminer la phase. Tâches en attente : ${nomsTaches}`
+              : 'Toutes les tâches doivent être terminées avant de terminer la phase.'
           );
         } else {
           showError('Erreur', errorMessage);
@@ -255,40 +245,10 @@ const PhasesEtapesManagementNew = () => {
     }
   };
 
-  // Actions sur les étapes
-  const handleEtapeAction = async (action, phaseId, etapeId) => {
-    return await handleEtapeActionHook(action, selectedProject?.id, phaseId, etapeId, () => {
-      if (selectedProject) {
-        return loadProjectPhases(selectedProject.id);
-      }
-    });
-  };
-
   // Gestion des modaux
   const handleEditPhase = (phase) => {
     setSelectedPhase(phase);
     setIsPhaseEditModalOpen(true);
-  };
-
-  const handleEditEtape = (etape) => {
-    setSelectedEtape(etape);
-    setIsEtapeEditModalOpen(true);
-  };
-
-  const handleAddEtape = (phaseId) => {
-    const phase = projectPhases.find(p => p.id === phaseId);
-    setSelectedPhase(phase);
-    setIsEtapeAddModalOpen(true);
-  };
-
-  const handleDeleteEtape = async (phaseId, etapeId) => {
-    if (window.confirm('Êtes-vous sûr de vouloir supprimer cette étape ?')) {
-      return await handleDeleteEtapeHook(selectedProject?.id, phaseId, etapeId, () => {
-        if (selectedProject) {
-          return loadProjectPhases(selectedProject.id);
-        }
-      });
-    }
   };
 
   return (
@@ -321,7 +281,7 @@ const PhasesEtapesManagementNew = () => {
 
                 {/* Bouton de completion du projet */}
                 {(projectCompletionStatus || isCheckingCompletion) && (
-                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                  <div className="bg-white shadow-sm border border-gray-200 p-4" style={{ borderRadius: '0' }}>
                     {/* Interface de completion du projet */}
                     <div className="space-y-4">
                       <div className="flex items-center space-x-3">
@@ -354,13 +314,14 @@ const PhasesEtapesManagementNew = () => {
                         <button
                           onClick={handleProjectCompletionToggle}
                           disabled={isCheckingCompletion || !projectCompletionStatus}
-                           className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                           className={`px-4 py-2 font-medium transition-colors ${
                              projectCompletionStatus?.projet?.est_termine
                                ? 'bg-orange-100 text-orange-800 hover:bg-orange-200 border border-orange-300'
                                : projectCompletionStatus?.peut_etre_termine
                                ? 'bg-green-100 text-green-800 hover:bg-green-200 border border-green-300'
                                : 'bg-gray-100 text-gray-500 cursor-not-allowed border border-gray-300'
                            }`}
+                           style={{ borderRadius: '0' }}
                         >
                           {isCheckingCompletion ? (
                             'Vérification...'
@@ -377,12 +338,10 @@ const PhasesEtapesManagementNew = () => {
                   </div>
                 )}
 
-                {/* Filtres et contrôles */}
+                {/* Filtres */}
                 <PhasesFilters
                   filterStatus={filterStatus}
                   onFilterChange={setFilterStatus}
-                  viewMode={viewMode}
-                  onViewModeChange={setViewMode}
                 />
 
                 {/* Liste des phases */}
@@ -396,23 +355,21 @@ const PhasesEtapesManagementNew = () => {
                         onToggleExpansion={togglePhaseExpansion}
                         onPhaseAction={handlePhaseAction}
                         onEditPhase={handleEditPhase}
-                        onAddEtape={handleAddEtape}
-                        expandedEtapes={expandedEtapes}
-                        onToggleEtapeExpansion={toggleEtapeExpansion}
-                        onEtapeAction={handleEtapeAction}
-                        onEditEtape={handleEditEtape}
-                        onDeleteEtape={handleDeleteEtape}
                         getPhaseStatusIcon={getPhaseStatusIcon}
                         getPhaseStatusColor={getPhaseStatusColor}
                         getPhaseStatusText={getPhaseStatusText}
-                        getEtapeStatusIcon={getEtapeStatusIcon}
-                        getEtapeStatusColor={getEtapeStatusColor}
-                        getEtapeStatusText={getEtapeStatusText}
-                        getPriorityColor={getPriorityColor}
+                        projectId={selectedProject?.id}
+                        onRefresh={() => {
+                          if (selectedProject) {
+                            loadProjectPhases(selectedProject.id);
+                            checkProjectCompletionStatus();
+                            setForceRefresh(prev => prev + 1);
+                          }
+                        }}
                       />
                     ))
                   ) : (
-                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
+                    <div className="bg-white shadow-sm border border-gray-200 p-8 text-center" style={{ borderRadius: '0' }}>
                       <Target className="w-12 h-12 text-gray-300 mx-auto mb-4" />
                       <h3 className="text-lg font-semibold text-gray-900 mb-2">
                         Aucune phase trouvée
@@ -426,7 +383,8 @@ const PhasesEtapesManagementNew = () => {
                             loadProjectPhases(selectedProject.id);
                           }
                         }}
-                        className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors text-sm"
+                        className="bg-indigo-600 text-white px-4 py-2 hover:bg-indigo-700 transition-colors text-sm"
+                        style={{ borderRadius: '0' }}
                       >
                         Recharger les phases
                       </button>
@@ -468,39 +426,6 @@ const PhasesEtapesManagementNew = () => {
         />
       )}
 
-      {isEtapeEditModalOpen && selectedEtape && (
-        <EtapeEditModal
-          isOpen={isEtapeEditModalOpen}
-          onClose={() => {
-            setIsEtapeEditModalOpen(false);
-            setSelectedEtape(null);
-          }}
-          etape={selectedEtape}
-          projectId={selectedProject?.id}
-          onSuccess={() => {
-            loadProjectPhases(selectedProject.id);
-            setIsEtapeEditModalOpen(false);
-            setSelectedEtape(null);
-          }}
-        />
-      )}
-
-      {isEtapeAddModalOpen && selectedPhase && (
-        <EtapeAddModal
-          isOpen={isEtapeAddModalOpen}
-          onClose={() => {
-            setIsEtapeAddModalOpen(false);
-            setSelectedPhase(null);
-          }}
-          phaseId={selectedPhase.id}
-          projectId={selectedProject?.id}
-          onSuccess={() => {
-            loadProjectPhases(selectedProject.id);
-            setIsEtapeAddModalOpen(false);
-            setSelectedPhase(null);
-          }}
-        />
-      )}
     </div>
   );
 };

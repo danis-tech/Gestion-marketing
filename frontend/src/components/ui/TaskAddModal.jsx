@@ -31,6 +31,7 @@ const TaskAddModal = ({ isOpen, onClose, onAdd, projects = [] }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [availableUsers, setAvailableUsers] = useState([]);
   const [availableTasks, setAvailableTasks] = useState([]);
+  const [projectPhases, setProjectPhases] = useState([]);
 
 
 
@@ -59,34 +60,56 @@ const TaskAddModal = ({ isOpen, onClose, onAdd, projects = [] }) => {
     }
   }, [isOpen]);
 
-  // Charger les tâches disponibles quand un projet est sélectionné
+  // Charger les phases d'état du projet et les tâches disponibles
   useEffect(() => {
-    const loadTasks = async () => {
+    const loadProjectData = async () => {
       if (!formData.projet) {
         setAvailableTasks([]);
+        setProjectPhases([]);
         return;
       }
 
       try {
-        const response = await fetch(`http://localhost:8000/api/taches/projet_taches/?projet_id=${formData.projet}`, {
+        // Charger les phases d'état du projet
+        const phasesResponse = await fetch(`http://localhost:8000/api/projects/${formData.projet}/phases/`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
             'Content-Type': 'application/json'
           }
         });
         
-        if (response.ok) {
-          const tasks = await response.json();
+        if (phasesResponse.ok) {
+          const phasesData = await phasesResponse.json();
+          // Gérer différents formats de réponse (liste directe ou paginée)
+          const phases = Array.isArray(phasesData) ? phasesData : (phasesData.results || phasesData.data || []);
+          console.log('Phases chargées pour le projet:', phases);
+          setProjectPhases(phases);
+        } else {
+          console.error('Erreur API phases:', phasesResponse.status, phasesResponse.statusText);
+          const errorText = await phasesResponse.text();
+          console.error('Détails de l\'erreur:', errorText);
+        }
+
+        // Charger les tâches du projet
+        const tasksResponse = await fetch(`http://localhost:8000/api/taches/projet_taches/?projet_id=${formData.projet}`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (tasksResponse.ok) {
+          const tasks = await tasksResponse.json();
           setAvailableTasks(tasks);
         } else {
-          console.error('Erreur API:', response.status, response.statusText);
+          console.error('Erreur API tâches:', tasksResponse.status, tasksResponse.statusText);
         }
       } catch (error) {
-        console.error('Erreur lors du chargement des tâches:', error);
+        console.error('Erreur lors du chargement des données du projet:', error);
       }
     };
 
-    loadTasks();
+    loadProjectData();
   }, [formData.projet]);
 
   // Gestion des changements de champs
@@ -155,17 +178,64 @@ const TaskAddModal = ({ isOpen, onClose, onAdd, projects = [] }) => {
         .map(item => parseInt(item.id, 10))
         .filter(id => !isNaN(id));
       
+      // Trouver le phase_etat_id correspondant à la phase métier sélectionnée
+      let phaseEtatId = null;
+      
+      // Mapping des phases métier vers les noms de phases
+      const phaseMapping = {
+        'expression_besoin': 'Expression du besoin',
+        'etudes_faisabilite': 'Études de faisabilité',
+        'conception': 'Conception',
+        'developpement': 'Développement / Implémentation',
+        'lancement_commercial': 'Lancement commercial',
+        'suppression_offre': "Suppression d'une offre"
+      };
+      
+      const phaseNom = phaseMapping[formData.phase];
+      console.log('Recherche de phase_etat_id:', { phaseNom, projectPhases, formDataPhase: formData.phase });
+      
+      if (phaseNom && projectPhases.length > 0) {
+        // Les phases peuvent être dans un format de liste ou directement
+        const phasesList = Array.isArray(projectPhases) ? projectPhases : (projectPhases.results || []);
+        console.log('Liste des phases à rechercher:', phasesList);
+        
+        const matchingPhase = phasesList.find(p => {
+          const nom = p.nom || p.phase?.nom;
+          console.log('Comparaison:', { nom, phaseNom, match: nom === phaseNom });
+          return nom === phaseNom;
+        });
+        
+        if (matchingPhase) {
+          phaseEtatId = matchingPhase.id;
+          console.log('Phase_etat_id trouvé:', phaseEtatId);
+        } else {
+          console.warn('Aucune phase correspondante trouvée. Phases disponibles:', phasesList.map(p => p.nom || p.phase?.nom));
+        }
+      } else {
+        console.warn('Phases non disponibles ou phaseNom manquant:', { phaseNom, projectPhasesLength: projectPhases.length });
+      }
+      
+      // Si on n'a pas de phase_etat_id, c'est une erreur (requis pour créer une tâche)
+      if (!phaseEtatId) {
+        const errorMsg = projectPhases.length === 0 
+          ? 'Les phases du projet ne sont pas encore chargées. Veuillez attendre un instant et réessayer.'
+          : `Impossible de trouver la phase d'état pour "${phaseNom}". Veuillez sélectionner un projet et une phase valides.`;
+        throw new Error(errorMsg);
+      }
+      
       const dataToSave = {
         ...formData,
         projet: formData.projet ? parseInt(formData.projet) : null,
         description: formData.description || '',
         debut: formData.debut || null,
         fin: formData.fin || null,
+        // Envoyer le phase_etat_id requis par le backend
+        phase_etat_id: phaseEtatId,
         assigne_a: assignesIds.length > 0 ? assignesIds : [],
         tache_dependante: formData.tache_dependante ? parseInt(formData.tache_dependante) : null
       };
       
-      console.log('Données à envoyer:', dataToSave);
+      console.log('Données envoyées à l\'API:', dataToSave);
 
       await onAdd(dataToSave);
       

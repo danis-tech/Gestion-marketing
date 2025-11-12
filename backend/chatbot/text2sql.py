@@ -37,10 +37,6 @@ class TextToSQLGenerator:
             'documents': 'DocumentProjet',
             'phase': 'PhaseProjet',
             'phases': 'PhaseProjet',
-            'etape': 'Etape',
-            'étape': 'Etape',
-            'etapes': 'Etape',
-            'étapes': 'Etape',
             'service': 'Service',
             'services': 'Service',
             'role': 'Role',
@@ -180,7 +176,7 @@ class TextToSQLGenerator:
         """
         try:
             # Import dynamique des modèles
-            from projects.models import Projet, Tache, PhaseProjet, Etape
+            from projects.models import Projet, Tache, PhaseProjet
             from accounts.models import User, Service, Role, Permission
             from documents.models import DocumentProjet, HistoriqueDocumentProjet, CommentaireDocumentProjet
             
@@ -189,7 +185,6 @@ class TextToSQLGenerator:
                 'Projet': Projet,
                 'Tache': Tache,
                 'PhaseProjet': PhaseProjet,
-                'Etape': Etape,
                 'User': User,
                 'Service': Service,
                 'Role': Role,

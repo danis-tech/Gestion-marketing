@@ -27,7 +27,7 @@ class DocumentProjetViewSet(viewsets.ModelViewSet):
     search_fields = ['nom_fichier', 'description', 'chemin_fichier']
     ordering_fields = ['nom_fichier', 'cree_le', 'version', 'statut']
     ordering = ['-cree_le']
-    filterset_fields = ['statut', 'origine', 'type_document', 'projet', 'phase', 'etape']
+    filterset_fields = ['statut', 'origine', 'type_document', 'projet', 'phase']
     
     def get_queryset(self):
         """Filtrer les documents selon les permissions."""
@@ -178,30 +178,29 @@ class DocumentProjetViewSet(viewsets.ModelViewSet):
         return Response(list(phases.values()))
     
     @action(detail=False, methods=['get'])
-    def par_etape(self, request):
-        """Obtenir les documents groupés par étape."""
+    def par_phase(self, request):
+        """Obtenir les documents groupés par phase."""
         user = request.user
-        queryset = self.get_queryset().filter(etape__isnull=False)
+        queryset = self.get_queryset().filter(phase__isnull=False)
         
-        # Grouper par étape
-        etapes = {}
+        # Grouper par phase
+        phases = {}
         for document in queryset:
-            etape_id = document.etape.id
-            if etape_id not in etapes:
-                etapes[etape_id] = {
-                    'etape': {
-                        'id': document.etape.id,
-                        'nom': document.etape.nom,
-                        'phase': document.etape.phase_etat.phase.nom,
+            phase_id = document.phase.id
+            if phase_id not in phases:
+                phases[phase_id] = {
+                    'phase': {
+                        'id': document.phase.id,
+                        'nom': document.phase.phase.nom,
                         'projet': document.projet.nom
                     },
                     'documents': []
                 }
-            etapes[etape_id]['documents'].append(
+            phases[phase_id]['documents'].append(
                 DocumentProjetListSerializer(document).data
             )
         
-        return Response(list(etapes.values()))
+        return Response(list(phases.values()))
     
     # Endpoint generer_fiches_phase supprimé - non utilisé
     

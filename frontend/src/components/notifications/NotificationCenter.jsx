@@ -59,7 +59,6 @@ const NotificationCenter = ({ isOpen, onClose }) => {
       'projet_en_cours': <PlayCircle className="w-4 h-4 text-blue-500" />,
       'projet_retard_perso': <AlertCircle className="w-4 h-4 text-red-500" />,
       'equipe_membre': <Users className="w-4 h-4 text-purple-500" />,
-      'etape_terminee': <Flag className="w-4 h-4 text-green-500" />,
       'document_valide': <FileCheck className="w-4 h-4 text-green-500" />,
       'document_rejete': <FileX className="w-4 h-4 text-red-500" />
     };

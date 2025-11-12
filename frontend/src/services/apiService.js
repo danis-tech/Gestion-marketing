@@ -190,6 +190,16 @@ export const tasksService = {
     const response = await apiClient.patch(`/api/taches/${id}/update_statut/`, { statut: status });
     return response.data;
   },
+  // Valider une tâche (changer son statut vers 'termine')
+  startTask: async (id) => {
+    const response = await apiClient.post(`/api/taches/${id}/demarrer/`);
+    return response.data;
+  },
+  
+  validateTask: async (id) => {
+    const response = await apiClient.post(`/api/taches/${id}/valider/`);
+    return response.data;
+  },
   
   // Récupérer les tâches d'un projet
   getProjectTasks: async (projectId) => {
@@ -707,68 +717,11 @@ export const phasesService = {
   getProjectPhasesProgression: async (projectId) => {
     const response = await apiClient.get(`/api/projects/${projectId}/phases/progression/`);
     return response.data;
-  }
-};
+  },
 
-// Service des étapes de projet
-export const etapesService = {
-  // Récupérer les étapes d'une phase
-  getPhaseEtapes: async (projectId, phaseId) => {
-    const response = await apiClient.get(`/api/projects/${projectId}/phases/${phaseId}/etapes/`);
-    return response.data;
-  },
-  
-  // Récupérer une étape par ID
-  getEtape: async (projectId, phaseId, etapeId) => {
-    const response = await apiClient.get(`/api/projects/${projectId}/phases/${phaseId}/etapes/${etapeId}/`);
-    return response.data;
-  },
-  
-  // Créer une nouvelle étape
-  createEtape: async (projectId, phaseId, etapeData) => {
-    const response = await apiClient.post(`/api/projects/${projectId}/phases/${phaseId}/etapes/`, etapeData);
-    return response.data;
-  },
-  
-  // Mettre à jour une étape
-  updateEtape: async (projectId, phaseId, etapeId, etapeData) => {
-    const response = await apiClient.put(`/api/projects/${projectId}/phases/${phaseId}/etapes/${etapeId}/`, etapeData);
-    return response.data;
-  },
-  
-  // Mettre à jour partiellement une étape
-  updateEtapePartial: async (projectId, phaseId, etapeId, etapeData) => {
-    const response = await apiClient.patch(`/api/projects/${projectId}/phases/${phaseId}/etapes/${etapeId}/`, etapeData);
-    return response.data;
-  },
-  
-  // Supprimer une étape
-  deleteEtape: async (projectId, phaseId, etapeId) => {
-    const response = await apiClient.delete(`/api/projects/${projectId}/phases/${phaseId}/etapes/${etapeId}/`);
-    return response.data;
-  },
-  
-  // Démarrer une étape
-  startEtape: async (projectId, phaseId, etapeId) => {
-    const response = await apiClient.post(`/api/projects/${projectId}/phases/${phaseId}/etapes/${etapeId}/demarrer/`);
-    return response.data;
-  },
-  
-  // Terminer une étape
-  endEtape: async (projectId, phaseId, etapeId) => {
-    const response = await apiClient.post(`/api/projects/${projectId}/phases/${phaseId}/etapes/${etapeId}/terminer/`);
-    return response.data;
-  },
-  
-  // Annuler une étape
-  cancelEtape: async (projectId, phaseId, etapeId) => {
-    const response = await apiClient.post(`/api/projects/${projectId}/phases/${phaseId}/etapes/${etapeId}/annuler/`);
-    return response.data;
-  },
-  
-  // Obtenir la progression des étapes d'une phase
-  getPhaseEtapesProgression: async (projectId, phaseId) => {
-    const response = await apiClient.get(`/api/projects/${projectId}/phases/${phaseId}/etapes/progression/`);
+  // Obtenir les tâches d'une phase donnée
+  getPhaseTasks: async (projectId, phaseId) => {
+    const response = await apiClient.get(`/api/projects/${projectId}/phases/${phaseId}/taches/`);
     return response.data;
   }
 };
@@ -998,7 +951,6 @@ export default {
   projects: projectService,
   tasks: taskService,
   phases: phasesService,
-  etapes: etapesService,
   analytics: analyticsService,
   projectCompletion: projectCompletionService,
 };

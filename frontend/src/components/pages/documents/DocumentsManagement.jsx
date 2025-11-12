@@ -20,7 +20,6 @@ const DocumentsManagement = () => {
     projects,
     selectedProject,
     phases,
-    etapes,
     documentTypes,
     documents,
     documentsTeleverses,
@@ -40,8 +39,6 @@ const DocumentsManagement = () => {
     // Actions - Documents générés
     selectProject,
     loadPhases,
-    loadEtapes,
-    loadEtapesProjet,
     loadDocuments,
     generateDocument,
     saveDocument,
@@ -504,11 +501,10 @@ const DocumentsManagement = () => {
         onClose={() => setGenerateModalOpen(false)}
         selectedProject={selectedProject}
         phases={phases}
-        etapes={etapes}
         documentTypes={documentTypes}
         onGenerate={handleGenerateDocument}
         loading={loading}
-        onLoadEtapes={loadEtapes}
+        onLoadPhases={loadPhases}
       />
 
       <DocumentEditModal
@@ -524,10 +520,8 @@ const DocumentsManagement = () => {
         onClose={() => setUploadModalOpen(false)}
         selectedProject={selectedProject}
         phases={phases}
-        etapes={etapes}
         onUpload={handleUploadDocument}
         loading={loading}
-        onLoadEtapes={loadEtapes}
         onLoadPhases={loadPhases}
       />
     </div>

@@ -48,22 +48,6 @@ class ProjectEmailService:
         return list(members)
     
     @staticmethod
-    def _get_step_members(step):
-        """Récupère tous les membres d'une étape (responsable + membres du projet)."""
-        members = set()
-        
-        # Ajouter le responsable de l'étape
-        if step.responsable and step.responsable.email:
-            members.add(step.responsable)
-        
-        # Ajouter les membres du projet
-        project = step.phase_etat.projet
-        project_members = ProjectEmailService._get_project_members(project)
-        members.update(project_members)
-        
-        return list(members)
-    
-    @staticmethod
     def _send_email(recipients, subject, template_name, context, text_content=None):
         """Méthode générique pour envoyer un email."""
         if not recipients:
@@ -543,49 +527,50 @@ L'équipe de gestion de projets
             text_content
         )
     
-    # ============================================================================
-    # EMAILS POUR ÉTAPES
-    # ============================================================================
-    
     @staticmethod
-    def send_step_created_email(step):
-        """Envoie un email à tous les membres de l'étape lors de sa création."""
+    def send_project_starting_soon_email(project, start_date):
+        """Envoie un email aux membres du projet pour un projet qui commence demain."""
         domain, site_name, frontend_url = ProjectEmailService._get_site_info()
-        project = step.phase_etat.projet
         project_url = f"{frontend_url}/projects/{project.id}"
         
-        # Récupérer tous les membres de l'étape
-        members = ProjectEmailService._get_step_members(step)
+        # Récupérer tous les membres du projet
+        members = ProjectEmailService._get_project_members(project)
+        
+        # Ajouter le propriétaire s'il n'est pas déjà dans la liste
+        if project.proprietaire.email and project.proprietaire not in members:
+            members.append(project.proprietaire)
         
         if not members:
             return False
         
         context = {
-            'step': step,
             'project': project,
             'project_url': project_url,
             'site_name': site_name,
             'domain': domain,
-            'action': 'created',
+            'start_date': start_date,
+            'action': 'starting_soon',
         }
         
-        subject = f"📋 Nouvelle Étape : {step.nom}"
+        subject = f"📅 Projet qui commence demain : {project.nom}"
         
         text_content = f"""
-Nouvelle Étape Créée - {step.nom}
+Projet qui commence demain - {project.nom}
 
 Bonjour,
 
-Une nouvelle étape a été créée dans le projet "{project.nom}" : {step.nom}
+Le projet "{project.nom}" est prévu pour commencer demain ({start_date.strftime("%d/%m/%Y")}).
 
-Détails de l'étape :
-- Nom : {step.nom}
-- Projet : {project.nom}
-- Phase : {step.phase_etat.phase.nom}
-- Statut : {step.get_statut_display()}
-- Priorité : {step.get_priorite_display()}
+Détails du projet :
+- Nom : {project.nom}
+- Code : {project.code}
+- Date de début : {start_date.strftime("%d/%m/%Y")}
+- Date de fin prévue : {project.fin.date().strftime("%d/%m/%Y") if project.fin else 'Non définie'}
+- Priorité : {project.get_priorite_display()}
 
-Vous pouvez voir l'étape dans l'application : {project_url}
+Préparez-vous pour le démarrage du projet !
+
+Vous pouvez voir le projet dans l'application : {project_url}
 
 Cordialement,
 L'équipe de gestion de projets
@@ -594,43 +579,54 @@ L'équipe de gestion de projets
         return ProjectEmailService._send_email(
             members,
             subject,
-            'emails/step_created.html',
+            'emails/project_starting_soon.html',
             context,
             text_content
         )
     
     @staticmethod
-    def send_step_updated_email(step):
-        """Envoie un email à tous les membres de l'étape lors de sa modification."""
+    def send_project_started_email(project):
+        """Envoie un email aux membres du projet pour un projet qui vient de démarrer."""
         domain, site_name, frontend_url = ProjectEmailService._get_site_info()
-        project = step.phase_etat.projet
         project_url = f"{frontend_url}/projects/{project.id}"
         
-        # Récupérer tous les membres de l'étape
-        members = ProjectEmailService._get_step_members(step)
+        # Récupérer tous les membres du projet
+        members = ProjectEmailService._get_project_members(project)
+        
+        # Ajouter le propriétaire s'il n'est pas déjà dans la liste
+        if project.proprietaire.email and project.proprietaire not in members:
+            members.append(project.proprietaire)
         
         if not members:
             return False
         
         context = {
-            'step': step,
             'project': project,
             'project_url': project_url,
             'site_name': site_name,
             'domain': domain,
-            'action': 'updated',
+            'action': 'started',
         }
         
-        subject = f"📝 Étape Modifiée : {step.nom}"
+        subject = f"🚀 Projet démarré : {project.nom}"
         
         text_content = f"""
-Étape Modifiée - {step.nom}
+Projet démarré - {project.nom}
 
 Bonjour,
 
-L'étape "{step.nom}" du projet "{project.nom}" a été modifiée.
+Le projet "{project.nom}" a démarré aujourd'hui. Le statut a été automatiquement mis à jour en "En cours".
 
-Vous pouvez voir les modifications dans l'application : {project_url}
+Détails du projet :
+- Nom : {project.nom}
+- Code : {project.code}
+- Statut : En cours
+- Date de début : {project.debut.date().strftime("%d/%m/%Y") if project.debut else "Aujourd'hui"}
+- Date de fin prévue : {project.fin.date().strftime("%d/%m/%Y") if project.fin else 'Non définie'}
+
+Bonne chance pour ce projet !
+
+Vous pouvez voir le projet dans l'application : {project_url}
 
 Cordialement,
 L'équipe de gestion de projets
@@ -639,105 +635,115 @@ L'équipe de gestion de projets
         return ProjectEmailService._send_email(
             members,
             subject,
-            'emails/step_updated.html',
+            'emails/project_started.html',
             context,
             text_content
         )
     
     @staticmethod
-    def send_step_deleted_email(step_nom, project_nom, members_emails):
-        """Envoie un email à tous les membres de l'étape lors de sa suppression."""
+    def send_task_starting_soon_email(task, start_date):
+        """Envoie un email aux membres de la tâche pour une tâche qui commence demain."""
         domain, site_name, frontend_url = ProjectEmailService._get_site_info()
+        project_url = f"{frontend_url}/projects/{task.projet.id}"
         
-        if not members_emails:
+        # Récupérer tous les membres de la tâche
+        members = ProjectEmailService._get_task_members(task)
+        
+        if not members:
             return False
         
         context = {
-            'step_nom': step_nom,
-            'project_nom': project_nom,
-            'site_name': site_name,
-            'domain': domain,
-            'action': 'deleted',
-        }
-        
-        subject = f"🗑️ Étape Supprimée : {step_nom}"
-        
-        text_content = f"""
-Étape Supprimée - {step_nom}
-
-Bonjour,
-
-L'étape "{step_nom}" du projet "{project_nom}" a été supprimée.
-
-Cordialement,
-L'équipe de gestion de projets
-"""
-        
-        return ProjectEmailService._send_email(
-            members_emails,
-            subject,
-            'emails/step_deleted.html',
-            context,
-            text_content
-        )
-    
-    @staticmethod
-    def send_step_delay_email(step):
-        """Envoie un email aux responsables pour une étape en retard."""
-        domain, site_name, frontend_url = ProjectEmailService._get_site_info()
-        project = step.phase_etat.projet
-        project_url = f"{frontend_url}/projects/{project.id}"
-        
-        # Envoyer au responsable de l'étape
-        recipients = []
-        if step.responsable and step.responsable.email:
-            recipients = [step.responsable]
-        
-        # Si personne n'est responsable, envoyer au propriétaire du projet
-        if not recipients and project.proprietaire.email:
-            recipients = [project.proprietaire]
-        
-        if not recipients:
-            return False
-        
-        context = {
-            'step': step,
-            'project': project,
+            'task': task,
+            'project': task.projet,
             'project_url': project_url,
             'site_name': site_name,
             'domain': domain,
-            'action': 'delay',
+            'start_date': start_date,
+            'action': 'starting_soon',
         }
         
-        subject = f"⚠️ Étape en Retard : {step.nom}"
-        
-        date_fin_str = 'Non définie'
-        if step.date_fin_prevue:
-            if isinstance(step.date_fin_prevue, date):
-                date_fin_str = step.date_fin_prevue.strftime('%d/%m/%Y')
-            else:
-                date_fin_str = step.date_fin_prevue.date().strftime('%d/%m/%Y')
+        subject = f"📅 Tâche qui commence demain : {task.titre}"
         
         text_content = f"""
-Étape en Retard - {step.nom}
+Tâche qui commence demain - {task.titre}
 
 Bonjour,
 
-L'étape "{step.nom}" du projet "{project.nom}" est en retard.
+La tâche "{task.titre}" du projet "{task.projet.nom}" est prévue pour commencer demain ({start_date.strftime("%d/%m/%Y")}).
 
-Date de fin prévue : {date_fin_str}
-Date actuelle : {date.today().strftime('%d/%m/%Y')}
+Détails de la tâche :
+- Titre : {task.titre}
+- Projet : {task.projet.nom}
+- Date de début : {start_date.strftime("%d/%m/%Y")}
+- Date de fin prévue : {task.fin.strftime("%d/%m/%Y") if task.fin else 'Non définie'}
+- Priorité : {task.get_priorite_display()}
 
-Vous pouvez voir l'étape dans l'application : {project_url}
+Préparez-vous pour le démarrage de la tâche !
+
+Vous pouvez voir la tâche dans l'application : {project_url}
 
 Cordialement,
 L'équipe de gestion de projets
 """
         
         return ProjectEmailService._send_email(
-            recipients,
+            members,
             subject,
-            'emails/step_delay.html',
+            'emails/task_starting_soon.html',
             context,
             text_content
         )
+    
+    @staticmethod
+    def send_task_started_email(task):
+        """Envoie un email aux membres de la tâche pour une tâche qui vient de démarrer."""
+        domain, site_name, frontend_url = ProjectEmailService._get_site_info()
+        project_url = f"{frontend_url}/projects/{task.projet.id}"
+        
+        # Récupérer tous les membres de la tâche
+        members = ProjectEmailService._get_task_members(task)
+        
+        if not members:
+            return False
+        
+        context = {
+            'task': task,
+            'project': task.projet,
+            'project_url': project_url,
+            'site_name': site_name,
+            'domain': domain,
+            'action': 'started',
+        }
+        
+        subject = f"🚀 Tâche démarrée : {task.titre}"
+        
+        text_content = f"""
+Tâche démarrée - {task.titre}
+
+Bonjour,
+
+La tâche "{task.titre}" du projet "{task.projet.nom}" a démarré aujourd'hui. Le statut a été automatiquement mis à jour en "En cours".
+
+Détails de la tâche :
+- Titre : {task.titre}
+- Projet : {task.projet.nom}
+- Statut : En cours
+- Date de début : {task.debut.strftime("%d/%m/%Y") if task.debut else "Aujourd'hui"}
+- Date de fin prévue : {task.fin.strftime("%d/%m/%Y") if task.fin else 'Non définie'}
+
+Bonne chance pour cette tâche !
+
+Vous pouvez voir la tâche dans l'application : {project_url}
+
+Cordialement,
+L'équipe de gestion de projets
+"""
+        
+        return ProjectEmailService._send_email(
+            members,
+            subject,
+            'emails/task_started.html',
+            context,
+            text_content
+        )
+    

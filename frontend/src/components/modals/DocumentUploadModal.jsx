@@ -6,17 +6,14 @@ const DocumentUploadModal = ({
   onClose, 
   selectedProject, 
   phases, 
-  etapes, 
   onUpload,
   loading,
-  onLoadEtapes,
   onLoadPhases
 }) => {
   const [formData, setFormData] = useState({
     fichier: null,
     projet_id: '',
     phase_id: '',
-    etape_id: '',
     titre: '',
     description: '',
     mots_cles: '',
@@ -33,7 +30,6 @@ const DocumentUploadModal = ({
         fichier: null,
         projet_id: selectedProject?.id || '',
         phase_id: '',
-        etape_id: '',
         titre: '',
         description: '',
         mots_cles: '',
@@ -43,16 +39,6 @@ const DocumentUploadModal = ({
       setErrors({});
     }
   }, [isOpen, selectedProject]);
-
-  // Charger les étapes quand une phase est sélectionnée
-  useEffect(() => {
-    if (formData.phase_id) {
-      console.log('Chargement des étapes pour la phase:', formData.phase_id);
-      onLoadEtapes(formData.phase_id);
-    } else {
-      setFormData(prev => ({ ...prev, etape_id: '' }));
-    }
-  }, [formData.phase_id, onLoadEtapes]);
 
   // Charger les phases du projet automatiquement quand le modal s'ouvre
   useEffect(() => {
@@ -146,9 +132,6 @@ const DocumentUploadModal = ({
       
       if (formData.phase_id) {
         uploadData.append('phase_id', formData.phase_id);
-      }
-      if (formData.etape_id) {
-        uploadData.append('etape_id', formData.etape_id);
       }
 
       if (onUpload && typeof onUpload === 'function') {
@@ -483,37 +466,11 @@ const DocumentUploadModal = ({
                     <span className="text-xs text-gray-500 font-normal">(optionnel)</span>
                   </label>
                   <div className="relative">
-                    <select
-                      name="etape_id"
-                      value={formData.etape_id}
-                      onChange={handleInputChange}
-                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white shadow-sm transition-all duration-200 appearance-none cursor-pointer ${
-                        !formData.phase_id 
-                          ? 'border-gray-200 bg-gray-50 text-gray-400' 
-                          : 'border-gray-300'
-                      }`}
-                      disabled={!formData.phase_id}
-                    >
-                      <option value="">
-                        {!formData.phase_id ? '🔒 Sélectionnez d\'abord une phase' : '📝 Sélectionner une étape'}
-                      </option>
-                      {etapes.length > 0 ? (
-                        etapes.map(etape => (
-                          <option key={etape.id} value={etape.id}>
-                            ✅ {etape.nom}
-                          </option>
-                        ))
-                      ) : formData.phase_id ? (
-                        <option value="" disabled>⏳ Chargement des étapes...</option>
-                      ) : null}
-                    </select>
-                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                      <svg className={`w-5 h-5 ${!formData.phase_id ? 'text-gray-300' : 'text-gray-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
+                    <div className="text-xs text-gray-500">
+                      Les documents sont désormais liés directement aux phases. Sélectionnez une phase dans la liste précédente.
                     </div>
                   </div>
-                  {formData.phase_id && etapes.length === 0 && (
+                  {formData.phase_id && (
                     <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
                       <svg className="w-4 h-4 text-amber-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
@@ -525,7 +482,7 @@ const DocumentUploadModal = ({
               </div>
               
               {/* Indicateur de sélection */}
-              {(formData.phase_id || formData.etape_id) && (
+              {formData.phase_id && (
                 <div className="mt-6 p-4 bg-white rounded-lg border border-gray-200">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
@@ -538,9 +495,8 @@ const DocumentUploadModal = ({
                         Sélection effectuée
                       </div>
                       <div className="text-sm text-gray-600">
-                        {formData.phase_id && `Phase: ${phases.find(p => p.id == formData.phase_id)?.phase?.nom || 'Phase sélectionnée'}`}
-                        {formData.phase_id && formData.etape_id && ' • '}
-                        {formData.etape_id && `Étape: ${etapes.find(e => e.id == formData.etape_id)?.nom || 'Étape sélectionnée'}`}
+                        {selectedProject ? `Projet: ${selectedProject.nom}` : 'Projet sélectionné'}
+                        {formData.phase_id && ` • Phase: ${phases.find(p => p.id == formData.phase_id)?.nom || 'Phase sélectionnée'}`}
                       </div>
                     </div>
                   </div>

@@ -126,19 +126,12 @@ const DocumentCard = ({
                 </span>
               </div>
 
-              {/* Phase et étape si disponibles */}
-              {(document.phase || document.etape) && (
+              {/* Phase si disponible */}
+              {document.phase && (
                 <div className="mt-2 flex gap-2 text-xs">
-                  {document.phase && (
-                    <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full">
-                      Phase: {document.phase}
-                    </span>
-                  )}
-                  {document.etape && (
-                    <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded-full">
-                      Étape: {document.etape}
-                    </span>
-                  )}
+                  <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full">
+                    Phase: {document.phase}
+                  </span>
                 </div>
               )}
             </div>

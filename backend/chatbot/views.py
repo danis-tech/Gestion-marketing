@@ -17,7 +17,7 @@ import logging
 import uuid
 import re
 from .models import Conversation, Message
-from projects.models import Projet, Tache, PhaseProjet, Etape
+from projects.models import Projet, Tache, PhaseProjet
 from accounts.models import User
 from .text2sql import text2sql_generator
 
@@ -2613,7 +2613,7 @@ Que souhaitez-vous savoir ? 😊"""
             status_mapping = {
                 'termine': 'termine',
                 'en_attente': 'en_attente',
-                'en_cours': 'en_attente',  # L'interface a "En cours" mais le modèle utilise "en_attente"
+                'en_cours': 'en_cours',  # Le modèle accepte maintenant 'en_cours'
                 'hors_delai': 'hors_delai',
                 'rejete': 'rejete'
             }

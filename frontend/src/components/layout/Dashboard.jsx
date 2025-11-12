@@ -126,9 +126,9 @@ const Dashboard = ({ user, onLogout }) => {
             <Route path="/projets/equipe" element={<TeamManagement />} />
             <Route path="/projets/ajouter" element={<AddProject />} />
             <Route path="/projets/taches/ajouter" element={<AddTask />} />
-            <Route path="/etapes/kanban" element={<KanbanBoard />} />
             <Route path="/etapes/gantt" element={<div>Page Ganttt</div>} />
             <Route path="/etapes/validations" element={<PhasesEtapesManagementNew />} />
+            <Route path="/etapes/kanban" element={<KanbanBoard />} />
             <Route path="/documents" element={<DocumentsManagement />} />
             <Route path="/analytics" element={<AnalyticsDashboard />} />
             <Route path="/notifications" element={<NotificationsPage />} />

@@ -3,7 +3,7 @@ from django.contrib.auth import get_user_model
 from .models import DocumentProjet, HistoriqueDocumentProjet
 from .utils import TemplateManager
 from .mappers import FicheDataMapper
-from projects.models import Projet, ProjetPhaseEtat, Etape
+from projects.models import Projet, ProjetPhaseEtat
 import os
 
 User = get_user_model()

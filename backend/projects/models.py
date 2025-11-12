@@ -1,6 +1,5 @@
 from django.db import models
 from django.contrib.auth import get_user_model
-from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
 from accounts.models import Service, Role, Permission
 
@@ -15,6 +14,7 @@ class Projet(models.Model):
     STATUT_CHOICES = [
         ('termine', 'Terminé'),
         ('en_attente', 'En attente'),
+        ('en_cours', 'En cours'),
         ('hors_delai', 'Hors délai'),
         ('rejete', 'Rejeté'),
     ]
@@ -144,17 +144,25 @@ class Projet(models.Model):
         self.save(update_fields=['statut', 'mis_a_jour_le'])
         
         # Terminer automatiquement toutes les phases non terminées
+        from django.utils import timezone
         phases_non_terminees = self.phases_etat.exclude(terminee=True).exclude(ignoree=True)
         for phase_etat in phases_non_terminees:
+            champs_a_mettre_a_jour = ['terminee', 'mis_a_jour_le']
             phase_etat.terminee = True
-            phase_etat.save(update_fields=['terminee', 'mis_a_jour_le'])
+            if not phase_etat.date_debut:
+                phase_etat.date_debut = timezone.now()
+                champs_a_mettre_a_jour.append('date_debut')
+            if not phase_etat.date_fin:
+                phase_etat.date_fin = timezone.now()
+                champs_a_mettre_a_jour.append('date_fin')
+            phase_etat.save(update_fields=champs_a_mettre_a_jour)
             
-            # Terminer automatiquement toutes les étapes de cette phase
-            etapes_non_terminees = phase_etat.etapes.exclude(statut='terminee')
-            for etape in etapes_non_terminees:
-                etape.statut = 'terminee'
-                etape.progression_pourcentage = 100
-                etape.save(update_fields=['statut', 'progression_pourcentage', 'mis_a_jour_le'])
+            # Terminer automatiquement toutes les tâches de cette phase
+            phase_etat.taches.exclude(statut='termine').update(
+                statut='termine',
+                mise_a_jour_le=timezone.now()
+            )
+            phase_etat.recalculer_depuis_taches()
         
         print(f"🎯 Projet '{self.nom}' marqué comme terminé - Toutes les phases et étapes terminées automatiquement")
     
@@ -180,20 +188,33 @@ class Projet(models.Model):
     
     @property
     def progression_globale(self):
-        """Calcule la progression globale du projet basée sur les phases"""
-        phases_etat = self.phases_etat.all()
-        if not phases_etat.exists():
-            return 0
+        """Calcule la progression globale du projet basée sur les tâches des utilisateurs"""
+        # Utiliser les tâches préchargées si disponibles, sinon faire une requête
+        if hasattr(self, '_prefetched_objects_cache') and 'taches' in self._prefetched_objects_cache:
+            toutes_les_taches = list(self._prefetched_objects_cache['taches'])
+        else:
+            toutes_les_taches = list(Tache.objects.filter(projet=self))
         
-        total_phases = phases_etat.count()
-        phases_terminees = phases_etat.filter(terminee=True).count()
-        phases_ignorees = phases_etat.filter(ignoree=True).count()
+        if len(toutes_les_taches) == 0:
+            # Si aucune tâche, calculer basé sur les phases comme fallback
+            phases_etat = self.phases_etat.all()
+            if not phases_etat.exists():
+                return 0
+            
+            total_phases = phases_etat.count()
+            phases_terminees = phases_etat.filter(terminee=True).count()
+            phases_ignorees = phases_etat.filter(ignoree=True).count()
+            phases_completes = phases_terminees + phases_ignorees
+            progression = (phases_completes / total_phases * 100) if total_phases > 0 else 0
+            return round(progression, 1)
         
-        # Calculer la progression en tenant compte des phases terminées et ignorées
-        phases_completes = phases_terminees + phases_ignorees
-        progression = (phases_completes / total_phases * 100) if total_phases > 0 else 0
+        # Compter les tâches terminées
+        taches_terminees = sum(1 for tache in toutes_les_taches if tache.statut == 'termine')
         
-        return round(progression, 1)
+        # Calculer la progression basée sur les tâches
+        progression = (taches_terminees / len(toutes_les_taches) * 100) if len(toutes_les_taches) > 0 else 0
+        
+        return round(progression, 2)
     
     @property
     def phase_actuelle(self):
@@ -365,6 +386,7 @@ class Tache(models.Model):
     STATUT_CHOICES = [
         ('termine', 'Terminé'),
         ('en_attente', 'En attente'),
+        ('en_cours', 'En cours'),
         ('hors_delai', 'Hors délai'),
         ('rejete', 'Rejeté'),
     ]
@@ -388,10 +410,18 @@ class Tache(models.Model):
     # Champs d'identification
     id = models.BigAutoField(primary_key=True)
     projet = models.ForeignKey(
-        Projet, 
-        on_delete=models.CASCADE, 
+        Projet,
+        on_delete=models.CASCADE,
         related_name='taches',
         verbose_name="Projet"
+    )
+    phase_etat = models.ForeignKey(
+        'ProjetPhaseEtat',
+        on_delete=models.CASCADE,
+        related_name='taches',
+        null=True,
+        blank=True,
+        verbose_name="Phase du projet"
     )
     titre = models.CharField(max_length=200, verbose_name="Titre de la tâche")
     description = models.TextField(verbose_name="Description de la tâche", null=True, blank=True)
@@ -412,6 +442,8 @@ class Tache(models.Model):
     phase = models.CharField(
         max_length=50, 
         choices=PHASE_CHOICES,
+        null=True,
+        blank=True,
         verbose_name="Phase"
     )
     
@@ -451,6 +483,7 @@ class Tache(models.Model):
         indexes = [
             models.Index(fields=['projet', 'statut', 'phase'], name='idx_taches'),
             models.Index(fields=['projet']),
+            models.Index(fields=['phase_etat']),
             models.Index(fields=['statut']),
             models.Index(fields=['phase']),
             models.Index(fields=['tache_dependante']),
@@ -462,12 +495,50 @@ class Tache(models.Model):
         return f"{self.projet.code} - {self.titre}"
     
     def save(self, *args, **kwargs):
+        # Si une phase est assignée, déduire le projet et la phase fonctionnelle
+        if self.phase_etat:
+            self.projet = self.phase_etat.projet
+            if not self.phase:
+                phase_nom = self.phase_etat.phase.nom if self.phase_etat.phase else None
+                phase_mapping = {
+                    'Expression du besoin': 'expression_besoin',
+                    'Études de faisabilité': 'etudes_faisabilite',
+                    'Conception': 'conception',
+                    'Développement / Implémentation': 'developpement',
+                    'Lancement commercial': 'lancement_commercial',
+                    'Suppression d\'une offre': 'suppression_offre',
+                }
+                self.phase = phase_mapping.get(phase_nom, self.phase)
+        
         # Calculer l'estimation en jours si début et fin sont définis
         if self.debut and self.fin:
             delta = self.fin - self.debut
             self.nbr_jour_estimation = delta.days
         
+        # Récupérer l'ancien statut si la tâche existe déjà
+        old_statut = None
+        old_phase_etat_id = None
+        if self.pk:
+            try:
+                old_instance = Tache.objects.get(pk=self.pk)
+                old_statut = old_instance.statut
+                old_phase_etat_id = old_instance.phase_etat_id
+            except Tache.DoesNotExist:
+                pass
+        
         super().save(*args, **kwargs)
+        
+        # Mettre à jour la progression de la phase si une tâche est liée
+        if self.phase_etat:
+            self.phase_etat.recalculer_depuis_taches()
+        
+        # Si la tâche a été déplacée d'une phase à une autre, mettre à jour l'ancienne phase également
+        if old_phase_etat_id and (not self.phase_etat or self.phase_etat_id != old_phase_etat_id):
+            try:
+                ancienne_phase = ProjetPhaseEtat.objects.get(id=old_phase_etat_id)
+                ancienne_phase.recalculer_depuis_taches()
+            except ProjetPhaseEtat.DoesNotExist:
+                pass
     
     @property
     def est_en_retard(self):
@@ -482,6 +553,7 @@ class Tache(models.Model):
         """Calcule la progression de la tâche basée sur le statut"""
         progression_map = {
             'en_attente': 0,
+            'en_cours': 50,
             'rejete': 0,
             'hors_delai': 50,
             'termine': 100,
@@ -571,72 +643,92 @@ class ProjetPhaseEtat(models.Model):
     def __str__(self):
         return f"{self.projet.code} - {self.phase.nom} ({'Terminée' if self.terminee else 'En cours' if self.date_debut else 'En attente'})"
     
+    def save(self, *args, **kwargs):
+        # Récupérer l'ancien statut si la phase existe déjà
+        old_terminee = None
+        if self.pk:
+            try:
+                old_instance = ProjetPhaseEtat.objects.get(pk=self.pk)
+                old_terminee = old_instance.terminee
+            except ProjetPhaseEtat.DoesNotExist:
+                pass
+        
+        super().save(*args, **kwargs)
+        
+        # Vérifier si la phase a été marquée comme terminée et si le projet doit être mis à jour
+        if self.terminee and old_terminee != self.terminee:
+            # Vérifier si toutes les phases du projet sont terminées
+            self._verifier_et_mettre_a_jour_projet()
+    
+    def _verifier_et_mettre_a_jour_projet(self):
+        """Vérifie si toutes les phases du projet sont terminées et met à jour le projet automatiquement"""
+        if not self.projet:
+            return
+        
+        # Récupérer toutes les phases du projet (sauf celles ignorées)
+        toutes_les_phases = ProjetPhaseEtat.objects.filter(projet=self.projet).exclude(ignoree=True)
+        
+        # Vérifier si toutes les phases sont terminées
+        toutes_terminees = toutes_les_phases.exclude(terminee=True).count() == 0
+        
+        if toutes_terminees and toutes_les_phases.count() > 0:
+            # Si le projet n'est pas déjà terminé, le terminer automatiquement
+            if self.projet.statut != 'termine':
+                self.projet.statut = 'termine'
+                from django.utils import timezone
+                self.projet.fin = timezone.now()
+                self.projet.save(update_fields=['statut', 'fin', 'mis_a_jour_le'])
+    
     @property
     def est_en_cours(self):
-        """Vérifie si la phase est en cours (a des étapes en cours)"""
+        """Vérifie si la phase est en cours (a des tâches démarrées mais non terminées)"""
         if self.terminee or self.ignoree:
             return False
         
-        # Une phase est en cours si elle a des étapes en cours
-        return self.etapes.filter(statut='en_cours').exists()
+        return self.taches.exclude(statut__in=['en_attente', 'termine', 'rejete']).exists() or \
+            self.taches.filter(statut='hors_delai').exists()
     
     @property
     def est_en_attente(self):
-        """Vérifie si la phase est en attente (pas d'étapes en cours et pas terminée)"""
+        """Vérifie si la phase est en attente (aucune tâche démarrée)"""
         if self.terminee or self.ignoree:
             return False
         
-        # Une phase est en attente si elle n'a pas d'étapes en cours
-        return not self.etapes.filter(statut='en_cours').exists()
+        if not self.taches.exists():
+            return True
+        
+        return self.taches.filter(statut='en_attente').count() == self.taches.count()
     
     @property
     def peut_etre_terminee(self):
-        """Vérifie si la phase peut être terminée (toutes les étapes sont terminées ou annulées)"""
+        """Vérifie si la phase peut être terminée (toutes les tâches sont terminées)"""
         if self.terminee or self.ignoree:
             return False
         
-        # Vérifier qu'il n'y a pas d'étapes en attente ou en cours
-        etapes_non_terminees = self.etapes.exclude(
-            statut__in=['terminee', 'annulee']
-        ).exists()
+        if not self.taches.exists():
+            return False
         
-        return not etapes_non_terminees
-    
-    @property
-    def etapes_en_attente_ou_en_cours(self):
-        """Retourne les étapes qui ne sont pas terminées ou annulées"""
-        return self.etapes.exclude(statut__in=['terminee', 'annulee'])
+        return self.taches.exclude(statut='termine').count() == 0
     
     @property
     def progression_pourcentage(self):
-        """Calcule la progression de la phase basée sur ses étapes"""
+        """Calcule la progression de la phase basée sur les tâches des étapes"""
         if self.terminee:
             return 100
         
-        etapes = self.etapes.all()
-        if not etapes.exists():
+        # Récupérer toutes les tâches directement liées à cette phase
+        toutes_les_taches = self.taches.all()
+        
+        if toutes_les_taches.count() == 0:
             return 0
         
-        total_progress = 0
-        etapes_terminees = 0
+        # Compter les tâches terminées
+        taches_terminees = toutes_les_taches.filter(statut='termine').count()
         
-        for etape in etapes:
-            if etape.statut == 'terminee':
-                total_progress += 100
-                etapes_terminees += 1
-            elif etape.statut == 'en_cours':
-                total_progress += (etape.progression_pourcentage or 0)
-            # Les étapes en attente contribuent 0
+        # Calculer la progression basée sur les tâches
+        progression = (taches_terminees / toutes_les_taches.count() * 100) if toutes_les_taches.count() > 0 else 0
         
-        progression = round(total_progress / etapes.count())
-        
-        # Si toutes les étapes sont terminées, marquer la phase comme terminée
-        if etapes_terminees == etapes.count() and etapes.count() > 0 and not self.terminee:
-            self.terminee = True
-            self.save(update_fields=['terminee', 'mis_a_jour_le'])
-            return 100
-        
-        return progression
+        return round(progression, 2)
     
     def marquer_debut(self):
         """Marque le début de la phase"""
@@ -654,15 +746,13 @@ class ProjetPhaseEtat(models.Model):
                 "Cette phase est déjà terminée."
             )
         
-        # Vérifier que toutes les étapes sont terminées ou annulées
-        etapes_non_terminees = self.etapes.exclude(
-            statut__in=['terminee', 'annulee']
-        ).exists()
+        # Vérifier que toutes les tâches sont terminées
+        taches_non_terminees = self.taches.exclude(statut='termine').exists()
         
-        if etapes_non_terminees:
+        if taches_non_terminees:
             from django.core.exceptions import ValidationError
             raise ValidationError(
-                "Impossible de terminer cette phase car certaines étapes ne sont pas terminées ou annulées."
+                "Impossible de terminer cette phase car certaines tâches ne sont pas terminées."
             )
         
         # Marquer la phase comme terminée (même si elle a déjà une date_fin)
@@ -671,150 +761,58 @@ class ProjetPhaseEtat(models.Model):
         self.terminee = True
         self.save(update_fields=['date_fin', 'terminee', 'mis_a_jour_le'])
 
-
-class Etape(models.Model):
-    """
-    Modèle pour les étapes d'une phase de projet.
-    Les étapes sont des sous-tâches détaillées d'une phase.
-    L'utilisateur peut ajouter, modifier ou supprimer ces étapes selon ses besoins.
-    """
-    STATUT_CHOICES = [
-        ('en_attente', 'En attente'),
-        ('en_cours', 'En cours'),
-        ('terminee', 'Terminée'),
-        ('annulee', 'Annulée'),
-    ]
-    
-    PRIORITE_CHOICES = [
-        ('faible', 'Faible'),
-        ('normale', 'Normale'),
-        ('elevee', 'Élevée'),
-        ('critique', 'Critique'),
-    ]
-    
-    # Relations
-    phase_etat = models.ForeignKey(
-        ProjetPhaseEtat,
-        on_delete=models.CASCADE,
-        related_name='etapes',
-        verbose_name="Phase du projet"
-    )
-    responsable = models.ForeignKey(
-        User,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='etapes_responsable',
-        verbose_name="Responsable de l'étape"
-    )
-    
-    # Informations de base
-    nom = models.CharField(max_length=200, verbose_name="Nom de l'étape")
-    description = models.TextField(blank=True, null=True, verbose_name="Description de l'étape")
-    ordre = models.PositiveIntegerField(verbose_name="Ordre dans la phase")
-    
-    # Statut et priorité
-    statut = models.CharField(
-        max_length=20,
-        choices=STATUT_CHOICES,
-        default='en_attente',
-        verbose_name="Statut de l'étape"
-    )
-    priorite = models.CharField(
-        max_length=20,
-        choices=PRIORITE_CHOICES,
-        default='normale',
-        verbose_name="Priorité"
-    )
-    
-    # Dates
-    date_debut_prevue = models.DateTimeField(null=True, blank=True, verbose_name="Date de début prévue")
-    date_fin_prevue = models.DateTimeField(null=True, blank=True, verbose_name="Date de fin prévue")
-    date_debut_reelle = models.DateTimeField(null=True, blank=True, verbose_name="Date de début réelle")
-    date_fin_reelle = models.DateTimeField(null=True, blank=True, verbose_name="Date de fin réelle")
-    
-    # Progression
-    progression_pourcentage = models.PositiveIntegerField(
-        default=0,
-        validators=[MinValueValidator(0), MaxValueValidator(100)],
-        verbose_name="Progression (%)"
-    )
-    
-    # Commentaires et notes
-    commentaire = models.TextField(blank=True, null=True, verbose_name="Commentaire")
-    notes_internes = models.TextField(blank=True, null=True, verbose_name="Notes internes")
-    
-    # Métadonnées
-    cree_par = models.ForeignKey(
-        User,
-        on_delete=models.SET_NULL,
-        null=True,
-        related_name='etapes_creees',
-        verbose_name="Créé par"
-    )
-    cree_le = models.DateTimeField(auto_now_add=True, verbose_name="Date de création")
-    mis_a_jour_le = models.DateTimeField(auto_now=True, verbose_name="Date de mise à jour")
-    
-    class Meta:
-        db_table = "etapes"
-        verbose_name = "Étape"
-        verbose_name_plural = "Étapes"
-        ordering = ['phase_etat__phase__ordre', 'ordre']
-        unique_together = ['phase_etat', 'ordre']
-        indexes = [
-            models.Index(fields=['phase_etat', 'ordre']),
-            models.Index(fields=['statut']),
-            models.Index(fields=['priorite']),
-            models.Index(fields=['responsable']),
-            models.Index(fields=['date_debut_prevue']),
-            models.Index(fields=['date_fin_prevue']),
-        ]
-    
-    def __str__(self):
-        return f"{self.phase_etat.phase.nom} - {self.nom}"
-    
-    @property
-    def est_en_retard(self):
-        """Vérifie si l'étape est en retard"""
-        if not self.date_fin_prevue or self.statut == 'terminee':
-            return False
+    def recalculer_depuis_taches(self):
+        """Met à jour automatiquement le statut et les dates de la phase en fonction des tâches"""
         from django.utils import timezone
-        return timezone.now() > self.date_fin_prevue and self.statut != 'terminee'
-    
-    @property
-    def duree_prevue(self):
-        """Calcule la durée prévue en jours"""
-        if self.date_debut_prevue and self.date_fin_prevue:
-            delta = self.date_fin_prevue - self.date_debut_prevue
-            return delta.days
-        return None
-    
-    @property
-    def duree_reelle(self):
-        """Calcule la durée réelle en jours"""
-        if self.date_debut_reelle and self.date_fin_reelle:
-            delta = self.date_fin_reelle - self.date_debut_reelle
-            return delta.days
-        return None
-    
-    def demarrer(self):
-        """Démarre l'étape"""
-        if self.statut == 'en_attente':
-            from django.utils import timezone
-            self.statut = 'en_cours'
-            self.date_debut_reelle = timezone.now()
-            self.save(update_fields=['statut', 'date_debut_reelle', 'mis_a_jour_le'])
-    
-    def terminer(self):
-        """Termine l'étape"""
-        if self.statut == 'en_cours':
-            from django.utils import timezone
-            self.statut = 'terminee'
-            self.date_fin_reelle = timezone.now()
-            self.progression_pourcentage = 100
-            self.save(update_fields=['statut', 'date_fin_reelle', 'progression_pourcentage', 'mis_a_jour_le'])
-    
-    def annuler(self):
-        """Annule l'étape"""
-        self.statut = 'annulee'
-        self.save(update_fields=['statut', 'mis_a_jour_le'])
+        
+        taches = self.taches.all()
+        total_taches = taches.count()
+        if total_taches == 0:
+            # Si aucune tâche n'est liée, on ne touche pas au statut automatiquement
+            return
+        
+        terminees = taches.filter(statut='termine').count()
+        en_attente = taches.filter(statut='en_attente').count()
+        en_cours = total_taches - terminees - en_attente
+        
+        champs_a_mettre_a_jour = set()
+        maintenant = timezone.now()
+        
+        # Définir la date de début si nécessaire (au moins une tâche démarrée)
+        if (en_cours > 0 or terminees > 0) and not self.date_debut:
+            self.date_debut = maintenant
+            champs_a_mettre_a_jour.add('date_debut')
+        
+        # Gestion du statut terminee / date_fin
+        toutes_terminees = terminees == total_taches
+        if toutes_terminees and not self.ignoree:
+            if not self.terminee:
+                self.terminee = True
+                champs_a_mettre_a_jour.add('terminee')
+            if not self.date_fin:
+                self.date_fin = maintenant
+                champs_a_mettre_a_jour.add('date_fin')
+        else:
+            if self.terminee and not self.ignoree:
+                self.terminee = False
+                champs_a_mettre_a_jour.add('terminee')
+            if self.date_fin and not toutes_terminees:
+                self.date_fin = None
+                champs_a_mettre_a_jour.add('date_fin')
+        
+        if champs_a_mettre_a_jour:
+            champs_a_mettre_a_jour.add('mis_a_jour_le')
+            self.save(update_fields=list(champs_a_mettre_a_jour))
+        
+        # Vérifier si toutes les phases du projet sont terminées et mettre à jour le projet automatiquement
+        if toutes_terminees and not self.ignoree:
+            projet = self.projet
+            if projet and projet.statut != 'termine':
+                # Vérifier si toutes les phases sont terminées ou ignorées
+                phases_non_terminees = projet.phases_etat.exclude(terminee=True).exclude(ignoree=True).exists()
+                if not phases_non_terminees:
+                    # Toutes les phases sont terminées, mettre à jour le projet automatiquement
+                    projet.statut = 'termine'
+                    if not projet.fin:
+                        projet.fin = timezone.now()
+                    projet.save(update_fields=['statut', 'fin', 'mis_a_jour_le'])

@@ -1,21 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { X, FileText, Plus, AlertCircle, CheckCircle, Info, Code, Database } from 'lucide-react';
 
-const DocumentGenerateModal = ({ 
-  isOpen, 
-  onClose, 
-  selectedProject, 
-  phases, 
-  etapes, 
-  documentTypes, 
+const DocumentGenerateModal = ({
+  isOpen,
+  onClose,
+  selectedProject,
+  phases,
+  documentTypes,
   onGenerate,
   loading,
-  onLoadEtapes
+  onLoadPhases
 }) => {
   const [formData, setFormData] = useState({
+    titre: '',
     type_document: '',
+    projet_id: '',
     phase_id: '',
-    etape_id: ''
+    phase_nom: ''
   });
   const [errors, setErrors] = useState({});
 
@@ -23,27 +24,25 @@ const DocumentGenerateModal = ({
   useEffect(() => {
     if (isOpen) {
       setFormData({
+        titre: '',
         type_document: '',
+        projet_id: '',
         phase_id: '',
-        etape_id: ''
+        phase_nom: ''
       });
       setErrors({});
     }
   }, [isOpen]);
 
-  // Charger les étapes quand une phase est sélectionnée
   useEffect(() => {
-    if (formData.phase_id) {
-      // Charger les étapes de la phase sélectionnée
-      onLoadEtapes(formData.phase_id);
-    } else {
-      setFormData(prev => ({ ...prev, etape_id: '' }));
+    if (isOpen && selectedProject && phases.length === 0 && onLoadPhases) {
+      onLoadPhases(selectedProject.id);
     }
-  }, [formData.phase_id, onLoadEtapes]);
+  }, [isOpen, selectedProject?.id, onLoadPhases]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Validation
     const newErrors = {};
     if (!formData.type_document) {
@@ -74,7 +73,7 @@ const DocumentGenerateModal = ({
 
   const getProjectData = () => {
     if (!selectedProject) return [];
-    
+
     return [
       { label: 'Nom', value: selectedProject.nom },
       { label: 'Code', value: selectedProject.code },
@@ -174,40 +173,16 @@ const DocumentGenerateModal = ({
             </label>
             <select
               value={formData.phase_id}
-              onChange={(e) => setFormData(prev => ({ ...prev, phase_id: e.target.value, etape_id: '' }))}
+              onChange={(e) => setFormData(prev => ({ ...prev, phase_id: e.target.value }))}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               disabled={loading}
             >
-              <option value="">Aucune phase spécifique</option>
-              {phases.map((phase) => (
-                <option key={phase.id} value={phase.id}>
-                  {phase.nom} - {phase.statut}
-                </option>
+              <option value="">Sélectionnez une phase</option>
+              {phases.map(phase => (
+                <option key={phase.id} value={phase.id}>{phase.nom}</option>
               ))}
             </select>
           </div>
-
-          {/* Étape (optionnel) */}
-          {formData.phase_id && (
-            <div className="form-group">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Étape (optionnel)
-              </label>
-              <select
-                value={formData.etape_id}
-                onChange={(e) => setFormData(prev => ({ ...prev, etape_id: e.target.value }))}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                disabled={loading}
-              >
-                <option value="">Aucune étape spécifique</option>
-                {etapes.map((etape) => (
-                  <option key={etape.id} value={etape.id}>
-                    {etape.nom} - {etape.statut}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
 
           {/* Information sur le workflow */}
           <div className="p-4 bg-blue-50 border border-blue-200">

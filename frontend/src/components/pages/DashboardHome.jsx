@@ -3,7 +3,7 @@ import {
   BarChart3, 
   ClipboardList, 
   CheckCircle, 
-  Users, 
+  Users,
   Clock, 
   ChevronDown,
   Target,
@@ -42,7 +42,6 @@ const DashboardHome = ({ user }) => {
     const loadProjects = async () => {
       try {
         setLoadingProjects(true);
-        console.log('[DashboardHome] Chargement des projets...');
         const response = await projectService.getProjects({ ordering: '-cree_le' });
         
         let projectsData = [];
@@ -54,20 +53,16 @@ const DashboardHome = ({ user }) => {
           projectsData = response.results;
         }
         
-        console.log('[DashboardHome] Projets chargés:', projectsData.length, projectsData);
         setProjects(projectsData);
         
         // Sélectionner le projet le plus récent par défaut
         if (projectsData.length > 0) {
           const mostRecentProject = projectsData[0];
-          console.log('[DashboardHome] Sélection du projet le plus récent:', mostRecentProject.id, mostRecentProject.nom);
           setSelectedProjectId(mostRecentProject.id);
         } else {
-          console.log('[DashboardHome] Aucun projet trouvé');
           setSelectedProjectId(null);
         }
       } catch (err) {
-        console.error('[DashboardHome] Erreur lors du chargement des projets:', err);
         setSelectedProjectId(null);
       } finally {
         setLoadingProjects(false);
@@ -286,7 +281,11 @@ const DashboardHome = ({ user }) => {
             </div>
             <div className="chart-title">
               <h3>Projets</h3>
-              <span className="chart-subtitle">Gestion et suivi des projets</span>
+              <span className="chart-subtitle">
+                {selectedProjectId && projects.find(p => p.id === selectedProjectId)
+                  ? projects.find(p => p.id === selectedProjectId).nom
+                  : 'Gestion et suivi des projets'}
+              </span>
             </div>
           </div>
           <SummaryCharts type="projects" projectId={selectedProjectId} />

@@ -11,7 +11,7 @@ class DocumentProjetAdmin(admin.ModelAdmin):
     
     list_display = [
         'nom_fichier', 'projet_link', 'type_document', 'version', 
-        'statut_badge', 'origine_badge', 'phase_link', 'etape_link',
+        'statut_badge', 'origine_badge', 'phase_link',
         'cree_par', 'depose_par', 'cree_le'
     ]
     list_filter = [
@@ -32,7 +32,7 @@ class DocumentProjetAdmin(admin.ModelAdmin):
             'fields': ('statut', 'origine')
         }),
         ('Relations', {
-            'fields': ('phase', 'etape')
+            'fields': ('phase',)
         }),
         ('Utilisateurs', {
             'fields': ('cree_par', 'depose_par')
@@ -55,14 +55,6 @@ class DocumentProjetAdmin(admin.ModelAdmin):
             return format_html('<a href="{}">{}</a>', url, obj.phase.phase.nom)
         return '-'
     phase_link.short_description = 'Phase'
-    
-    def etape_link(self, obj):
-        """Lien vers l'étape."""
-        if obj.etape:
-            url = reverse('admin:projects_etape_change', args=[obj.etape.id])
-            return format_html('<a href="{}">{}</a>', url, obj.etape.nom)
-        return '-'
-    etape_link.short_description = 'Étape'
     
     def statut_badge(self, obj):
         """Badge du statut."""

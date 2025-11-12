@@ -9,7 +9,7 @@ from typing import Dict, List, Any, Optional
 import logging
 
 from .models import Metric, MetricCategory, MetricType, SystemHealth
-from projects.models import Projet, Tache, PhaseProjet, ProjetPhaseEtat, Etape
+from projects.models import Projet, Tache, PhaseProjet, ProjetPhaseEtat
 from accounts.models import User, Service, Role
 from documents.models import DocumentProjet, HistoriqueDocumentProjet, CommentaireDocumentProjet
 from notifications.models import Notification
@@ -518,14 +518,14 @@ class AnalyticsService:
         # Détails des phases
         phases_detail = []
         for phase_etat in phases_etat:
-            # Compter les étapes de cette phase
-            etapes = phase_etat.etapes.all()
-            total_etapes = etapes.count()
-            etapes_terminees = etapes.filter(statut='termine').count()
-            etapes_en_cours = etapes.filter(statut='en_cours').count()
-            etapes_en_attente = etapes.filter(statut='en_attente').count()
+            # Compter les tâches de cette phase
+            taches = phase_etat.taches.all()
+            total_taches = taches.count()
+            taches_terminees = taches.filter(statut='termine').count()
+            taches_en_cours = taches.filter(statut='en_cours').count()
+            taches_en_attente = taches.filter(statut='en_attente').count()
             
-            progression_phase = (etapes_terminees / total_etapes * 100) if total_etapes > 0 else 0
+            progression_phase = (taches_terminees / total_taches * 100) if total_taches > 0 else 0
             
             phases_detail.append({
                 'id': phase_etat.id,
@@ -537,10 +537,10 @@ class AnalyticsService:
                 'date_debut': phase_etat.date_debut.isoformat() if phase_etat.date_debut else None,
                 'date_fin': phase_etat.date_fin.isoformat() if phase_etat.date_fin else None,
                 'progression': round(progression_phase, 1),
-                'total_etapes': total_etapes,
-                'etapes_terminees': etapes_terminees,
-                'etapes_en_cours': etapes_en_cours,
-                'etapes_en_attente': etapes_en_attente,
+                'total_taches': total_taches,
+                'taches_terminees': taches_terminees,
+                'taches_en_cours': taches_en_cours,
+                'taches_en_attente': taches_en_attente,
             })
         
         # Tâches du projet
@@ -570,6 +570,21 @@ class AnalyticsService:
                     'photo_url': premier_assigne.photo_url,
                 }
             
+            # Informations du projet
+            projet_info = {
+                'id': project.id,
+                'code': project.code,
+                'nom': project.nom,
+            }
+            
+            # Informations de la tâche dépendante si elle existe
+            tache_dependante_info = None
+            if tache.tache_dependante:
+                tache_dependante_info = {
+                    'id': tache.tache_dependante.id,
+                    'titre': tache.tache_dependante.titre,
+                }
+            
             taches_list.append({
                 'id': tache.id,
                 'titre': tache.titre,
@@ -580,7 +595,14 @@ class AnalyticsService:
                 'phase': tache.phase,
                 'debut': tache.debut.isoformat() if tache.debut else None,
                 'fin': tache.fin.isoformat() if tache.fin else None,
+                'nbr_jour_estimation': tache.nbr_jour_estimation,
+                'progression': tache.progression,
+                'description': tache.description,
                 'responsable': responsable_info,
+                'projet': projet_info,
+                'tache_dependante': tache_dependante_info,
+                'cree_le': tache.cree_le.isoformat() if tache.cree_le else None,
+                'mise_a_jour_le': tache.mise_a_jour_le.isoformat() if tache.mise_a_jour_le else None,
             })
         
         # Membres de l'équipe
@@ -628,7 +650,7 @@ class AnalyticsService:
             taches_par_statut_membre = taches_membre.values('statut').annotate(count=Count('id'))
             taches_statut_membre = {item['statut']: item['count'] for item in taches_par_statut_membre}
             
-            taches_list = []
+            taches_list_membre = []
             for tache in taches_membre:
                 # Récupérer les responsables de la tâche (assigne_a est maintenant ManyToMany)
                 # Prendre le premier assigné comme responsable principal pour la compatibilité
@@ -646,7 +668,7 @@ class AnalyticsService:
                         'photo_url': premier_assigne.photo_url,
                     }
                 
-                taches_list.append({
+                taches_list_membre.append({
                     'id': tache.id,
                     'titre': tache.titre,
                     'statut': tache.statut,
@@ -673,14 +695,20 @@ class AnalyticsService:
                 'taches': {
                     'total': taches_membre.count(),
                     'par_statut': taches_statut_membre,
-                    'liste': taches_list,
+                    'liste': taches_list_membre,
                 },
             })
         
-        # Statistiques des étapes
-        toutes_etapes = Etape.objects.filter(phase_etat__projet=project)
-        etapes_par_statut = toutes_etapes.values('statut').annotate(count=Count('id'))
-        etapes_statut_data = {item['statut']: item['count'] for item in etapes_par_statut}
+        # Statistiques des tâches par phase (remplace les étapes)
+        taches_par_phase = {}
+        for phase_etat in phases_etat:
+            taches_phase = Tache.objects.filter(phase_etat=phase_etat)
+            taches_par_phase[phase_etat.id] = {
+                'phase_nom': phase_etat.phase.nom if phase_etat.phase else None,
+                'total': taches_phase.count(),
+                'terminees': taches_phase.filter(statut='termine').count(),
+                'en_cours': taches_phase.filter(statut='en_cours').count(),
+            }
         
         return {
             'project': project_info,
@@ -694,6 +722,11 @@ class AnalyticsService:
             'phases': phases_detail,
             'taches': {
                 'total': taches.count(),
+                'terminees': taches_statut_data.get('termine', 0),
+                'en_cours': taches_statut_data.get('en_cours', 0),
+                'en_attente': taches_statut_data.get('en_attente', 0),
+                'hors_delai': taches_statut_data.get('hors_delai', 0),
+                'rejete': taches_statut_data.get('rejete', 0),
                 'par_statut': taches_statut_data,
                 'par_priorite': taches_priorite_data,
                 'liste': taches_list,  # Liste complète des tâches
@@ -703,10 +736,7 @@ class AnalyticsService:
                 'par_service': equipe_data,
                 'membres': membres_details if membres_details else [],  # Liste complète de tous les membres avec leurs détails
             },
-            'etapes': {
-                'total': toutes_etapes.count(),
-                'par_statut': etapes_statut_data,
-            }
+            'taches_par_phase': taches_par_phase
         }
     
     def get_dashboard_data(self, period_days: int = 30, project_id: Optional[int] = None) -> Dict[str, Any]:
@@ -875,7 +905,7 @@ class AnalyticsService:
         # Projets en retard (dépassant leur date de fin prévue)
         overdue_projects = Projet.objects.filter(
             fin__lt=self.now,
-            statut__in=['en_cours', 'en_attente', 'en_pause']
+            statut__in=['en_cours', 'en_attente']
         ).count()
         
         metrics.append(Metric(
@@ -893,7 +923,7 @@ class AnalyticsService:
         # Tâches en retard
         overdue_tasks = Tache.objects.filter(
             fin__lt=self.now,
-            statut__in=['en_cours', 'en_attente', 'en_pause']
+            statut__in=['en_cours', 'en_attente']
         ).count()
         
         metrics.append(Metric(
@@ -912,7 +942,7 @@ class AnalyticsService:
         at_risk_projects = Projet.objects.filter(
             fin__lte=self.now + timedelta(days=7),
             fin__gte=self.now,
-            statut__in=['en_cours', 'en_attente', 'en_pause']
+            statut__in=['en_cours', 'en_attente']
         ).count()
         
         metrics.append(Metric(
@@ -931,7 +961,7 @@ class AnalyticsService:
         at_risk_tasks = Tache.objects.filter(
             fin__lte=self.now + timedelta(days=3),
             fin__gte=self.now,
-            statut__in=['en_cours', 'en_attente', 'en_pause']
+            statut__in=['en_cours', 'en_attente']
         ).count()
         
         metrics.append(Metric(

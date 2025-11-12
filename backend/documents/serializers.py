@@ -3,11 +3,11 @@ from django.contrib.auth import get_user_model
 from .models import DocumentProjet, HistoriqueDocumentProjet, CommentaireDocumentProjet, DocumentTeleverse
 # Import des sérialiseurs depuis projects
 try:
-    from projects.serializers import ProjetSerializer, ProjetPhaseEtatSerializer, EtapeSerializer
+    from projects.serializers import ProjetSerializer, ProjetPhaseEtatSerializer
 except ImportError:
     # Fallback si les sérialiseurs n'existent pas
     from rest_framework import serializers
-    from projects.models import Projet, ProjetPhaseEtat, Etape
+    from projects.models import Projet, ProjetPhaseEtat
     
     class ProjetSerializer(serializers.ModelSerializer):
         class Meta:
@@ -18,11 +18,6 @@ except ImportError:
         class Meta:
             model = ProjetPhaseEtat
             fields = ['id', 'phase', 'terminee', 'est_en_cours', 'date_debut', 'date_fin']
-    
-    class EtapeSerializer(serializers.ModelSerializer):
-        class Meta:
-            model = Etape
-            fields = ['id', 'nom', 'description', 'statut', 'priorite', 'date_debut_prevue', 'date_fin_prevue', 'date_debut_reelle', 'date_fin_reelle']
 
 User = get_user_model()
 
@@ -41,14 +36,13 @@ class DocumentProjetListSerializer(serializers.ModelSerializer):
     cree_par = UserSimpleSerializer(read_only=True)
     depose_par = UserSimpleSerializer(read_only=True)
     phase = serializers.StringRelatedField(read_only=True)
-    etape = serializers.StringRelatedField(read_only=True)
     taille_fichier_mb = serializers.ReadOnlyField()
     
     class Meta:
         model = DocumentProjet
         fields = [
             'id', 'projet', 'type_document', 'version', 'chemin_fichier',
-            'statut', 'origine', 'cree_par', 'depose_par', 'phase', 'etape',
+            'statut', 'origine', 'cree_par', 'depose_par', 'phase',
             'taille_fichier_mb', 'nom_fichier', 'cree_le'
         ]
 
@@ -59,7 +53,6 @@ class DocumentProjetDetailSerializer(serializers.ModelSerializer):
     cree_par = UserSimpleSerializer(read_only=True)
     depose_par = UserSimpleSerializer(read_only=True)
     phase = ProjetPhaseEtatSerializer(read_only=True)
-    etape = EtapeSerializer(read_only=True)
     taille_fichier_mb = serializers.ReadOnlyField()
     est_brouillon = serializers.ReadOnlyField()
     est_final = serializers.ReadOnlyField()
@@ -76,7 +69,7 @@ class DocumentProjetDetailSerializer(serializers.ModelSerializer):
         model = DocumentProjet
         fields = [
             'id', 'projet', 'type_document', 'version', 'chemin_fichier',
-            'statut', 'origine', 'cree_par', 'depose_par', 'phase', 'etape',
+            'statut', 'origine', 'cree_par', 'depose_par', 'phase',
             'nom_fichier', 'taille_fichier', 'taille_fichier_mb', 'description',
             'cree_le', 'est_brouillon', 'est_final', 'est_rejete', 
             'est_genere', 'est_manuel', 'peut_etre_modifie', 'peut_etre_supprime',
@@ -89,13 +82,12 @@ class DocumentProjetCreateSerializer(serializers.ModelSerializer):
     """Sérialiseur pour la création de documents de projet."""
     projet_id = serializers.IntegerField(write_only=True)
     phase_id = serializers.IntegerField(write_only=True, required=False, allow_null=True)
-    etape_id = serializers.IntegerField(write_only=True, required=False, allow_null=True)
     
     class Meta:
         model = DocumentProjet
         fields = [
             'projet_id', 'type_document', 'version', 'chemin_fichier',
-            'statut', 'origine', 'phase_id', 'etape_id', 'nom_fichier',
+            'statut', 'origine', 'phase_id', 'nom_fichier',
             'taille_fichier', 'description'
         ]
     
@@ -118,15 +110,6 @@ class DocumentProjetCreateSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError("Cette phase n'existe pas.")
         return value
     
-    def validate_etape_id(self, value):
-        """Valider que l'étape existe."""
-        if value is not None:
-            from projects.models import Etape
-            try:
-                Etape.objects.get(id=value)
-            except Etape.DoesNotExist:
-                raise serializers.ValidationError("Cette étape n'existe pas.")
-        return value
     
     def create(self, validated_data):
         """Créer un nouveau document de projet."""
@@ -136,13 +119,10 @@ class DocumentProjetCreateSerializer(serializers.ModelSerializer):
         # Extraire les IDs
         projet_id = validated_data.pop('projet_id')
         phase_id = validated_data.pop('phase_id', None)
-        etape_id = validated_data.pop('etape_id', None)
-        
         # Récupérer les objets
-        from projects.models import Projet, ProjetPhaseEtat, Etape
+        from projects.models import Projet, ProjetPhaseEtat
         projet = Projet.objects.get(id=projet_id)
         phase = ProjetPhaseEtat.objects.get(id=phase_id) if phase_id else None
-        etape = Etape.objects.get(id=etape_id) if etape_id else None
         
         # Déterminer qui a créé/déposé le document
         if validated_data.get('origine') == 'genere':
@@ -154,7 +134,6 @@ class DocumentProjetCreateSerializer(serializers.ModelSerializer):
         document = DocumentProjet.objects.create(
             projet=projet,
             phase=phase,
-            etape=etape,
             **validated_data
         )
         
@@ -172,13 +151,12 @@ class DocumentProjetCreateSerializer(serializers.ModelSerializer):
 class DocumentProjetUpdateSerializer(serializers.ModelSerializer):
     """Sérialiseur pour la mise à jour de documents de projet."""
     phase_id = serializers.IntegerField(required=False, allow_null=True)
-    etape_id = serializers.IntegerField(required=False, allow_null=True)
     
     class Meta:
         model = DocumentProjet
         fields = [
             'type_document', 'version', 'chemin_fichier', 'statut',
-            'phase_id', 'etape_id', 'nom_fichier', 'taille_fichier', 'description'
+            'phase_id', 'nom_fichier', 'taille_fichier', 'description'
         ]
     
     def validate_phase_id(self, value):
@@ -191,15 +169,6 @@ class DocumentProjetUpdateSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError("Cette phase n'existe pas.")
         return value
     
-    def validate_etape_id(self, value):
-        """Valider que l'étape existe."""
-        if value is not None:
-            from projects.models import Etape
-            try:
-                Etape.objects.get(id=value)
-            except Etape.DoesNotExist:
-                raise serializers.ValidationError("Cette étape n'existe pas.")
-        return value
     
     def update(self, instance, validated_data):
         """Mettre à jour un document de projet."""
@@ -207,16 +176,10 @@ class DocumentProjetUpdateSerializer(serializers.ModelSerializer):
         
         # Extraire les IDs
         phase_id = validated_data.pop('phase_id', None)
-        etape_id = validated_data.pop('etape_id', None)
-        
         # Récupérer les objets si fournis
         if phase_id is not None:
             from projects.models import ProjetPhaseEtat
             instance.phase = ProjetPhaseEtat.objects.get(id=phase_id) if phase_id else None
-        
-        if etape_id is not None:
-            from projects.models import Etape
-            instance.etape = Etape.objects.get(id=etape_id) if etape_id else None
         
         # Mettre à jour le document
         document = super().update(instance, validated_data)
@@ -353,7 +316,6 @@ class DocumentTeleverseListSerializer(serializers.ModelSerializer):
     televerse_par = UserSimpleSerializer(read_only=True)
     valide_par = UserSimpleSerializer(read_only=True)
     phase = serializers.StringRelatedField(read_only=True)
-    etape = serializers.StringRelatedField(read_only=True)
     taille_fichier_mb = serializers.ReadOnlyField()
     est_image = serializers.ReadOnlyField()
     est_document_office = serializers.ReadOnlyField()
@@ -376,7 +338,6 @@ class DocumentTeleverseDetailSerializer(serializers.ModelSerializer):
     """Sérialiseur détaillé pour les documents téléversés."""
     projet = ProjetSerializer(read_only=True)
     phase = ProjetPhaseEtatSerializer(read_only=True)
-    etape = EtapeSerializer(read_only=True)
     televerse_par = UserSimpleSerializer(read_only=True)
     valide_par = UserSimpleSerializer(read_only=True)
     taille_fichier_mb = serializers.ReadOnlyField()
@@ -405,7 +366,7 @@ class DocumentTeleverseCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = DocumentTeleverse
         fields = [
-            'projet', 'phase', 'etape', 'titre', 'description',
+            'projet', 'phase', 'titre', 'description',
             'mots_cles', 'version', 'est_public'
         ]
     

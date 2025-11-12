@@ -2,7 +2,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
     ProjetViewSet, MembreProjetViewSet, HistoriqueEtatViewSet,
-    PermissionProjetViewSet, TacheViewSet, PhaseProjetViewSet, ProjetPhaseEtatViewSet, EtapeViewSet,
+    PermissionProjetViewSet, TacheViewSet, PhaseProjetViewSet, ProjetPhaseEtatViewSet,
     ProjetCompletionViewSet
 )
 
@@ -35,15 +35,8 @@ urlpatterns = [
     path('projects/<int:projet_pk>/phases/<int:pk>/', ProjetPhaseEtatViewSet.as_view({'get': 'retrieve', 'put': 'update', 'patch': 'partial_update'}), name='projet-phase-detail'),
     path('projects/<int:projet_pk>/phases/<int:pk>/marquer-debut/', ProjetPhaseEtatViewSet.as_view({'post': 'marquer_debut'}), name='projet-phase-marquer-debut'),
     path('projects/<int:projet_pk>/phases/<int:pk>/marquer-fin/', ProjetPhaseEtatViewSet.as_view({'post': 'marquer_fin'}), name='projet-phase-marquer-fin'),
+    path('projects/<int:projet_pk>/phases/<int:pk>/taches/', ProjetPhaseEtatViewSet.as_view({'get': 'taches'}), name='projet-phase-taches'),
     path('projects/<int:projet_pk>/phases/progression/', ProjetPhaseEtatViewSet.as_view({'get': 'progression'}), name='projet-phases-progression'),
-    
-    # URLs imbriquées pour les étapes d'une phase spécifique
-    path('projects/<int:projet_pk>/phases/<int:phase_pk>/etapes/', EtapeViewSet.as_view({'get': 'list', 'post': 'create'}), name='projet-phase-etapes'),
-    path('projects/<int:projet_pk>/phases/<int:phase_pk>/etapes/<int:pk>/', EtapeViewSet.as_view({'get': 'retrieve', 'put': 'update', 'patch': 'partial_update', 'delete': 'destroy'}), name='projet-phase-etape-detail'),
-    path('projects/<int:projet_pk>/phases/<int:phase_pk>/etapes/<int:pk>/demarrer/', EtapeViewSet.as_view({'post': 'demarrer'}), name='projet-phase-etape-demarrer'),
-    path('projects/<int:projet_pk>/phases/<int:phase_pk>/etapes/<int:pk>/terminer/', EtapeViewSet.as_view({'post': 'terminer'}), name='projet-phase-etape-terminer'),
-    path('projects/<int:projet_pk>/phases/<int:phase_pk>/etapes/<int:pk>/annuler/', EtapeViewSet.as_view({'post': 'annuler'}), name='projet-phase-etape-annuler'),
-    path('projects/<int:projet_pk>/phases/<int:phase_pk>/etapes/progression/', EtapeViewSet.as_view({'get': 'progression'}), name='projet-phase-etapes-progression'),
     
     # URLs pour la gestion de la completion des projets
     path('projects/<int:projet_pk>/marquer-termine/', ProjetCompletionViewSet.as_view({'post': 'marquer_termine'}), name='projet-marquer-termine'),

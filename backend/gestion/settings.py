@@ -315,12 +315,12 @@ EMAIL_USE_TLS = True   # Utiliser STARTTLS sur le port 587
 EMAIL_USE_SSL = False  # Ne pas utiliser SSL direct
 
 # Récupérer les identifiants depuis les variables d'environnement ou utiliser les valeurs par défaut
-EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', 'marketges174@gmail.com')
 # Le mot de passe d'application Google (16 caractères sans espaces)
 # Format Google: "xxxx xxxx xxxx xxxx" -> convertir en "xxxxxxxxxxxxxxxx"
-email_password_raw = os.getenv('EMAIL_HOST_PASSWORD', 'swtd cire yqyy opiq')
+email_password_raw = os.getenv('EMAIL_HOST_PASSWORD', '')
 EMAIL_HOST_PASSWORD = email_password_raw.replace(' ', '').replace('-', '') if email_password_raw else ''
-DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', '')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'marketges174@gmail.com')
 
 # Timeout pour la connexion SMTP (en secondes) - augmenté pour les connexions lentes
 EMAIL_TIMEOUT = 30

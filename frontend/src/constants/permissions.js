@@ -26,7 +26,6 @@ export const PERMISSION_CATEGORIES = {
       { code: 'projets:budget', description: 'Gérer le budget' },
       { code: 'projets:equipe', description: 'Gérer l\'équipe' },
       { code: 'projets:phases', description: 'Gérer les phases' },
-      { code: 'projets:etapes', description: 'Gérer les étapes' },
       { code: 'projets:taches', description: 'Gérer les tâches' },
       { code: 'projets:exporter', description: 'Exporter les projets' },
       { code: 'projets:historique', description: 'Voir l\'historique' }
@@ -136,7 +135,6 @@ export const PREDEFINED_ROLES = {
       'projets:budget',
       'projets:equipe',
       'projets:phases',
-      'projets:etapes',
       'projets:taches',
       'projets:exporter',
       'projets:historique',
@@ -172,7 +170,6 @@ export const PREDEFINED_ROLES = {
       'projets:statut',
       'projets:equipe',
       'projets:phases',
-      'projets:etapes',
       'projets:taches',
       'projets:exporter',
       'projets:historique',
